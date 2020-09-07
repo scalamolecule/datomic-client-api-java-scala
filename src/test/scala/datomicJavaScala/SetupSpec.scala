@@ -6,6 +6,11 @@ import datomicJavaScala.client.api.{Connection, Datomic}
 import org.specs2.mutable.Specification
 import org.specs2.specification.core.{Fragments, Text}
 
+/*
+Multiple-environment setup inspiration:
+https://github.com/etorreborre/specs2/issues/827
+*/
+
 trait SetupSpec extends Specification with SchemaAndData {
 
   override def map(fs: => Fragments): Fragments =

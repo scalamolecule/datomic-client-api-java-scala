@@ -1,7 +1,7 @@
 package datomicJavaScala.client.api.sync
 
 import datomicJavaScala.client.api.Datom
-import datomicJavaScala.{SetupSpec, Setup}
+import datomicJavaScala.{Setup, SetupSpec}
 
 
 class ConnectionTest extends SetupSpec {
@@ -27,39 +27,22 @@ class ConnectionTest extends SetupSpec {
   }
 
 
-  // (withDb and widh are tested in DbTest...)
+  // (`withDb` and `widh` are tested in DbTest...)
 
 
   "db" in new Setup {
-    // Test if repeated calls do conn.db returns the samme db value (/object)
+    // Test if repeated calls do conn.db returns the same db value (/object)
     val db = conn.db
 
     if (isDevLocal) {
       // Dev-local connection returns same database object
       db === conn.db
-      assert(db == conn.db)
-
-      // Value equality
-      db.equals(conn.db)
-
-      // Object identity equality
-      db.eq(conn.db)
-
     } else {
-
-      // Peer Server connection returns a database object copy
+      // Peer Server connection returns new database object
       db !== conn.db
-      assert(db != conn.db)
-
-      // Weirdly these test equal!?:
-
-      // Value equality
-      db.equals(conn.db)
-
-      // Object identity equality
-      db.eq(conn.db)
     }
   }
+
 
   "sync" in new Setup {
 
