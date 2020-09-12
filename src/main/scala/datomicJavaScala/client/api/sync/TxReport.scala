@@ -1,7 +1,9 @@
-package datomicJavaScala.client.api
+package datomicJavaScala.client.api.sync
 
 import java.util.stream.{Stream => jStream}
 import java.util.{Map => jMap}
+import datomic.Util._
+import datomicJavaScala.client.api.Datom
 import datomicJavaScala.util.ClojureBridge
 
 /** Facade to Datomic transaction report */
@@ -14,7 +16,7 @@ case class TxReport(rawTxReport: jMap[_, _]) extends ClojureBridge {
   def dbAfter: Db = Db(rawTxReport.get(read(":db-after")).asInstanceOf[AnyRef])
 
   /** Get Array of transacted Datoms. */
-  def txData: jStream[Datom] = arrayOfDatoms(rawTxReport.get(read(":tx-data")))
+  def txData: jStream[Datom] = streamOfDatoms(rawTxReport.get(read(":tx-data")))
 
   /** Get map of temp ids and entity ids. */
   def tempIds: jMap[Long, Long] =

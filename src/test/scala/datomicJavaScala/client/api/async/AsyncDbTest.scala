@@ -1,4 +1,4 @@
-package datomicJavaScala.client.api.sync
+package datomicJavaScala.client.api.async
 
 import java.util.stream.{Stream => jStream}
 import java.util.{Map => jMap}
@@ -10,11 +10,11 @@ import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
 
-class DbTest extends SetupSpec {
+class AsyncDbTest extends AsyncSetupSpec {
   sequential
 
 
-  "stats" in new Setup {
+  "stats" in new AsyncSetup {
     val db = conn.db
 
     db.dbName === "hello"
@@ -24,7 +24,7 @@ class DbTest extends SetupSpec {
     db.isHistory === false
 
     if (isDevLocal) {
-      db.dbStats === DbStats(
+      db.dbStats.realize === DbStats(
         243,
         Some(Map(
           ":db.install/partition" -> 3,
@@ -46,7 +46,7 @@ class DbTest extends SetupSpec {
       )
     } else {
       // todo: why are attrs not picked up with Peer Server?
-      db.dbStats.attrs !== None
+      db.dbStats.realize.attrs !== None
     }
 
     db.asOf(tBefore).dbName === "hello"
@@ -81,7 +81,7 @@ class DbTest extends SetupSpec {
   }
 
 
-  "as-of" in new Setup {
+  "as-of" in new AsyncSetup {
 
     // Current state
     films(conn.db) === threeFilms
@@ -97,7 +97,7 @@ class DbTest extends SetupSpec {
   }
 
 
-  "since" in new Setup {
+  "since" in new AsyncSetup {
     // State created since previous t
     films(conn.db.since(tBefore)) === threeFilms
 
@@ -106,17 +106,17 @@ class DbTest extends SetupSpec {
   }
 
 
-  "with" in new Setup {
-    val wDb = conn.withDb
+  "with" in new AsyncSetup {
+    val wDb = conn.withDb.realize
     val db  = conn.db
 
     // Updated `with` db value
-    val wDb2 = db.`with`(wDb, film4)
+    val wDb2 = db.`with`(wDb, film4).realize
 
     films(wDb2) === fourFilms
 
     // Add more data to `wDb2`
-    val wDb3 = db.`with`(wDb2.datomicDb, film5)
+    val wDb3 = db.`with`(wDb2.datomicDb, film5).realize
     films(wDb3) === (fourFilms :+ "Film 5").sorted
 
     // Current state is unaffected
@@ -124,7 +124,7 @@ class DbTest extends SetupSpec {
   }
 
 
-  "with - single invocation" in new Setup {
+  "with - single invocation" in new AsyncSetup {
     // As a convenience, a single-invocation shorter version of `with`:
     films(conn.widh(film4)) === fourFilms
 
@@ -136,7 +136,7 @@ class DbTest extends SetupSpec {
   }
 
 
-  "history" in new Setup {
+  "history" in new AsyncSetup {
 
     // Not testing Peer Server history since history is accumulating when we
     // can't re-create database for each test without shutting down Peer Server.
@@ -148,7 +148,7 @@ class DbTest extends SetupSpec {
       films(conn.db.history) == threeFilms
 
       // As long as we only add data, current/history will be the same
-      val tx = conn.transact(film4)
+      val tx = conn.transact(film4).realize
       films(conn.db) == fourFilms
       films(conn.db.history) == fourFilms
 
@@ -159,13 +159,13 @@ class DbTest extends SetupSpec {
       films(conn.db.history) == fourFilms
 
       // History of movie title assertions and retractions
-      Datomic.q(
+      AsyncDatomic.q(
         """[:find ?movie-title ?tx ?added
           |:where [_ :movie/title ?movie-title ?tx ?added]]""".stripMargin,
 
         // Use history database
         conn.db.history
-      ).asInstanceOf[PersistentVector].asScala.toList
+      ).realize.iterator().asScala.toList
         .map { row =>
           val List(v, tx, added) = row.asInstanceOf[PersistentVector].asScala.toList
           (v.toString, tx.asInstanceOf[Long], added.asInstanceOf[Boolean])
@@ -186,16 +186,16 @@ class DbTest extends SetupSpec {
   }
 
 
-  "datoms" in new Setup {
+  "datoms" in new AsyncSetup {
     conn.db.datoms(
       ":avet",
       list(read(":movie/title"))
-    ).toScala(List).map(_.v.toString).sorted === threeFilms
+    ).realize.toScala(List).map(_.v.toString).sorted === threeFilms
   }
 
 
-  "indexRange" in new Setup {
-    conn.db.indexRange(":movie/title").toScala(List).sortBy(_.e) === List(
+  "indexRange" in new AsyncSetup {
+    conn.db.indexRange(":movie/title").realize.toScala(List).sortBy(_.e) === List(
       Datom(e1, a1, "The Goonies", txIdAfter, true),
       Datom(e2, a1, "Commando", txIdAfter, true),
       Datom(e3, a1, "Repo Man", txIdAfter, true),
@@ -203,16 +203,16 @@ class DbTest extends SetupSpec {
   }
 
 
-  "pull" in new Setup {
-    conn.db.pull("[*]", eid).toString ===
+  "pull" in new AsyncSetup {
+    conn.db.pull("[*]", eid).realize.toString ===
       s"""{:db/id $eid, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
 
-    conn.db.pull("[*]", eid, 1000).toString ===
+    conn.db.pull("[*]", eid, 1000).realize.toString ===
       s"""{:db/id $eid, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
 
     // dev-local in-memory db will pull within 1 ms
     if (!isDevLocal)
-      conn.db.pull("[*]", eid, 1) must throwA(
+      conn.db.pull("[*]", eid, 1).realize must throwA(
         new clojure.lang.ExceptionInfo(
           "Datomic Client Timeout",
           new PersistentArrayMap(
@@ -226,15 +226,14 @@ class DbTest extends SetupSpec {
   }
 
 
-  "indexPull" in new Setup {
+  "indexPull" in new AsyncSetup {
 
     // Pull lazy java Stream of indexes
-    // since 1.0.61.65
     val javaStream: jStream[_] = conn.db.indexPull(
       ":avet",
       "[:movie/title :movie/release-year]",
       "[:movie/release-year 1985]"
-    )
+    ).realize
 
     // Lazily convert to scala LazyList
     val scalaLazyList: LazyList[Any] = javaStream.toScala(LazyList)

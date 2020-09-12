@@ -1,9 +1,11 @@
-package datomicJavaScala.client.api
+package datomicJavaScala.client.api.sync
 
 import java.util.stream.{Stream => jStream}
 import java.util.{List => jList, Map => jMap}
 import clojure.lang.Keyword
 import datomic.Util
+import datomic.Util._
+import datomicJavaScala.client.api.{Datom, DbStats}
 import datomicJavaScala.util.ClojureBridge
 import scala.jdk.CollectionConverters._
 
@@ -40,7 +42,7 @@ case class Db(datomicDb: AnyRef) extends ClojureBridge {
 
   // Todo:
   def dbStats: DbStats = {
-    val raw    = clientFn("db-stats").invoke(datomicDb).asInstanceOf[jMap[_, _]]
+    val raw    = syncFn("db-stats").invoke(datomicDb).asInstanceOf[jMap[_, _]]
     val datoms = raw.get(read(":datoms")).asInstanceOf[Long]
 
     // todo: seems to work only for dev-local
@@ -62,13 +64,9 @@ case class Db(datomicDb: AnyRef) extends ClojureBridge {
 
   // Time filters --------------------------------------
 
-  def asOf(t: Long): Db = {
-    Db(clientFn("as-of").invoke(datomicDb, t))
-  }
+  def asOf(t: Long): Db = Db(syncFn("as-of").invoke(datomicDb, t))
 
-  def since(t: Long): Db = {
-    Db(clientFn("since").invoke(datomicDb, t))
-  }
+  def since(t: Long): Db = Db(syncFn("since").invoke(datomicDb, t))
 
   def `with`(withDb: AnyRef, list: jList[_]): Db = {
     if (withDb.isInstanceOf[Db])
@@ -76,15 +74,15 @@ case class Db(datomicDb: AnyRef) extends ClojureBridge {
         """Please pass a "with-db", initially created from `conn.withDb` and """ +
           "subsequently with `<Db-object>.datomicDb`.")
     Db(
-      clientFn("with").invoke(
+      syncFn("with").invoke(
         withDb,
         read(s"{:tx-data ${edn(list)}}")
       ).asInstanceOf[jMap[_, _]]
-        .get(Util.read(":db-after")).asInstanceOf[AnyRef]
+        .get(read(":db-after")).asInstanceOf[AnyRef]
     )
   }
 
-  def history: Db = Db(clientFn("history").invoke(datomicDb))
+  def history: Db = Db(syncFn("history").invoke(datomicDb))
 
 
   // Indexes --------------------------------------
@@ -100,7 +98,7 @@ case class Db(datomicDb: AnyRef) extends ClojureBridge {
   def datoms(index: String, components: jList[_]): jStream[Datom] = {
     // dev-local: LazySeq
     // peer-server: Iterable
-    arrayOfDatoms(clientFn("datoms").invoke(
+    streamOfDatoms(syncFn("datoms").invoke(
       datomicDb,
       read(
         s"""{
@@ -120,37 +118,42 @@ case class Db(datomicDb: AnyRef) extends ClojureBridge {
     val end_   = end.fold("")(e => s":end $e")
     // dev-local: LazySeq
     // peer-server: Iterable
-    arrayOfDatoms(clientFn("index-range").invoke(
-      datomicDb,
-      read(
-        s"""{
-           |:attrid $attrId
-           |$start_
-           |$end_
-           |}""".stripMargin
+    streamOfDatoms(
+      syncFn("index-range").invoke(
+        datomicDb,
+        read(
+          s"""{
+             |:attrid $attrId
+             |$start_
+             |$end_
+             |}""".stripMargin
+        )
       )
-    ))
+    )
   }
 
 
   // Pull --------------------------------------
 
-  def pull(pattern: String, eid: Any): jMap[_, _] = {
-    clientFn("pull").invoke(
-      datomicDb,
-      read(pattern),
-      read(eid.toString)
-    ).asInstanceOf[jMap[_, _]]
-  }
-
-  def pull(selector: String, eid: Any, timeout: Int = 0): jMap[_, _] = {
-    clientFn("pull").invoke(
+  def pull(
+    selector: String,
+    eid: Any,
+    timeout: Int = 0,
+    offset: Int = 0,
+    limit: Int = 1000
+  ): jMap[_, _] = {
+    val timeout_ = if (timeout == 0) "" else s":timeout $timeout"
+    val offset_  = if (offset == 0) "" else s":offset $offset"
+    val limit_   = if (limit == 1000) "" else s":limit $limit"
+    syncFn("pull").invoke(
       datomicDb,
       read(
         s"""{
            |:selector $selector
            |:eid $eid
-           |:timeout $timeout
+           |$timeout_
+           |$offset_
+           |$limit_
            |}""".stripMargin
       )
     ).asInstanceOf[jMap[_, _]]
@@ -174,7 +177,7 @@ case class Db(datomicDb: AnyRef) extends ClojureBridge {
     val offset_  = if (offset == 0) "" else s":offset $offset"
     val limit_   = if (limit == 1000) "" else s":limit $limit"
 
-    clientFn("index-pull").invoke(
+    syncFn("index-pull").invoke(
       datomicDb,
       read(
         s"""{

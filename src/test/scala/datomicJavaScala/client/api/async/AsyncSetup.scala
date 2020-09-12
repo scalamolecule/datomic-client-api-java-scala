@@ -1,20 +1,20 @@
-package datomicJavaScala
+package datomicJavaScala.client.api.async
 
-import java.util.{Date, List => jList}
+import java.util.Date
 import clojure.lang.PersistentVector
-import datomic.Util.{list, read}
-import datomic.{Peer, Util}
-import datomicJavaScala.ClientProvider.system
-import datomicJavaScala.client.api._
+import datomic.Peer
+import datomicJavaScala.SchemaAndData
+import datomicJavaScala.util.ClojureBridge
 import org.specs2.specification.Scope
 import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
-class Setup extends SchemaAndData with Scope {
-  lazy val system  : String     = ClientProvider.system
-  lazy val client  : Client     = ClientProvider.client
-  lazy val conn    : Connection = ClientProvider.conn
-  lazy val txReport: TxReport   = ClientProvider.txReport
+
+class AsyncSetup extends SchemaAndData with Scope with ClojureBridge {
+  lazy val system  : String          = AsyncClientProvider.system
+  lazy val client  : AsyncClient     = AsyncClientProvider.client
+  lazy val conn    : AsyncConnection = AsyncClientProvider.conn
+  lazy val txReport: AsyncTxReport   = AsyncClientProvider.txReport
 
   lazy val isDevLocal = system == "dev-local"
 
@@ -40,8 +40,12 @@ class Setup extends SchemaAndData with Scope {
   val List(a1, a2, a3) = if (system == "dev-local")
     List(73, 74, 75) else List(63, 64, 65)
 
-  def films(db: Db): Seq[String] = Datomic.q(filmQuery, db)
-    .asInstanceOf[PersistentVector].asScala.toList
-    .map(row => row.asInstanceOf[PersistentVector].asScala.toList.head.toString)
-    .sorted
+  def films(db: AsyncDb): Seq[String] = {
+    val res = AsyncDatomic.q(filmQuery, db).realize
+    if (res != null) {
+      res.iterator().asScala.toList
+        .map(row => row.asInstanceOf[PersistentVector].asScala.toList.head.toString)
+        .sorted
+    } else Nil
+  }
 }

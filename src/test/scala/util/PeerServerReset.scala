@@ -15,6 +15,7 @@ class PeerServerReset extends Specification {
   "delete hello db" >> {
     // Run this test only to delete test db 'hello'
     Peer.deleteDatabase("datomic:free://localhost:4334/hello")
+    Peer.deleteDatabase("datomic:free://localhost:4334/hello-dev-local")
     ok
   }
 

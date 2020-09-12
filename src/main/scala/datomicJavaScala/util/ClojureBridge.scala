@@ -4,6 +4,7 @@ import java.util.stream.{StreamSupport, Stream => jStream}
 import java.util.{Spliterator, Spliterators, Iterator => jIterator, List => jList, Map => jMap}
 import clojure.java.api.Clojure
 import clojure.lang.{IFn, ILookup, LazySeq, Keyword => clKeyword, Symbol => clSymbol}
+import datomic.Util._
 import datomic.core.db.Datum
 import datomic.db.DbId
 import datomicJavaScala.client.api.Datom
@@ -14,15 +15,28 @@ trait ClojureBridge {
 
   def fn(ns: String, method: String): IFn = Clojure.`var`(ns, method)
 
-  def read(s: String): AnyRef = Clojure.read(s)
+//  def read(s: String): AnyRef = read(s)
 
   lazy val deref = fn("clojure.core", "deref")
 
-  lazy val requireFn: IFn = fn("clojure.core", "require")
+  lazy val requireFn     : IFn = fn("clojure.core", "require")
+  lazy val referClojureFn: IFn = fn("clojure.core", "refer-clojure")
 
   def require(nss: String): AnyRef = requireFn.invoke(read(nss))
 
-  def clientFn(name: String): IFn = fn("datomic.client.api", name)
+
+  def excludeSymbol(symbol: String): AnyRef = referClojureFn.invoke("exclude", read(symbol))
+
+  def syncFn(name: String): IFn = fn("datomic.client.api", name)
+
+
+  def datomicAsyncFn(name: String): IFn = fn("datomic.client.api.async", name)
+  def coreAsyncFn(name: String): IFn = fn("clojure.core.async", name)
+
+  // Blocking take values from clojure.core.async.Channel
+  //  def <!!(channel: AnyRef): AnyRef = coreAsyncFn("<!!").invoke(channel)
+
+  //  def callAndTake(name: String)
 
   def printLn(s: AnyRef): Unit = fn("clojure.core", "println").invoke(s)
 
@@ -88,13 +102,14 @@ trait ClojureBridge {
   // Helper methods -------------------------------------------------
 
   // Unify Datoms in single fast iteration
-  protected def arrayOfDatoms(rawDatoms: Any): jStream[Datom] = {
+  protected def streamOfDatoms(rawDatoms: Any): jStream[Datom] = {
     rawDatoms match {
       // Dev-local only
+      // Getting Datom values without reflection
       case lazySeq: LazySeq => mkStream(
         new jIterator[Datom] {
           val it: jIterator[_] = lazySeq.iterator
-          var d: Datum = null
+          var d : Datum        = null
           override def hasNext: Boolean = it.hasNext
           override def next(): Datom = {
             d = it.next.asInstanceOf[Datum]
@@ -104,10 +119,11 @@ trait ClojureBridge {
       )
 
       // Peer Server + Dev-local
+      // Gets Datom values with reflection through ILookup interface
       case iterable: java.lang.Iterable[_] => mkStream(
         new jIterator[Datom] {
           val it: jIterator[_] = iterable.iterator
-          var d: ILookup = null
+          var d : ILookup      = null
           def valAt(d: ILookup, key: String): Any = d.valAt(read(key))
           override def hasNext: Boolean = it.hasNext
           override def next(): Datom = {
@@ -125,7 +141,7 @@ trait ClojureBridge {
     }
   }
 
-  def mkStream(it: jIterator[Datom]): jStream[Datom] = StreamSupport.stream(
+  private def mkStream(it: jIterator[Datom]): jStream[Datom] = StreamSupport.stream(
     Spliterators.spliteratorUnknownSize(it, Spliterator.ORDERED),
     false
   )
@@ -135,6 +151,7 @@ trait ClojureBridge {
 
   def types(obj: Any): Unit = {
     println("-----")
+    println(obj)
     println(obj.getClass)
     println(obj.getClass.getSuperclass)
     obj.getClass.getInterfaces.map(_.toString).sorted foreach println

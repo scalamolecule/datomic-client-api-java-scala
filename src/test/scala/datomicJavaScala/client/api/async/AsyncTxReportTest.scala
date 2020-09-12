@@ -1,10 +1,10 @@
-package datomicJavaScala.client.api.sync
+package datomicJavaScala.client.api.async
 
-class TxReportTest extends SetupSpec {
+class AsyncTxReportTest extends AsyncSetupSpec {
   sequential
 
 
-  "4 txReport ops" in new Setup {
+  "4 txReport ops" in new AsyncSetup {
 
     films(txReport.dbBefore) == Nil
     films(txReport.dbAfter) == threeFilms

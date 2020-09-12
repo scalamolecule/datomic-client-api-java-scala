@@ -1,8 +1,8 @@
-package datomicJavaScala
+package datomicJavaScala.client.api.sync
 
 import java.util.{List => jList}
 import datomic.Util.list
-import datomicJavaScala.client.api.{Connection, Datomic}
+import datomicJavaScala.SchemaAndData
 import org.specs2.mutable.Specification
 import org.specs2.specification.core.{Fragments, Text}
 
@@ -13,18 +13,24 @@ https://github.com/etorreborre/specs2/issues/827
 
 trait SetupSpec extends Specification with SchemaAndData {
 
+//    override def map(fs: => Fragments): Fragments =
+//      step(setupDevLocal()) ^
+//        fs.mapDescription(d => Text(s"${ClientProvider.system}: " + d.show))
+
   override def map(fs: => Fragments): Fragments =
     step(setupDevLocal()) ^
+//      fs.mapDescription(d => Text(s"${ClientProvider.system}: " + d.show))
       fs.mapDescription(d => Text(s"${ClientProvider.system}: " + d.show)) ^
       step(setupPeerServer()) ^
       fs.mapDescription(d => Text(s"${ClientProvider.system}: " + d.show))
 
 
   def setupDevLocal(): Unit = {
-    val client = Datomic.clientForDevLocal("free")
+    val client = Datomic.clientForDevLocal("dev")
 
     // Re-create db
     client.deleteDatabase("hello")
+    client.deleteDatabase("world")
     client.createDatabase("hello")
     val conn: Connection = client.connect("hello")
     conn.transact(schema(false))
@@ -35,6 +41,7 @@ trait SetupSpec extends Specification with SchemaAndData {
     ClientProvider.txReport = conn.transact(data)
   }
 
+
   def setupPeerServer(): Unit = {
     val client = Datomic.clientForPeerServer("myaccesskey", "mysecret", "localhost:8998")
 
@@ -42,7 +49,10 @@ trait SetupSpec extends Specification with SchemaAndData {
     val conn = client.connect("hello")
 
     // Install schema if necessary
-    if (Datomic.q("[:find ?e :where [?e :db/ident :movie/title]]", conn.db).toString == "[]") {
+    if (Datomic.q(
+      "[:find ?e :where [?e :db/ident :movie/title]]",
+      conn.db
+    ).toString == "[]") {
       println("Installing Peer Server hello db schema...")
       conn.transact(schema(true))
     }

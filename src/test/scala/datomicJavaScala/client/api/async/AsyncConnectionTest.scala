@@ -1,15 +1,18 @@
-package datomicJavaScala.client.api.sync
+package datomicJavaScala.client.api.async
 
 import datomicJavaScala.client.api.Datom
 
 
-class ConnectionTest extends SetupSpec {
+class AsyncConnectionTest extends AsyncSetupSpec {
   sequential
 
 
-  "txRange" in new Setup {
+  "txRange" in new AsyncSetup {
     // For some reason we can't compare (7, Array(...)) but separately goes fine:
-    val txRange = conn.txRange()
+
+    // todo: manually selecting last tx - until all txs are returned
+    // (see AsyncConnection.txRange comments)
+    val txRange = conn.txRange(offset = 7, limit = 1).realize
     txRange.last._1 === tAfter
     txRange.last._2 === Array(
       Datom(txIdAfter, 50, txInst, txIdAfter, true),
@@ -29,7 +32,7 @@ class ConnectionTest extends SetupSpec {
   // (`withDb` and `widh` are tested in DbTest...)
 
 
-  "db" in new Setup {
+  "db" in new AsyncSetup {
     // Test if repeated calls do conn.db returns the same db value (/object)
     val db = conn.db
 
@@ -43,18 +46,18 @@ class ConnectionTest extends SetupSpec {
   }
 
 
-  "sync" in new Setup {
+  "sync" in new AsyncSetup {
 
     // Db value the same
-    conn.sync(tAfter).equals(dbAfter)
+    conn.sync(tAfter).realize.equals(dbAfter)
 
     // Db object identity
     if (isDevLocal) {
       // Same db object
-      conn.sync(tAfter) === dbAfter
+      conn.sync(tAfter).realize === dbAfter
     } else {
       // Db object copy
-      conn.sync(tAfter) !== dbAfter
+      conn.sync(tAfter).realize !== dbAfter
     }
   }
 }

@@ -1,15 +1,15 @@
-package datomicJavaScala.client.api.sync
+package datomicJavaScala.client.api.async
 
 import datomic.Util
 import datomic.Util._
 import scala.jdk.CollectionConverters._
 
 
-class ClientTest extends SetupSpec {
+class AsyncClientTest extends AsyncSetupSpec {
   sequential
 
 
-  "administer system" in new Setup {
+  "administer system" in new AsyncSetup {
     // todo: Not available for Peer Server?
 
     client.administerSystem(
@@ -25,18 +25,20 @@ class ClientTest extends SetupSpec {
         read(":action"), read(":upgrade-schema"),
       )
     ).toString === "{}"
+
+    ok
   }
 
 
-  "list databases" in new Setup {
-    client.listDatabases().asScala === List("hello")
+  "list databases" in new AsyncSetup {
+    client.listDatabases().realize.asScala === List("hello")
   }
 
 
-  "create database" in new Setup {
+  "create database" in new AsyncSetup {
     if (isDevLocal) {
       client.createDatabase("world")
-      client.listDatabases().asScala.sorted === List("hello", "world")
+      client.listDatabases().realize.asScala.sorted === List("hello", "world")
     } else {
       // create-database not implemented for Peer Server
       client.createDatabase("world") must throwA(
@@ -50,11 +52,11 @@ class ClientTest extends SetupSpec {
   }
 
 
-  "delete database" in new Setup {
+  "delete database" in new AsyncSetup {
     if (isDevLocal) {
-      client.listDatabases().asScala.sorted === List("hello", "world")
+      client.listDatabases().realize.asScala.sorted === List("hello", "world")
       client.deleteDatabase("world")
-      client.listDatabases().asScala === List("hello")
+      client.listDatabases().realize.asScala === List("hello")
     } else {
       // delete-database not implemented for Peer Server
       client.deleteDatabase("world") must throwA(

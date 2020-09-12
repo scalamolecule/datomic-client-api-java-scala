@@ -1,11 +1,15 @@
-package datomicJavaScala.client.api
+package datomicJavaScala.client.api.sync
 
 import java.util.{List => jList, Map => jMap}
 import datomic.client.api.protocols.{Client => DatomicClient}
 import datomicJavaScala.util.ClojureBridge
+import datomic.Util._
 
 
-case class Client(forPeerServer: Boolean, datomicClient: DatomicClient) extends ClojureBridge {
+case class Client(
+  forPeerServer: Boolean,
+  datomicClient: DatomicClient
+) extends ClojureBridge {
 
   /**
    * Upgrading Datomic Schema
@@ -19,29 +23,29 @@ case class Client(forPeerServer: Boolean, datomicClient: DatomicClient) extends 
    *                // Example options
    *                Util.map(
    *                // Client
-   *                Util.read(":db-name"), "my-db",
+   *                read(":db-name"), "my-db",
    *                // On-Prem (?)
-   *                Util.read(":uri"), "datomic:dev://localhost:4334/my-db",
+   *                read(":uri"), "datomic:dev://localhost:4334/my-db",
    *
-   *                Util.read(":action"), Util.read(":upgrade-schema"),
+   *                read(":action"), read(":upgrade-schema"),
    *                )
    * @return Diagnostive value or throwing a failure exception
    */
   def administerSystem(options: jMap[_, _]): jMap[_, _] = {
-    clientFn("administer-system")
+    syncFn("administer-system")
       .invoke(datomicClient, read(edn(options)))
       .asInstanceOf[jMap[_, _]]
   }
 
   def administerSystem(options: String): jMap[_, _] = {
-    clientFn("administer-system")
+    syncFn("administer-system")
       .invoke(datomicClient, read(options))
       .asInstanceOf[jMap[_, _]]
   }
 
 
   def connect(dbName: String): Connection = Connection(
-    clientFn("connect").invoke(datomicClient, read(s"""{:db-name "$dbName"}"""))
+    syncFn("connect").invoke(datomicClient, read(s"""{:db-name "$dbName"}"""))
   )
 
 
@@ -55,7 +59,7 @@ case class Client(forPeerServer: Boolean, datomicClient: DatomicClient) extends 
     } else {
       // Errors reported via ex-info exceptions, with map contents
       // as specified by cognitect.anomalies.
-      clientFn("create-database").invoke(datomicClient, read(s"""{:db-name "$dbName"}"""))
+      syncFn("create-database").invoke(datomicClient, read(s"""{:db-name "$dbName"}"""))
     }
     true
   }
@@ -71,7 +75,7 @@ case class Client(forPeerServer: Boolean, datomicClient: DatomicClient) extends 
     } else {
       // Errors reported via ex-info exceptions, with map contents
       // as specified by cognitect.anomalies.
-      clientFn("delete-database").invoke(datomicClient, read(s"""{:db-name "$dbName"}"""))
+      syncFn("delete-database").invoke(datomicClient, read(s"""{:db-name "$dbName"}"""))
     }
     true
   }
@@ -85,7 +89,7 @@ case class Client(forPeerServer: Boolean, datomicClient: DatomicClient) extends 
   ): jList[String] = {
     val timeout = timeoutOpt.map(t => s":timeout $t ")
     val offset  = offsetOpt.map(t => s":offset $t ")
-    clientFn("list-databases").invoke(
+    syncFn("list-databases").invoke(
       datomicClient,
       read(
         s"""{
@@ -96,5 +100,4 @@ case class Client(forPeerServer: Boolean, datomicClient: DatomicClient) extends 
       )
     ).asInstanceOf[jList[String]]
   }
-
 }
