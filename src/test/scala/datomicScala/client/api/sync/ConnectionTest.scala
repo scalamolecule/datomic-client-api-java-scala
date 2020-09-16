@@ -1,9 +1,10 @@
 package datomicScala.client.api.sync
 
+import datomicScala.SyncSpec
 import datomicScala.client.api.Datom
 
 
-class ConnectionTest extends SetupSpec {
+class ConnectionTest extends SyncSpec {
   sequential
 
 
@@ -60,15 +61,13 @@ class ConnectionTest extends SetupSpec {
 
   "sync" in new Setup {
 
-    // Db value the same
-    conn.sync(tAfter).equals(dbAfter)
-
-    // Db object identity
     if (isDevLocal) {
       // Same db object
       conn.sync(tAfter) === dbAfter
     } else {
-      // Db object copy
+      // todo? Does sync call need to create a new db object
+      //  or could it be memoized/cached?
+      // New db object
       conn.sync(tAfter) !== dbAfter
     }
   }

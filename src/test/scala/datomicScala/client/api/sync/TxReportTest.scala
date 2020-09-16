@@ -1,7 +1,9 @@
 package datomicScala.client.api.sync
 
+import datomicScala.SyncSpec
 
-class TxReportTest extends SetupSpec {
+
+class TxReportTest extends SyncSpec {
   sequential
 
 

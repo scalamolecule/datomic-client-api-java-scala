@@ -2,10 +2,11 @@ package datomicScala.client.api.async
 
 import datomic.Util
 import datomic.Util.{list, _}
+import datomicScala.AsyncSpec
 import scala.jdk.StreamConverters._
 
 
-class AsyncDatomicTest extends AsyncSetupSpec {
+class AsyncDatomicTest extends AsyncSpec {
   sequential
 
 
@@ -13,7 +14,7 @@ class AsyncDatomicTest extends AsyncSetupSpec {
 
     // Not much of a test really - just checking that we can produce some clients
 
-    AsyncClientProvider.system match {
+    system match {
       case "cloud" =>
         // with AWSCredentialsProviderChain
         // Uncomment and test if a cloud system is available

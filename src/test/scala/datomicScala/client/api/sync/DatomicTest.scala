@@ -2,16 +2,17 @@ package datomicScala.client.api.sync
 
 import datomic.Util
 import datomic.Util._
+import datomicScala.SyncSpec
 import datomicScala.anomaly.{Forbidden, NotFound}
 
 
-class DatomicTest extends SetupSpec {
+class DatomicTest extends SyncSpec {
   sequential
 
 
   "create client" >> {
 
-    ClientProvider.system match {
+    system match {
       case "cloud" =>
         // with AWSCredentialsProviderChain
         // Uncomment and test if a cloud system is available

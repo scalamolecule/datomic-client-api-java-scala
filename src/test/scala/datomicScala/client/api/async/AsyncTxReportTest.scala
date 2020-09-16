@@ -1,7 +1,9 @@
 package datomicScala.client.api.async
 
+import datomicScala.AsyncSpec
 
-class AsyncTxReportTest extends AsyncSetupSpec {
+
+class AsyncTxReportTest extends AsyncSpec {
   sequential
 
   "4 txReport ops" in new AsyncSetup {

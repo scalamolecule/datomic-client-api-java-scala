@@ -1,9 +1,10 @@
 package datomicScala.client.api.async
 
+import datomicScala.AsyncSpec
 import datomicScala.client.api.Datom
 
 
-class AsyncConnectionTest extends AsyncSetupSpec {
+class AsyncConnectionTest extends AsyncSpec {
   sequential
 
 

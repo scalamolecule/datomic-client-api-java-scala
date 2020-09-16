@@ -1,15 +1,11 @@
 package datomicClojure
 
-import java.util.{Collection => jCollection, Map => jMap}
+import java.util.stream.{Stream => jStream}
+import java.util.{Collection => jCollection, List => jList, Map => jMap}
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util.read
 import datomic.client.api.protocols
-import datomicJava.client.api.sync.Datomic.{edn, syncFn}
-import datomicJava.client.api.sync.Db
-import java.util.{Collection => jCollection, List => jList, Map => jMap}
-import datomicScala.client.api.sync.Datomic.{catchAnomaly, syncFn}
-import java.util.stream.{Stream => jStream}
-import datomicScala.util.Helper.{edn, syncFn}
+import datomicJava.util.Helper.syncFn
 
 
 object Invoke extends ClojureBridge {
@@ -32,7 +28,10 @@ object Invoke extends ClojureBridge {
       .asInstanceOf[jMap[_, _]]
   }
 
-  def asOf(datomicDb: AnyRef, t: Long): AnyRef = {
+  def asOf(
+    datomicDb: AnyRef,
+    t: Long
+  ): AnyRef = {
     syncFn("as-of").invoke(datomicDb, t)
   }
 
@@ -179,17 +178,22 @@ object Invoke extends ClojureBridge {
   }
 
 
-  def indexPpull(
+  def history(datomicDb: AnyRef): AnyRef = {
+    syncFn("history").invoke(datomicDb)
+  }
+
+
+  def indexPull(
     datomicDb: AnyRef,
     index: String,
     selector: String,
     start: String,
-    reverse: Option[Boolean] = None,
+    reverse: Boolean = false,
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
   ): jStream[_] = {
-    val reverse_ = reverse.fold("")(r => s":reverse $r")
+    val reverse_ = if(reverse) ":reverse true" else ""
     syncFn("index-pull").invoke(
       datomicDb,
       read(
@@ -351,11 +355,11 @@ object Invoke extends ClojureBridge {
 
   def transact(
     datomicConn: AnyRef,
-    stmtss: jList[_]
+    stmts: jList[_]
   ): jMap[_, _] = {
     syncFn("transact").invoke(
       datomicConn,
-      read(s"{:tx-data ${edn(stmtss)}}")
+      read(s"{:tx-data ${edn(stmts)}}")
     ).asInstanceOf[jMap[_, _]]
   }
 
@@ -383,13 +387,14 @@ object Invoke extends ClojureBridge {
     )
   }
 
+
   def `with`(
     withDb: AnyRef,
-    stmtss: jList[_]
+    stmts: jList[_]
   ): jMap[_, _] = {
     syncFn("with").invoke(
       withDb,
-      read(s"{:tx-data ${edn(stmtss)}}")
+      read(s"{:tx-data ${edn(stmts)}}")
     ).asInstanceOf[jMap[_, _]]
   }
 

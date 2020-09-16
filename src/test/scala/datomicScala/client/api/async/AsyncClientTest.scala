@@ -2,10 +2,12 @@ package datomicScala.client.api.async
 
 import datomic.Util
 import datomic.Util._
+import datomicScala.AsyncSpec
+
 import scala.jdk.CollectionConverters._
 
 
-class AsyncClientTest extends AsyncSetupSpec {
+class AsyncClientTest extends AsyncSpec {
   sequential
 
 

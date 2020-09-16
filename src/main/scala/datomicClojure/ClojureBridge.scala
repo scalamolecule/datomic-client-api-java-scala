@@ -81,15 +81,15 @@ trait ClojureBridge {
     .build
 
 
-  def edn(stmtss: jList[_]): String = {
-    Printers.printString(compact, stmtss)
+  def edn(stmts: jList[_]): String = {
+    Printers.printString(compact, stmts)
   }
   def edn(stmts: jMap[_, _]): String = {
     Printers.printString(compact, stmts)
   }
 
-  def ednPretty(stmtss: jList[_]): String = {
-    Printers.printString(pretty, stmtss)
+  def ednPretty(stmts: jList[_]): String = {
+    Printers.printString(pretty, stmts)
   }
   def ednPretty(stmts: jMap[_, _]): String = {
     Printers.printString(pretty, stmts)

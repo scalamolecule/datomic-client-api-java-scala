@@ -5,12 +5,13 @@ import java.util.{Map => jMap}
 import clojure.lang.{PersistentArrayMap, PersistentVector}
 import datomic.Util
 import datomic.Util._
+import datomicScala.AsyncSpec
 import datomicScala.client.api.{Datom, DbStats}
 import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
 
-class AsyncDbTest extends AsyncSetupSpec {
+class AsyncDbTest extends AsyncSpec {
   sequential
 
 

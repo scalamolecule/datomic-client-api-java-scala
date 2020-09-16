@@ -5,14 +5,14 @@ import java.util.{Map => jMap}
 import clojure.lang.{PersistentArrayMap, PersistentVector}
 import datomic.Util
 import datomic.Util._
+import datomicScala.SyncSpec
 import datomicScala.client.api.{Datom, DbStats}
 import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
 
-class DbTest extends SetupSpec {
+class DbTest extends SyncSpec {
   sequential
-
 
   "stats" in new Setup {
     val db: Db = conn.db
@@ -226,10 +226,10 @@ class DbTest extends SetupSpec {
   }
 
 
+  // since 1.0.61.65
   "indexPull" in new Setup {
 
-    // Pull lazy java Stream of indexes
-    // since 1.0.61.65
+    // Pull from :avet index
     val javaStream: jStream[_] = conn.db.indexPull(
       ":avet",
       "[:movie/title :movie/release-year]",

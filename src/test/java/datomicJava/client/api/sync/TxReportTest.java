@@ -1,8 +1,8 @@
 package datomicJava.client.api.sync;
 
+import datomicJava.Setup;
 import org.junit.Test;
 
-import static datomic.Util.list;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;

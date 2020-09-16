@@ -21,10 +21,10 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
   }
 
 
-  def transact(stmtss: jList[_]): TxReport = catchAnomaly {
-    if (stmtss.isEmpty)
+  def transact(stmts: jList[_]): TxReport = catchAnomaly {
+    if (stmts.isEmpty)
       throw new IllegalArgumentException("No transaction statements passed.")
-    TxReport(Invoke.transact(datomicConn, stmtss))
+    TxReport(Invoke.transact(datomicConn, stmts))
   }
 
 
@@ -39,8 +39,8 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
   }
 
   // Convenience method for single invocation from connection
-  def widh(stmtss: jList[_]): Db = catchAnomaly {
-    val txReport = Invoke.`with`(withDb, stmtss)
+  def widh(stmts: jList[_]): Db = catchAnomaly {
+    val txReport = Invoke.`with`(withDb, stmts)
     val dbAfter  = txReport.get(read(":db-after"))
     Db(dbAfter.asInstanceOf[AnyRef])
   }

@@ -70,14 +70,13 @@ case class Db(datomicDb: AnyRef) extends AnomalyWrapper {
 
   def since(t: Long): Db = Db(Invoke.since(datomicDb, t))
 
-  def `with`(withDb: AnyRef, stmtss: jList[_]): Db = {
+  def `with`(withDb: AnyRef, stmts: jList[_]): Db = {
     if (withDb.isInstanceOf[Db])
       throw new IllegalArgumentException(
         """Please pass a "with-db", initially created from `conn.withDb` and """ +
           "subsequently with `<Db-object>.datomicDb`.")
     Db(
-      Invoke.`with`(withDb, stmtss)
-        .get(read(":db-after")).asInstanceOf[AnyRef]
+      Invoke.`with`(withDb, stmts).get(read(":db-after")).asInstanceOf[AnyRef]
     )
   }
 
@@ -130,14 +129,14 @@ case class Db(datomicDb: AnyRef) extends AnomalyWrapper {
     index: String,
     selector: String,
     start: String,
-    reverse: Option[Boolean] = None,
+    reverse: Boolean = false,
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
   ): jStream[_] = {
     if (!Seq(":avet", ":aevt").contains(index))
       throw new IllegalArgumentException("Index can only be :avet or :aevt")
-    Invoke.indexPpull(datomicDb, index, selector, start, reverse, timeout, offset, limit)
+    Invoke.indexPull(datomicDb, index, selector, start, reverse, timeout, offset, limit)
   }
 }
 

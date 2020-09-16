@@ -1,5 +1,6 @@
 package datomicJava.client.api.sync;
 
+import datomicJava.Setup;
 import datomicJava.client.api.Datom;
 import javafx.util.Pair;
 import org.junit.FixMethodOrder;
@@ -59,16 +60,13 @@ public class ConnectionTest extends Setup {
 
     @Test
     public void sync() {
-        // Db value the same
-        assertThat(conn.sync(tAfter()).equals(dbAfter()), is(true));
-        assertThat(conn.sync(tAfter()), is(dbAfter()));
-
-        // Db object identity
         if (isDevLocal()) {
             // Same db object
             assertThat(conn.sync(tAfter()), is(dbAfter()));
         } else {
-            // Db object copy
+            // todo? Does sync call need to create a new db object
+            //  or could it be memoized/cached?
+            // New db object
             assertThat(conn.sync(tAfter()), not(dbAfter()));
         }
     }

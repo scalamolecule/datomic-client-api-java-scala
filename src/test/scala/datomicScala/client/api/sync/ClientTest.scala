@@ -2,22 +2,18 @@ package datomicScala.client.api.sync
 
 import datomic.Util
 import datomic.Util._
+import datomicScala.SyncSpec
 import scala.jdk.CollectionConverters._
 
 
-class ClientTest extends SetupSpec {
+class ClientTest extends SyncSpec {
   sequential
 
 
   "administer system" in new Setup {
     // todo: Not available for Peer Server?
 
-    client.administerSystem(
-      """{
-        |:db-name "hello"
-        |:action :upgrade-schema
-        |}""".stripMargin
-    ).toString === "{}"
+    client.administerSystem("hello").toString === "{}"
 
     client.administerSystem(
       Util.map(
@@ -25,6 +21,7 @@ class ClientTest extends SetupSpec {
         read(":action"), read(":upgrade-schema"),
       )
     ).toString === "{}"
+
   }
 
 

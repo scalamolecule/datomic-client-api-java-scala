@@ -5,8 +5,10 @@ import java.util.stream.{Stream => jStream}
 import java.util.{List => jList, Map => jMap}
 import clojure.lang.Keyword
 import datomic.Util._
+import datomicClojure.Invoke
 import datomicJava.client.api.{Datom, DbStats}
 import datomicJava.util.Helper._
+import datomicJava.util.Helper.streamOfDatoms
 import scala.jdk.CollectionConverters._
 
 
@@ -41,7 +43,7 @@ case class Db(datomicDb: AnyRef) {
   }
 
   def dbStats: DbStats = {
-    val raw      = syncFn("db-stats").invoke(datomicDb).asInstanceOf[jMap[_, _]]
+    val raw      = Invoke.dbStats(datomicDb)
     val datoms   = raw.get(read(":datoms")).asInstanceOf[Long]
     val attrsRaw = raw.get(read(":attrs"))
     if (attrsRaw != null) {
@@ -70,25 +72,21 @@ case class Db(datomicDb: AnyRef) {
 
   // Time filters --------------------------------------
 
-  def asOf(t: Long): Db = Db(syncFn("as-of").invoke(datomicDb, t))
+  def asOf(t: Long): Db = Db(Invoke.asOf(datomicDb, t))
 
-  def since(t: Long): Db = Db(syncFn("since").invoke(datomicDb, t))
+  def since(t: Long): Db = Db(Invoke.since(datomicDb, t))
 
-  def `with`(withDb: AnyRef, list: jList[_]): Db = {
+  def `with`(withDb: AnyRef, stmts: jList[_]): Db = {
     if (withDb.isInstanceOf[Db])
       throw new IllegalArgumentException(
         """Please pass a "with-db", initially created from `conn.withDb` and """ +
           "subsequently with `<Db-object>.datomicDb`.")
     Db(
-      syncFn("with").invoke(
-        withDb,
-        read(s"{:tx-data ${edn(list)}}")
-      ).asInstanceOf[jMap[_, _]]
-        .get(read(":db-after")).asInstanceOf[AnyRef]
+      Invoke.`with`(withDb, stmts).get(read(":db-after")).asInstanceOf[AnyRef]
     )
   }
 
-  def history: Db = Db(syncFn("history").invoke(datomicDb))
+  def history: Db = Db(Invoke.history(datomicDb))
 
 
   // Indexes --------------------------------------
@@ -102,101 +100,98 @@ case class Db(datomicDb: AnyRef) {
    * @return List[datomicFacade.client.api.Datom] Wrapped Datoms with a unified api
    */
   def datoms(index: String, components: jList[_]): jStream[Datom] = {
-    // dev-local: LazySeq
-    // peer-server: Iterable
-    streamOfDatoms(syncFn("datoms").invoke(
-      datomicDb,
-      read(
-        s"""{
-           |:index $index
-           |:components ${edn(components)}
-           |}""".stripMargin
-      )
-    ))
+    streamOfDatoms(
+      Invoke.datoms(datomicDb, index, components)
+    )
   }
+
+  def indexRange[T](attrId: String): jStream[Datom] =
+    indexRange(attrId, None, None, 0, 0, 1000)
+
+  def indexRange[T](attrId: String, start: Option[Any]): jStream[Datom] =
+    indexRange(attrId, start, None, 0, 0, 1000)
 
   def indexRange[T](
     attrId: String,
-    start: Option[T] = None,
-    end: Option[T] = None
+    start: Any,
+    end: Any
+  ): jStream[Datom] = indexRange(attrId, start, end, 0, 0, 1000)
+
+
+  def indexRange(
+    attrId: String,
+    start: Any,
+    end: Any,
+    timeout: Int,
+    offset: Int,
+    limit: Int
   ): jStream[Datom] = {
-    val start_ = start.fold("")(s => s":start $s")
-    val end_   = end.fold("")(e => s":end $e")
-    // dev-local: LazySeq
-    // peer-server: Iterable
     streamOfDatoms(
-      syncFn("index-range").invoke(
-        datomicDb,
-        read(
-          s"""{
-             |:attrid $attrId
-             |$start_
-             |$end_
-             |}""".stripMargin
-        )
-      )
+      Invoke.indexRange(datomicDb, attrId, Option(start), Option(end), timeout, offset, limit)
     )
   }
 
 
   // Pull --------------------------------------
 
+  def pull(selector: String, eid: Any): jMap[_, _] =
+    pull(selector, eid, 0, 0, 1000)
+
+  def pull(selector: String, eid: Any, limit: Int): jMap[_, _] =
+    pull(selector, eid, 0, 0, limit)
+
   def pull(
     selector: String,
     eid: Any,
-    timeout: Int = 0,
-    offset: Int = 0,
-    limit: Int = 1000
+    timeout: Int,
+    offset: Int,
+    limit: Int
   ): jMap[_, _] = {
-    val timeout_ = if (timeout == 0) "" else s":timeout $timeout"
-    val offset_  = if (offset == 0) "" else s":offset $offset"
-    val limit_   = if (limit == 1000) "" else s":limit $limit"
-    syncFn("pull").invoke(
-      datomicDb,
-      read(
-        s"""{
-           |:selector $selector
-           |:eid $eid
-           |$timeout_
-           |$offset_
-           |$limit_
-           |}""".stripMargin
-      )
-    ).asInstanceOf[jMap[_, _]]
+    Invoke.pull(datomicDb, selector, eid, timeout, offset, limit)
   }
 
 
   def indexPull(
     index: String,
     selector: String,
+    start: String
+  ): jStream[_] = {
+    indexPull(index, selector, start, false, 0, 0, 1000)
+  }
+
+  def indexPull(
+    index: String,
+    selector: String,
     start: String,
-    reverse: Option[Boolean] = None,
-    timeout: Option[Int] = None,
-    offset: Int = 0,
-    limit: Int = 1000
+    reverse: Boolean
+  ): jStream[_] = {
+    indexPull(index, selector, start, reverse, 0, 0, 1000)
+  }
+
+  def indexPull(
+    index: String,
+    selector: String,
+    start: String,
+    reverse: Boolean,
+    limit: Int,
+  ): jStream[_] = {
+    indexPull(index, selector, start, reverse, 0, 0, limit)
+  }
+
+  def indexPull(
+    index: String,
+    selector: String,
+    start: String,
+    reverse: Boolean,
+    timeout: Int,
+    offset: Int,
+    limit: Int,
   ): jStream[_] = {
     if (!Seq(":avet", ":aevt").contains(index))
       throw new IllegalArgumentException("Index can only be :avet or :aevt")
-
-    val reverse_ = reverse.fold("")(r => s":reverse $r")
-    val timeout_ = timeout.fold("")(t => s":timeout $t")
-    val offset_  = if (offset == 0) "" else s":offset $offset"
-    val limit_   = if (limit == 1000) "" else s":limit $limit"
-
-    syncFn("index-pull").invoke(
-      datomicDb,
-      read(
-        s"""{
-           |:index $index
-           |:selector $selector
-           |:start $start
-           |$reverse_
-           |$timeout_
-           |$offset_
-           |$limit_
-           |}""".stripMargin
-      )
-    ).asInstanceOf[clojure.lang.ChunkedCons].stream()
+    Invoke.indexPull(
+      datomicDb, index, selector, start, reverse, timeout, offset, limit
+    )
   }
 }
 

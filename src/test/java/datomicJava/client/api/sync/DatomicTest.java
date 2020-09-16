@@ -1,5 +1,6 @@
 package datomicJava.client.api.sync;
 
+import datomicJava.Setup;
 import datomicJava.anomaly.Forbidden;
 import datomicJava.anomaly.NotFound;
 import org.junit.FixMethodOrder;

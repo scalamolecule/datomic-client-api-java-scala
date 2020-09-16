@@ -1,9 +1,9 @@
 package datomicJava.client.api.sync;
 
-import datomicJava.anomaly.Forbidden;
+import clojure.lang.ExceptionInfo;
+import datomicJava.Setup;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.DbStats;
-import javafx.util.Pair;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -14,7 +14,6 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThrows;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 @FixMethodOrder(MethodSorters.JVM)
 public class DbTest extends Setup {
@@ -212,101 +211,75 @@ public class DbTest extends Setup {
 
     @Test
     public void datoms() {
-        Iterator<Datom> it = conn.db().datoms(
-            ":avet",
-            list(read(":movie/title"))
-        ).iterator();
+        Iterator<Datom> it = conn.db().datoms(":avet", list(read(":movie/title"))).iterator();
         List<String> films = new ArrayList<>();
-        while(it.hasNext()){
+        while (it.hasNext()) {
             films.add(it.next().v().toString());
         }
         Collections.sort(films);
         assertThat(films, is(threeFilms));
     }
 
-//    @Test
-//    public void indexRange() {
-//
-//        Stream<Datom> stream = conn.db().indexRange(":movie/title");
-//
-//
-//
-//        assertThat(conn.db().indexRange(":movie/title").toScala(List).sortBy(_.e), is(List(
-//            Datom(e1, a1, "The Goonies", txIdAfter, true),
-//            Datom(e2, a1, "Commando", txIdAfter, true),
-//            Datom(e3, a1, "Repo Man", txIdAfter, true),
-//            )));
-//    }
+    @Test
+    public void indexRange() {
 
-//    @Test
-//    public void pull() {
-//        assertThat(conn.db().pull("[*]", eid()).toString, is(
-//            s"""{:db/id $eid, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""));
-//
-//        assertThat(conn.db().pull("[*]", eid(), 1000).toString, is(
-//            s"""{:db/id $eid, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""));
-//
-//        // dev-local in-memory db will pull within 1 ms
-//        if (!isDevLocal)
-//            conn.db().pull("[*]", eid(), 1) must throwA(
-//            new clojure.lang.ExceptionInfo(
-//                "Datomic Client Timeout",
-//                new PersistentArrayMap(
-//                    Array(
-//                        read(":cognitect.anomalies/category"), read(":cognitect.anomalies/interrupted"),
-//                        read(":cognitect.anomalies/message"), "Datomic Client Timeout"
-//                    )
-//                )
-//            )
-//        )
-//    }
-//
-//    @Test
-//    public void indexPull() {
-//        // Pull lazy java Stream of indexes
-//        // since 1.0.61.65
-//        val javaStream: jStream[_] = conn.db().indexPull(
-//            ":avet",
-//            "[:movie/title :movie/release-year]",
-//            "[:movie/release-year 1985]"
-//        )
-//
-//        // Lazily convert to scala LazyList
-//        val scalaLazyList: LazyList[Any] = javaStream.toScala(LazyList)
-//
-//        // Evaluate lazy list
-//        assertThat(scalaLazyList.size, is(2));
-//
-//        // LazyList in Scala can be accessed multiple times contrary to java Stream
-//        // that can only be consumed once, like an Iterator.
-//        val firstFilm = scalaLazyList.head
-//
-//        // The underlying type of pulled indexes are clojure.lang.PersistentArrayMaps
-//        // that need to be cast to java Maps before we can be access values of the map.
-//        firstFilm.getClass, is(classOf[clojure.lang.PersistentArrayMap]
-//        val firstFilmMap = firstFilm.asInstanceOf[jMap[_, _]]
-//
-//        assertThat(firstFilmMap.get(read(":movie/title")), is("The Goonies"));
-//
-//
-//        // Comparing with data structures...
-//
-//        // We might think that we can compare with a data structure:
-//        val firstFilmData: jMap[_, _] = map(
-//            read(":movie/title"), "The Goonies",
-//            read(":movie/release-year"), 1985
-//        )
-//        // But we can't
-//        assertThat(firstFilmMap, not(firstFilmData));
-//
-//        // That's because the underlying index types are different:
-//        assertThat(firstFilmMap.getClass, is(classOf[clojure.lang.PersistentArrayMap]));
-//        assertThat(firstFilmData.getClass.toString, is("class java.util.Collections$UnmodifiableMap"));
-//
-//        // Their String representations differ:
-//        assertThat(firstFilmMap.toString, is(
-//            """{:movie/title "The Goonies", :movie/release-year 1985}"""));
-//        assertThat(firstFilmData.toString, is(
-//            """{:movie/title=The Goonies, :movie/release-year=1985}"""));
-//    }
+        Iterator<Datom> datoms = conn.db().indexRange(":movie/title").iterator();
+
+        List<Datom> datomsCheck = new ArrayList<>();
+        datomsCheck.add(new Datom(e2(), a1(), "Commando", txIdAfter(), true));
+        datomsCheck.add(new Datom(e3(), a1(), "Repo Man", txIdAfter(), true));
+        datomsCheck.add(new Datom(e1(), a1(), "The Goonies", txIdAfter(), true));
+        Iterator<Datom> datomsCheckIt = datomsCheck.iterator();
+
+        while (datoms.hasNext()) {
+            assertThat(datoms.next(), is(datomsCheckIt.next()));
+        }
+    }
+
+    @Test
+    public void pull() {
+        // Pull last movie
+        Map entity = conn.db().pull("[*]", eid());
+        assertThat(entity.get(read(":db/id")), is(eid()));
+        assertThat(entity.get(read(":movie/title")), is("Repo Man"));
+        assertThat(entity.get(read(":movie/genre")), is("punk dystopia"));
+        assertThat(entity.get(read(":movie/release-year")), is(1984L));
+
+        // dev-local in-memory db will pull within 1 ms
+        if (!isDevLocal()) {
+            ExceptionInfo timedOut = assertThrows(
+                ExceptionInfo.class,
+                () -> conn.db().pull("[*]", eid(), 1, 0, 0)
+            );
+            assertThat(timedOut.getMessage(), is("Datomic Client Timeout"));
+            assertThat(timedOut.getData(), is(
+                map(
+                    read(":cognitect.anomalies/category"), read(":cognitect.anomalies/interrupted"),
+                    read(":cognitect.anomalies/message"), "Datomic Client Timeout"
+                )
+            ));
+        }
+    }
+
+    // since 1.0.61.65
+    @Test
+    public void indexPull() {
+        // Pull from :avet index
+        Iterator<Map<?, ?>> entities = (Iterator<Map<?, ?>>) conn.db().indexPull(
+            ":avet",
+            "[:movie/title :movie/release-year]",
+            "[:movie/release-year 1985]"
+        ).iterator();
+
+        // 2 films pulled from index
+        Map<?, ?> film1 = entities.next();
+        Map<?, ?> film2 = entities.next();
+
+
+        assertThat(film1.get(read(":movie/title")), is("The Goonies"));
+        assertThat(film1.get(read(":movie/release-year")), is(1985L));
+
+        assertThat(film2.get(read(":movie/title")), is("Commando"));
+        assertThat(film2.get(read(":movie/release-year")), is(1985L));
+    }
 }

@@ -1,9 +1,8 @@
-package datomicJava.client.api.sync;
+package datomicJava;
 
-import clojure.lang.PersistentVector;
-import datomicJava.client.api.Datom;
 import datomic.Peer;
-import datomicJava.SchemaAndData;
+import datomicJava.client.api.Datom;
+import datomicJava.client.api.sync.*;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -16,6 +15,12 @@ import static datomic.Util.list;
 
 @RunWith(Parameterized.class)
 public class Setup extends SchemaAndData {
+
+    public String system;
+    public Client client;
+    public Connection conn;
+    public TxReport txReport;
+
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data() {
@@ -47,14 +52,12 @@ public class Setup extends SchemaAndData {
             conn = client.connect("hello");
 
             // Install schema if necessary
-            String x = Datomic.q(
-                "[:find ?e :where [?e :db/ident :movie/title]]",
-                conn.db()
-            ).toString();
-
-            println("XX " + x);
-
-            if (x == "[]") {
+            if (
+                Datomic.q(
+                    "[:find ?e :where [?e :db/ident :movie/title]]",
+                    conn.db()
+                ).toString() == "[]"
+            ) {
                 println("Installing Peer Server hello db schema...");
                 conn.transact(schemaPeerServer);
             }
@@ -72,11 +75,6 @@ public class Setup extends SchemaAndData {
         }
     }
 
-    String system = "dev-local";
-
-    Client client;
-    Connection conn;
-    TxReport txReport;
 
     public boolean isDevLocal() {
         return system.equals("dev-local");
@@ -130,61 +128,32 @@ public class Setup extends SchemaAndData {
     }
 
     // Entity ids of the three films
-    long e1() {
+    public long e1() {
         return txData().get(1).e();
     }
-
-    long e2() {
-        return txData().get(2).e();
+    public long e2() {
+        return txData().get(4).e();
     }
-
-    long e3() {
-        return txData().get(3).e();
+    public long e3() {
+        return txData().get(7).e();
     }
-
 
     // Ids of the three attributes
-    int a1() {
+    public int a1() {
         if (isDevLocal()) {
             return 73;
         } else {
-            return 63;
-        }
-    }
-
-    int a2() {
-        if (isDevLocal()) {
-            return 74;
-        } else {
-            return 64;
-        }
-    }
-
-    int a3() {
-        if (isDevLocal()) {
-            return 75;
-        } else {
-            return 65;
+            return 72;
         }
     }
 
     // Convenience retriever
-    List<String> films(Db db) {
+    public List<String> films(Db db) {
         List<String> titles = new ArrayList<String>();
         Datomic.q(filmQuery, db).forEach(row ->
             titles.add((String) row.get(0))
         );
         Collections.sort(titles);
         return titles;
-    }
-
-    // Convenience sorter
-    List<String> sortStrings(Db db, String query) {
-        List<String> strings = new ArrayList<String>();
-        Datomic.q(query, db).forEach(row ->
-            strings.add((String) row.get(0))
-        );
-        Collections.sort(strings);
-        return strings;
     }
 }
