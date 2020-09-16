@@ -22,6 +22,8 @@ resolvers ++= Seq(
   ("ICM repository" at "http://maven.icm.edu.pl/artifactory/repo/").withAllowInsecureProtocol(true),
   mavenLocal
 )
+crossPaths := false
+
 libraryDependencies ++= Seq(
   // datomic-free uses 1.8, but we need >=1.9 (otherwise `int?` method is missing)
   "org.clojure" % "clojure" % "1.10.1",
@@ -40,5 +42,9 @@ libraryDependencies ++= Seq(
 
   "us.bpsm" % "edn-java" % "0.7.1",
 
-  "org.specs2" %% "specs2-core" % "4.10.3"
+  "org.specs2" %% "specs2-core" % "4.10.3" % Test,
+
+  "com.novocode" % "junit-interface" % "0.11" % Test,
+  "junit" % "junit" % "4.13" % Test,
+  "org.hamcrest" % "hamcrest-junit" % "2.0.0.0" % Test
 )
