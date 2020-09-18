@@ -1,11 +1,10 @@
-package datomicJava.anomaly
-import java.util.{Map => jMap}
+package datomicScala
 
 sealed trait CognitectAnomaly extends RuntimeException {
   val msg: String
 }
 
-case class Forbidden(httpRequest: jMap[String, Any]) extends CognitectAnomaly{
+case class Forbidden(httpRequest: Map[String, Any]) extends CognitectAnomaly{
   val msg = "forbidden"
 }
 

@@ -1,57 +1,33 @@
 package datomicScala.client.api.sync
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util._
-import datomicScala.SyncSpec
-import datomicScala.anomaly.{Forbidden, NotFound}
+import datomicScala.{Forbidden, NotFound, Spec}
 
 
-class DatomicTest extends SyncSpec {
+class DatomicTest extends Spec {
   sequential
 
-
   "create client" >> {
-
     system match {
-      case "cloud" =>
-        // with AWSCredentialsProviderChain
-        // Uncomment and test if a cloud system is available
-        // import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
-        //    validClient(Datomic.clientForCloud(
-        //      "us-east-1",
-        //      "mysystem",
-        //      "http://entry.us-east-1.mysystem.datomic.net:8182/",
-        //      DefaultAWSCredentialsProviderChain.getInstance(),
-        //      8182
-        //    ))
+      case "dev-local" => {
+        /*
+          Install dev-local (https://docs.datomic.com/cloud/dev-local.html)
+          > mkdir ~/.datomic
+          > touch ~/.datomic/dev-local.edn
+          > open ~/.datomic/dev-local.edn
+          add path to where you want to save data as per instructions in link above
 
-        // with credentials profile name
-        // Uncomment and test if a cloud system is available
-        //    validClient(Datomic.clientForCloud(
-        //      "us-east-1",
-        //      "mysystem",
-        //      "http://entry.us-east-1.mysystem.datomic.net:8182/",
-        //      "myprofile",
-        //      8182
-        //    ))
-        ok
+          Add dependency to dev-local in your project
+          "com.datomic" % "dev-local" % "0.9.195",
 
+          As long dev-local has a dependency on clojure 1.10.0-alpha4
+          we also need to import a newer version of clojure
+          "org.clojure" % "clojure" % "1.10.1",
 
-      case "dev-local" =>
-        // Install dev-local (https://docs.datomic.com/cloud/dev-local.html)
-        // > mkdir ~/.datomic
-        // > touch ~/.datomic/dev-local.edn
-        // > open ~/.datomic/dev-local.edn
-        // add path to where you want to save data as per instructions in link above
-
-        // Add dependency to dev-local in your project
-        // "com.datomic" % "dev-local" % "0.9.195",
-
-        // As long dev-local has a dependency on clojure 1.10.0-alpha4
-        // we also need to import a newer version of clojure
-        // "org.clojure" % "clojure" % "1.10.1",
-
-        // (No need to start a transactor)
+          (No need to start a transactor)
+         */
 
         // Retrieve client for a specific system
         // (this one has been created in SetupSpec)
@@ -60,13 +36,18 @@ class DatomicTest extends SyncSpec {
         // Confirm that client is valid and can connect to a database
         client.connect("hello")
 
-        // System name 'x' has not been established
+        // Wrong system name
         Datomic.clientForDevLocal("x").connect("hello") must throwA(
           NotFound("Db not found: hello")
         )
 
+        // Wrong db name
+        Datomic.clientForDevLocal("Hello system name").connect("y") must throwA(
+          NotFound("Db not found: y")
+        )
+      }
 
-      case "peer-server" =>
+      case "peer-server" => {
         /*
           To run tests against a Peer Server do these 3 steps first:
 
@@ -121,7 +102,32 @@ class DatomicTest extends SyncSpec {
           .connect("hello") must throwA(
           NotFound("x: nodename nor servname provided, or not known")
         )
+      }
+
+      case "cloud" => {
+        val client1: Client = Datomic.clientForCloud(
+          "us-east-1",
+          "mysystem",
+          "http://entry.us-east-1.mysystem.datomic.net:8182/",
+          DefaultAWSCredentialsProviderChain.getInstance(),
+          8182
+        )
+        // todo: test against a live cloud client
+
+        // with credentials profile name
+        // Uncomment and test if a cloud system is available
+        val client2: Client = Datomic.clientForCloud(
+          "us-east-1",
+          "mysystem",
+          "http://entry.us-east-1.mysystem.datomic.net:8182/",
+          "myprofile",
+          8182
+        )
+        // todo: test against a live cloud client
+      }
     }
+
+    ok
   }
 
 
@@ -132,6 +138,16 @@ class DatomicTest extends SyncSpec {
         |:where [_ :movie/title ?movie-title]]""".stripMargin,
       conn.db
     ) === list(list("Commando"), list("The Goonies"), list("Repo Man"))
+
+    // Input arg(s)
+    Datomic.q(
+      """[:find ?movie-title
+        |:in $ ?year
+        |:where [?e :movie/release-year ?year]
+        |       [?e :movie/title ?movie-title]
+        |]""".stripMargin,
+      conn.db, 1984
+    ) === list(list("Repo Man"))
 
     // query & args / data structure
     Datomic.q(

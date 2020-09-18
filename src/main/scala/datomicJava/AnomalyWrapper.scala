@@ -1,12 +1,11 @@
-package datomicScala.anomaly
+package datomicJava
 
+import java.util
 import java.util.{Map => jMap}
 import clojure.lang.{ExceptionInfo, Keyword}
 import datomic.Util.read
-import scala.jdk.CollectionConverters._
 
 trait AnomalyWrapper {
-
 
   def anomalyCat(e: ExceptionInfo): String = {
     e.data.entryAt(read(":cognitect.anomalies/category"))
@@ -17,13 +16,15 @@ trait AnomalyWrapper {
     e.data.entryAt(read(":cognitect.anomalies/message")).getValue.toString
   }
 
-  def httpResult(e: ExceptionInfo): Map[String, Any] = {
-    e.data.entryAt(read(":http-result")).getValue.asInstanceOf[jMap[_, _]]
-      .asScala.toMap.map {
-      case (k: Keyword, v: jMap[_, _]) => (k.getName, v.asScala.toMap)
-      case (k: Keyword, v)             => (k.getName, v)
-      case (k, v)                      => (k.toString, v)
+  def httpResult(e: ExceptionInfo): jMap[String, Any] = {
+    val res = new util.HashMap[String, Any]()
+    e.data.entryAt(read(":http-result"))
+      .getValue.asInstanceOf[jMap[_, _]].forEach {
+      case (k: Keyword, v: jMap[_, _]) => res.put(k.getName, v)
+      case (k: Keyword, v)             => res.put(k.getName, v)
+      case (k, v)                      => res.put(k.toString, v)
     }
+    res
   }
 
   def anomalyValue(e: ExceptionInfo, key: String): Any = {

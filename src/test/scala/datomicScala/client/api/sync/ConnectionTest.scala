@@ -1,48 +1,14 @@
 package datomicScala.client.api.sync
 
-import datomicScala.SyncSpec
+import datomic.Util
+import datomic.Util.{list, read}
+import datomicClojure.ErrorMsg
+import datomicScala.Spec
 import datomicScala.client.api.Datom
 
 
-class ConnectionTest extends SyncSpec {
+class ConnectionTest extends Spec {
   sequential
-
-
-  "txRange" in new Setup {
-    val txRange2: Iterable[(Long, Iterable[Datom])] = conn.txRange()
-    val l                                           = txRange2.toList
-    l.last._1 === tAfter
-    l.last._2.toList === List(
-      Datom(txIdAfter, 50, txInst, txIdAfter, true),
-      Datom(e1, a1, "The Goonies", txIdAfter, true),
-      Datom(e1, a2, "action/adventure", txIdAfter, true),
-      Datom(e1, a3, 1985, txIdAfter, true),
-      Datom(e2, a1, "Commando", txIdAfter, true),
-      Datom(e2, a2, "thriller/action", txIdAfter, true),
-      Datom(e2, a3, 1985, txIdAfter, true),
-      Datom(e3, a1, "Repo Man", txIdAfter, true),
-      Datom(e3, a2, "punk dystopia", txIdAfter, true),
-      Datom(e3, a3, 1984, txIdAfter, true)
-    )
-
-    val txRange: Array[(Long, Array[Datom])] = conn.txRangeArray()
-    txRange.last._1 === tAfter
-    txRange.last._2 === Array(
-      Datom(txIdAfter, 50, txInst, txIdAfter, true),
-      Datom(e1, a1, "The Goonies", txIdAfter, true),
-      Datom(e1, a2, "action/adventure", txIdAfter, true),
-      Datom(e1, a3, 1985, txIdAfter, true),
-      Datom(e2, a1, "Commando", txIdAfter, true),
-      Datom(e2, a2, "thriller/action", txIdAfter, true),
-      Datom(e2, a3, 1985, txIdAfter, true),
-      Datom(e3, a1, "Repo Man", txIdAfter, true),
-      Datom(e3, a2, "punk dystopia", txIdAfter, true),
-      Datom(e3, a3, 1984, txIdAfter, true)
-    )
-  }
-
-
-  // (`withDb` and `widh` are tested in DbTest...)
 
 
   "db" in new Setup {
@@ -71,4 +37,56 @@ class ConnectionTest extends SyncSpec {
       conn.sync(tAfter) !== dbAfter
     }
   }
+
+
+  "transact" in new Setup {
+    films(conn.db) === threeFilms
+    conn.transact(list(
+      Util.map(
+        read(":movie/title"), "Film 4",
+      )
+    ))
+    films(conn.db) === fourFilms
+
+    conn.transact(list()) must throwA(
+      new IllegalArgumentException(ErrorMsg.transact)
+    )
+
+    if (isDevLocal) resetDevLocalDb() else resetPeerServerDb()
+  }
+
+
+  "txRange" in new Setup {
+    val iterable: Iterable[(Long, Iterable[Datom])] = conn.txRange()
+    iterable.last._1 === tAfter
+    iterable.last._2.toList === List(
+      Datom(txIdAfter, 50, txInst, txIdAfter, true),
+      Datom(e1, a1, "The Goonies", txIdAfter, true),
+      Datom(e1, a2, "action/adventure", txIdAfter, true),
+      Datom(e1, a3, 1985, txIdAfter, true),
+      Datom(e2, a1, "Commando", txIdAfter, true),
+      Datom(e2, a2, "thriller/action", txIdAfter, true),
+      Datom(e2, a3, 1985, txIdAfter, true),
+      Datom(e3, a1, "Repo Man", txIdAfter, true),
+      Datom(e3, a2, "punk dystopia", txIdAfter, true),
+      Datom(e3, a3, 1984, txIdAfter, true)
+    )
+
+    val array: Array[(Long, Array[Datom])] = conn.txRangeArray()
+    array.last._1 === tAfter
+    array.last._2 === Array(
+      Datom(txIdAfter, 50, txInst, txIdAfter, true),
+      Datom(e1, a1, "The Goonies", txIdAfter, true),
+      Datom(e1, a2, "action/adventure", txIdAfter, true),
+      Datom(e1, a3, 1985, txIdAfter, true),
+      Datom(e2, a1, "Commando", txIdAfter, true),
+      Datom(e2, a2, "thriller/action", txIdAfter, true),
+      Datom(e2, a3, 1985, txIdAfter, true),
+      Datom(e3, a1, "Repo Man", txIdAfter, true),
+      Datom(e3, a2, "punk dystopia", txIdAfter, true),
+      Datom(e3, a3, 1984, txIdAfter, true)
+    )
+  }
+
+  // (`withDb` and `widh` are tested in DbTest...)
 }

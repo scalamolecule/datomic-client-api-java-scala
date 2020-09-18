@@ -1,8 +1,8 @@
 package datomicJava.client.api.sync;
 
 import datomicJava.Setup;
-import datomicJava.anomaly.Forbidden;
-import datomicJava.anomaly.NotFound;
+import datomicJava.Forbidden;
+import datomicJava.NotFound;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -26,21 +26,22 @@ public class DatomicTest extends Setup {
     @Test
     public void createClient() {
         if (system == "dev-local") {
+          /*
+            Install dev-local (https://docs.datomic.com/cloud/dev-local.html)
+            > mkdir ~/.datomic
+            > touch ~/.datomic/dev-local.edn
+            > open ~/.datomic/dev-local.edn
+            add path to where you want to save data as per instructions in link above
 
-            // Install dev-local (https://docs.datomic.com/cloud/dev-local.html)
-            // > mkdir ~/.datomic
-            // > touch ~/.datomic/dev-local.edn
-            // > open ~/.datomic/dev-local.edn
-            // add path to where you want to save data as per instructions in link above
+            Add dependency to dev-local in your project
+            "com.datomic" % "dev-local" % "0.9.195",
 
-            // Add dependency to dev-local in your project
-            // "com.datomic" % "dev-local" % "0.9.195",
+            As long dev-local has a dependency on clojure 1.10.0-alpha4
+            we also need to import a newer version of clojure
+            "org.clojure" % "clojure" % "1.10.1",
 
-            // As long dev-local has a dependency on clojure 1.10.0-alpha4
-            // we also need to import a newer version of clojure
-            // "org.clojure" % "clojure" % "1.10.1",
-
-            // (No need to start a transactor)
+            (No need to start a transactor)
+           */
 
             // Retrieve client for a specific system
             // (this one has been created in SetupSpec)
@@ -129,6 +130,18 @@ public class DatomicTest extends Setup {
                 conn.db()
             ),
             is(list(list("Commando"), list("The Goonies"), list("Repo Man")))
+        );
+
+        // Input arg(s)
+        assertThat(
+            Datomic.q(
+                "[:find ?movie-title " +
+                    ":in $ ?year " +
+                    ":where [?e :movie/release-year ?year]" +
+                    "       [?e :movie/title ?movie-title]]",
+                conn.db(), 1984L
+            ),
+            is(list(list("Repo Man")))
         );
 
         // query & args / data structure

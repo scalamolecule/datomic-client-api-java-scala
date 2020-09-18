@@ -12,7 +12,7 @@ import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
 
-trait AsyncSpec extends Specification with SchemaAndData {
+trait SpecAsync extends Specification with SchemaAndData {
 
   var system  : String          = "Not set yet. Can be: dev-local / peer-server / cloud"
   var client  : AsyncClient     = null // set in setup
@@ -31,15 +31,7 @@ trait AsyncSpec extends Specification with SchemaAndData {
   def setupDevLocal(): Unit = {
     system = "dev-local"
     client = AsyncDatomic.clientForDevLocal("free")
-
-    // Re-create db
-    client.deleteDatabase("hello").realize
-    client.deleteDatabase("world").realize
-    client.createDatabase("hello").realize
-    conn = client.connect("hello")
-    conn.transact(schema(false)).realize
-
-    txReport = conn.transact(data).realize
+    resetDevLocalDb()
   }
 
 
@@ -49,7 +41,20 @@ trait AsyncSpec extends Specification with SchemaAndData {
 
     // Using the db associated with the Peer Server connection
     conn = client.connect("hello")
+    resetPeerServerDb()
+  }
 
+  def resetDevLocalDb(): Unit = {
+    // Re-create db
+    client.deleteDatabase("hello").realize
+    client.deleteDatabase("world").realize
+    client.createDatabase("hello").realize
+    conn = client.connect("hello")
+    conn.transact(schema(false)).realize
+    txReport = conn.transact(data).realize
+  }
+
+  def resetPeerServerDb(): Unit = {
     // Install schema if necessary
     if (AsyncDatomic.q(
       "[:find ?e :where [?e :db/ident :movie/title]]",
@@ -68,6 +73,7 @@ trait AsyncSpec extends Specification with SchemaAndData {
 
     txReport = conn.transact(data).realize
   }
+
 
   class AsyncSetup extends SchemaAndData with Scope {
 

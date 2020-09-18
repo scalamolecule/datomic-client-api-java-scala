@@ -1,6 +1,7 @@
 package datomicScala.client.api
 
-case class Transaction(
+
+case class Tx(
   t: Long,
   data: Iterable[Datom]
 )

@@ -1,12 +1,17 @@
 package datomicScala.client.api.async
 
+import java.util
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util.{list, _}
-import datomicScala.AsyncSpec
+import datomicScala.client.api.sync.{Client, Datomic}
+import datomicScala.{Forbidden, NotFound, SpecAsync}
+import scala.::
 import scala.jdk.StreamConverters._
+import scala.jdk.CollectionConverters._
 
 
-class AsyncDatomicTest extends AsyncSpec {
+class AsyncDatomicTest extends SpecAsync {
   sequential
 
 
@@ -15,48 +20,43 @@ class AsyncDatomicTest extends AsyncSpec {
     // Not much of a test really - just checking that we can produce some clients
 
     system match {
-      case "cloud" =>
-        // with AWSCredentialsProviderChain
-        // Uncomment and test if a cloud system is available
-        // import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
-        //    validClient(Datomic.clientForCloud(
-        //      "us-east-1",
-        //      "mysystem",
-        //      "http://entry.us-east-1.mysystem.datomic.net:8182/",
-        //      DefaultAWSCredentialsProviderChain.getInstance(),
-        //      8182
-        //    ))
+      case "dev-local" => {
+        /*
+          Install dev-local (https://docs.datomic.com/cloud/dev-local.html)
+          > mkdir ~/.datomic
+          > touch ~/.datomic/dev-local.edn
+          > open ~/.datomic/dev-local.edn
+          add path to where you want to save data as per instructions in link above
 
-        // with credentials profile name
-        // Uncomment and test if a cloud system is available
-        //    validClient(Datomic.clientForCloud(
-        //      "us-east-1",
-        //      "mysystem",
-        //      "http://entry.us-east-1.mysystem.datomic.net:8182/",
-        //      "myprofile",
-        //      8182
-        //    ))
-        ok
+          Add dependency to dev-local in your project
+          "com.datomic" % "dev-local" % "0.9.195",
 
-      case "dev-local" =>
-        // Install dev-local (https://docs.datomic.com/cloud/dev-local.html)
-        // > mkdir ~/.datomic
-        // > touch ~/.datomic/dev-local.edn
-        // > open ~/.datomic/dev-local.edn
-        // add path to where you want to save data as per instructions in link above
+          As long dev-local has a dependency on clojure 1.10.0-alpha4
+          we also need to import a newer version of clojure
+          "org.clojure" % "clojure" % "1.10.1",
 
-        // Add dependency to dev-local in your project
-        // "com.datomic" % "dev-local" % "0.9.195",
+          (No need to start a transactor)
+         */
 
-        // As long dev-local has a dependency on clojure 1.10.0-alpha4
-        // we also need to import a newer version of clojure
-        // "org.clojure" % "clojure" % "1.10.1",
+        // Retrieve client for a specific system
+        // (this one has been created in SetupSpec)
+        val client: AsyncClient = AsyncDatomic.clientForDevLocal("Hello system name")
 
-        // (No need to start a transactor)
+        // Confirm that client is valid and can connect to a database
+        client.connect("hello")
 
-        val client: AsyncClient = AsyncDatomic.clientForDevLocal("free")
+        // Wrong system name
+        AsyncDatomic.clientForDevLocal("x").connect("hello") must throwA(
+          NotFound("Db not found: hello")
+        )
 
-      case "peer-server" =>
+        // Wrong db name
+        AsyncDatomic.clientForDevLocal("Hello system name").connect("y") must throwA(
+          NotFound("Db not found: y")
+        )
+      }
+
+      case "peer-server" => {
         /*
           To run tests against a Peer Server do these 3 steps first:
 
@@ -70,23 +70,96 @@ class AsyncDatomicTest extends AsyncSpec {
           > bin/run -m datomic.peer-server -h localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:dev://localhost:4334/hello
          */
 
-        val client: AsyncClient = AsyncDatomic
-          .clientForPeerServer("myaccesskey", "mysecret", "localhost:8998")
+        val client: AsyncClient =
+          AsyncDatomic.clientForPeerServer("myaccesskey", "mysecret", "localhost:8998")
+
+        // Confirm that client is valid and can connect to a database
+        client.connect("hello")
+
+        // Note that a Client is returned immediately without contacting
+        // a server and can thus be invalid.
+        val client2: AsyncClient =
+          AsyncDatomic.clientForPeerServer("admin", "nice-try", "localhost:8998")
+
+        // Invalid setup shows on first call to server
+        try {
+          client2.connect("hello")
+        } catch {
+          case forbidden: Forbidden =>
+            forbidden.msg === "forbidden"
+            forbidden.httpRequest("status") === 403
+            forbidden.httpRequest("body") === null
+
+          /*
+          Example of forbidden.httpRequest data:
+
+          Map(
+            status -> 403,
+            headers -> Map(
+              server -> Jetty(9.3.7.v20160115),
+              content-length -> 19,
+              date -> Sun, 13 Sep 2020 19:14:36 GMT,
+              content-type -> application/transit+msgpack
+            ),
+            body -> null
+          )
+          */
+        }
+
+        // Wrong endpoint
+        AsyncDatomic.clientForPeerServer("myaccesskey", "mysecret", "x")
+          .connect("hello") must throwA(
+          NotFound("x: nodename nor servname provided, or not known")
+        )
+      }
+
+      case "cloud" => {
+        val client1: AsyncClient = AsyncDatomic.clientForCloud(
+          "us-east-1",
+          "mysystem",
+          "http://entry.us-east-1.mysystem.datomic.net:8182/",
+          DefaultAWSCredentialsProviderChain.getInstance(),
+          8182
+        )
+        // todo: test against a live cloud client
+
+        // with credentials profile name
+        // Uncomment and test if a cloud system is available
+        val client2: AsyncClient = AsyncDatomic.clientForCloud(
+          "us-east-1",
+          "mysystem",
+          "http://entry.us-east-1.mysystem.datomic.net:8182/",
+          "myprofile",
+          8182
+        )
+        // todo: test against a live cloud client
+      }
     }
     ok
   }
 
 
-  "q query & args / String" in new AsyncSetup {
+  "q" in new AsyncSetup {
+
+    // query & args / String
     AsyncDatomic.q(
       """[:find ?movie-title
         |:where [_ :movie/title ?movie-title]]""".stripMargin,
       conn.db
     ).realize.toScala(List) ===
-      List(list("Commando"),list("The Goonies"), list("Repo Man"))
-  }
+      List(list("Commando"), list("The Goonies"), list("Repo Man"))
 
-  "q query & args / data structure" in new AsyncSetup {
+    // Input arg(s)
+    AsyncDatomic.q(
+      """[:find ?movie-title
+        |:in $ ?year
+        |:where [?e :movie/release-year ?year]
+        |       [?e :movie/title ?movie-title]
+        |]""".stripMargin,
+      conn.db, 1984
+    ).realize.toScala(List) === List(list("Repo Man"))
+
+    // query & args / data structure
     AsyncDatomic.q(
       list(
         read(":find"), read("?title"),
@@ -94,10 +167,9 @@ class AsyncDatomicTest extends AsyncSpec {
       ),
       conn.db
     ).realize.toScala(List) ===
-      List(list("Commando"),list("The Goonies"), list("Repo Man"))
-  }
+      List(list("Commando"), list("The Goonies"), list("Repo Man"))
 
-  "q arg-map / String" in new AsyncSetup {
+    // arg-map / String
     AsyncDatomic.q(
       Util.map(
         read(":query"),
@@ -106,10 +178,9 @@ class AsyncDatomicTest extends AsyncSpec {
         read(":args"), list(conn.db.datomicDb),
       )
     ).realize.toScala(List) ===
-      List(list("Commando"),list("The Goonies"), list("Repo Man"))
-  }
+      List(list("Commando"), list("The Goonies"), list("Repo Man"))
 
-  "q arg-map / data structure" in new AsyncSetup {
+    // arg-map / data structure
     AsyncDatomic.q(
       Util.map(
         read(":query"), list(
@@ -119,10 +190,9 @@ class AsyncDatomicTest extends AsyncSpec {
         read(":args"), list(conn.db.datomicDb)
       )
     ).realize.toScala(List) ===
-      List(list("Commando"),list("The Goonies"), list("Repo Man"))
-  }
+      List(list("Commando"), list("The Goonies"), list("Repo Man"))
 
-  "q arg-map / String with :limit" in new AsyncSetup {
+    // arg-map / String with :limit
     AsyncDatomic.q(
       Util.map(
         read(":query"),
@@ -131,10 +201,9 @@ class AsyncDatomicTest extends AsyncSpec {
         read(":args"), list(conn.db.datomicDb),
         read(":limit"), 2,
       )
-    ).realize.toScala(List) === List(list("Commando"),list("The Goonies"))
-  }
+    ).realize.toScala(List) === List(list("Commando"), list("The Goonies"))
 
-  "q arg-map / String with :offset, :limit :timeout" in new AsyncSetup {
+    // arg-map / String with :offset, :limit :timeout
     AsyncDatomic.q(
       Util.map(
         read(":query"),
@@ -149,7 +218,11 @@ class AsyncDatomicTest extends AsyncSpec {
   }
 
 
-  "qseq / String" in new AsyncSetup {
+  // qseq since 1.0.6165
+
+  "qseq" in new AsyncSetup {
+
+    // query & args / String
     AsyncDatomic.qseq(
       """[:find ?movie-title
         |:where [_ :movie/title ?movie-title]]""".stripMargin,
@@ -157,12 +230,18 @@ class AsyncDatomicTest extends AsyncSpec {
     ).realize.toScala(LazyList) === LazyList(
       list("Commando"), list("The Goonies"), list("Repo Man"),
     )
-  }
 
+    // Input arg(s)
+    AsyncDatomic.qseq(
+      """[:find ?movie-title
+        |:in $ ?year
+        |:where [?e :movie/release-year ?year]
+        |       [?e :movie/title ?movie-title]
+        |]""".stripMargin,
+      conn.db, 1984
+    ).realize.toScala(List) === LazyList(list("Repo Man"))
 
-  // qseq since 1.0.6165
-
-  "qseq query & args / data structure" in new AsyncSetup {
+    // qseq query & args / data structure
     AsyncDatomic.qseq(
       list(
         read(":find"), read("?title"),
@@ -172,9 +251,8 @@ class AsyncDatomicTest extends AsyncSpec {
     ).realize.toScala(LazyList) === LazyList(
       list("Commando"), list("The Goonies"), list("Repo Man"),
     )
-  }
 
-  "qseq arg-map / String" in new AsyncSetup {
+    // qseq arg-map / String
     AsyncDatomic.qseq(
       Util.map(
         read(":query"),
@@ -185,9 +263,8 @@ class AsyncDatomicTest extends AsyncSpec {
     ).realize.toScala(LazyList) === LazyList(
       list("Commando"), list("The Goonies"), list("Repo Man"),
     )
-  }
 
-  "qseq arg-map / data structure" in new AsyncSetup {
+    // arg-map / data structure
     AsyncDatomic.qseq(
       Util.map(
         read(":query"), list(
@@ -199,9 +276,8 @@ class AsyncDatomicTest extends AsyncSpec {
     ).realize.toScala(LazyList) === LazyList(
       list("Commando"), list("The Goonies"), list("Repo Man"),
     )
-  }
 
-  "qseq arg-map / String with :limit" in new AsyncSetup {
+    // arg-map / String with :limit
     AsyncDatomic.qseq(
       Util.map(
         read(":query"),
@@ -213,9 +289,8 @@ class AsyncDatomicTest extends AsyncSpec {
     ).realize.toScala(LazyList) === LazyList(
       list("Commando"), list("The Goonies"),
     )
-  }
 
-  "qseq arg-map / String with :offset, :limit :timeout" in new AsyncSetup {
+    // arg-map / String with :offset, :limit :timeout
     AsyncDatomic.qseq(
       Util.map(
         read(":query"),

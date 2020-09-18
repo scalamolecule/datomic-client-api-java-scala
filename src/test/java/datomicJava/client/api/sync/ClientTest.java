@@ -1,5 +1,6 @@
 package datomicJava.client.api.sync;
 
+import datomicClojure.ErrorMsg;
 import datomicJava.Setup;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -39,13 +40,6 @@ public class ClientTest extends Setup {
         );
     }
 
-
-    @Test
-    public void listDatabases() {
-        assertThat(client.listDatabases(), is(list("hello")));
-    }
-
-
     @Test
     public void createDatabase() {
         if (isDevLocal()) {
@@ -61,11 +55,7 @@ public class ClientTest extends Setup {
             );
             assertThat(
                 notImplemented.getMessage(),
-                is(
-                    "createDatabase is not available with a client running against a Peer Server.\n" +
-                        "Please create a database with the Peer class instead:\n" +
-                        "Peer.createDatabase(\"datomic:<free/dev/pro>://<host>:<port>/world\")"
-                )
+                is(ErrorMsg.createDatabase("world"))
             );
         }
     }
@@ -90,12 +80,14 @@ public class ClientTest extends Setup {
             );
             assertThat(
                 notImplemented.getMessage(),
-                is(
-                    "deleteDatabase is not available with a client running against a Peer Server.\n" +
-                        "Please delete a database with the Peer class instead:\n" +
-                        "Peer.deleteDatabase(\"datomic:<free/dev/pro>://<host>:<port>/hello\")"
-                )
+                is(ErrorMsg.deleteDatabase("hello"))
             );
         }
+    }
+
+
+    @Test
+    public void listDatabases() {
+        assertThat(client.listDatabases(), is(list("hello")));
     }
 }

@@ -1,6 +1,9 @@
 package datomicJava.client.api
 
-class Tx (
+import java.lang.{Iterable => jIterable}
+
+
+case class Tx(
   t: Long,
-  data: java.lang.Iterable[Datom]
+  data: jIterable[Datom]
 )

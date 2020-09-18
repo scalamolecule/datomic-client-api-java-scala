@@ -3,9 +3,8 @@ package datomicJava.client.api
 import java.util.{Map => jMap}
 
 
-/* todo: other possible stats? */
-class DbStats(
-  val datoms: Long,
-  val attrs: jMap[String, Long]
+case class DbStats(
+  datoms: Long,
+  attrs: jMap[String, Long]
 )
 

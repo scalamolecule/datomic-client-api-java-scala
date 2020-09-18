@@ -1,5 +1,6 @@
 package datomicScala.client.api
 
+
 case class Datom(
   e: Long,
   a: Any, // Keyword or Long

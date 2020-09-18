@@ -19,9 +19,7 @@ public class PeerServerTest2 extends SchemaAndData {
             conn.db()
         );
 
-//        assert result.toString() == "[[63]]";
-
-        // [[63]]
+        // [[72]]
         System.out.println(result);
     }
 }

@@ -2,6 +2,7 @@ package datomicJava.client.api.sync;
 
 import clojure.lang.ExceptionInfo;
 import datomicJava.Setup;
+import datomicJava.client.api.sync.TxReport;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.DbStats;
 import org.junit.FixMethodOrder;

@@ -2,14 +2,15 @@ package datomicJava.client.api.async
 
 import clojure.lang.PersistentArrayMap
 import datomic.Util._
-import datomicJava.util.Helper._
+import datomicClojure.ClojureBridge
+import datomicJava.Helper._
 
 // Mock wrapper around clojure.core.async.ManyToManyChannel
 // To be properly implemented by consuming language (java/scala)
-class Channel[T](
+case class Channel[T](
   channelOrInternal: AnyRef,
   transform: Option[AnyRef => T] = None
-) {
+) extends ClojureBridge {
 
   // Get value(s)/execute blocking op from channel
   def realize: T = channelOrInternal match {

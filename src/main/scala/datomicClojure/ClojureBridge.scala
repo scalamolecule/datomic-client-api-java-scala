@@ -21,19 +21,11 @@ trait ClojureBridge {
 
   def require(nss: String): AnyRef = requireFn.invoke(read(nss))
 
-
   def excludeSymbol(symbol: String): AnyRef = referClojureFn.invoke("exclude", read(symbol))
 
   def syncFn(name: String): IFn = fn("datomic.client.api", name)
-
-
   def datomicAsyncFn(name: String): IFn = fn("datomic.client.api.async", name)
   def coreAsyncFn(name: String): IFn = fn("clojure.core.async", name)
-
-  // Blocking take values from clojure.core.async.Channel
-  //  def <!!(channel: AnyRef): AnyRef = coreAsyncFn("<!!").invoke(channel)
-
-  //  def callAndTake(name: String)
 
   def printLn(s: AnyRef): Unit = fn("clojure.core", "println").invoke(s)
 
@@ -104,11 +96,6 @@ trait ClojureBridge {
     println(obj.getClass)
     println(obj.getClass.getSuperclass)
     obj.getClass.getInterfaces.map(_.toString).sorted foreach println
-    println("------------")
-  }
-
-  def methods(obj: Any): Unit = {
-    obj.getClass.getMethods.map(_.toString).sorted foreach println
     println("------------")
   }
 }

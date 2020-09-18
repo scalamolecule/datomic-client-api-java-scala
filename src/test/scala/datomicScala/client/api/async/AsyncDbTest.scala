@@ -5,13 +5,13 @@ import java.util.{Map => jMap}
 import clojure.lang.{PersistentArrayMap, PersistentVector}
 import datomic.Util
 import datomic.Util._
-import datomicScala.AsyncSpec
+import datomicScala.SpecAsync
 import datomicScala.client.api.{Datom, DbStats}
 import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
 
-class AsyncDbTest extends AsyncSpec {
+class AsyncDbTest extends SpecAsync {
   sequential
 
 
@@ -46,8 +46,10 @@ class AsyncDbTest extends AsyncSpec {
         ))
       )
     } else {
-      // todo: why are attrs not picked up with Peer Server?
-      db.dbStats.realize.attrs !== None
+      // Peer server db is not re-created on each test,
+      // so we can only test some stable values
+      db.dbStats.realize.datoms >= 0
+      db.dbStats.realize.attrs.get(":db.install/partition") === 3
     }
 
     db.asOf(tBefore).dbName === "hello"

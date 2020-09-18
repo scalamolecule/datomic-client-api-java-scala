@@ -1,11 +1,16 @@
 package datomicScala.client.api.async
 
 import java.util.{List => jList, Map => jMap}
+import datomic.Util
 import datomic.Util._
-import datomicScala.util.Helper._
+import datomicClojure._
+import datomicScala.AnomalyWrapper
 
 
-case class AsyncClient(forPeerServer: Boolean, asyncDatomicClient: AnyRef) {
+case class AsyncClient(
+  forPeerServer: Boolean,
+  asyncDatomicClient: AnyRef
+) extends AnomalyWrapper with ClojureBridge {
 
   /**
    * Upgrading Datomic Schema
@@ -27,75 +32,58 @@ case class AsyncClient(forPeerServer: Boolean, asyncDatomicClient: AnyRef) {
    *                )
    * @return Diagnostive value or throwing a failure exception
    */
-  def administerSystem(options: jMap[_, _]): jMap[_, _] = {
-    datomicAsyncFn("administer-system")
-      .invoke(asyncDatomicClient, read(edn(options)))
-      .asInstanceOf[jMap[_, _]]
+  def administerSystem(options: jMap[_, _]): jMap[_, _] = catchAnomaly {
+    InvokeAsync.administerSystem(asyncDatomicClient, options)
   }
 
-  def administerSystem(options: String): jMap[_, _] = {
-    datomicAsyncFn("administer-system")
-      .invoke(asyncDatomicClient, read(options))
-      .asInstanceOf[jMap[_, _]]
-  }
+  def administerSystem(dbName: String): jMap[_, _] = administerSystem(
+    Util.map(
+      read(":xdb-name"), read(dbName),
+      read(":action"), read(":upgrade-schema"),
+    )
+  )
 
 
   def connect(dbName: String): AsyncConnection = {
     AsyncConnection(
-      new Channel(
-        datomicAsyncFn("connect")
-          .invoke(asyncDatomicClient, read(s"""{:db-name "$dbName"}"""))
+      Channel(
+        InvokeAsync.connect(asyncDatomicClient, dbName)
       )
     )
   }
 
 
-  def createDatabase(dbName: String): Channel[Boolean] = {
+  def createDatabase(
+    dbName: String,
+    timeout: Int = 0
+  ): Channel[Boolean] = catchAnomaly {
     if (forPeerServer)
-      throw new RuntimeException(
-        """createDatabase is not available with a client running against a Peer Server.
-          |Please create a database with the Peer class instead:
-          |Peer.createDatabase("datomic:free://localhost:4334/hello")""".stripMargin
-      )
-    new Channel[Boolean](
-      datomicAsyncFn("create-database")
-        .invoke(asyncDatomicClient, read(s"""{:db-name "$dbName"}"""))
+      throw new RuntimeException(ErrorMsg.createDatabase(dbName))
+    Channel[Boolean](
+      InvokeAsync.createDatabase(asyncDatomicClient, dbName, timeout)
     )
   }
 
 
-  def deleteDatabase(dbName: String): Channel[Boolean] = {
+  def deleteDatabase(
+    dbName: String,
+    timeout: Int = 0
+  ): Channel[Boolean] = catchAnomaly {
     if (forPeerServer)
-      throw new RuntimeException(
-        """deleteDatabase is not available with a client running against a Peer Server.
-          |Please delete a database with the Peer class instead:
-          |Peer.deleteDatabase("datomic:free://localhost:4334/hello")""".stripMargin)
-
-    new Channel[Boolean](
-      datomicAsyncFn("delete-database")
-        .invoke(asyncDatomicClient, read(s"""{:db-name "$dbName"}"""))
+      throw new RuntimeException(ErrorMsg.deleteDatabase(dbName))
+    Channel[Boolean](
+      InvokeAsync.deleteDatabase(asyncDatomicClient, dbName, timeout)
     )
   }
 
   // If using Peer Server, this will only show the single db that Peer Server connects to.
   def listDatabases(
-    timeoutOpt: Option[Int] = None,
-    offsetOpt: Option[Int] = None,
-    limit: Int = 1000,
-  ): Channel[jList[String]] = {
-    val timeout = timeoutOpt.map(t => s":timeout $t ")
-    val offset  = offsetOpt.map(t => s":offset $t ")
-    new Channel[jList[String]](
-      datomicAsyncFn("list-databases").invoke(
-        asyncDatomicClient,
-        read(
-          s"""{
-             |$timeout
-             |$offset
-             |:limit "$limit"
-             |}""".stripMargin
-        )
-      )
+    timeout: Int = 0,
+    offset: Int = 0,
+    limit: Int = 1000
+  ): Channel[jList[String]] = catchAnomaly {
+    Channel[jList[String]](
+      InvokeAsync.listDatabase(asyncDatomicClient, timeout, offset, limit)
     )
   }
 }

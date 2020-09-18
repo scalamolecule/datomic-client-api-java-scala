@@ -2,33 +2,36 @@ package datomicScala.client.api.sync
 
 import datomic.Util
 import datomic.Util._
-import datomicScala.SyncSpec
+import datomicClojure.ErrorMsg
+import datomicScala.Spec
 import scala.jdk.CollectionConverters._
 
 
-class ClientTest extends SyncSpec {
+class ClientTest extends Spec {
   sequential
 
 
   "administer system" in new Setup {
     // todo: Not available for Peer Server?
 
-    client.administerSystem("hello").toString === "{}"
+    client.administerSystem("hello") === Util.map()
 
     client.administerSystem(
       Util.map(
         read(":db-name"), "hello",
         read(":action"), read(":upgrade-schema"),
       )
-    ).toString === "{}"
+    ) === Util.map()
 
+    // todo - why doesn't this throw a failure exception?
+    client.administerSystem("xyz") must throwA(
+      new RuntimeException(
+        """Some failure message...""".stripMargin
+      )
+    )
   }
 
-
-  "list databases" in new Setup {
-    client.listDatabases().asScala === List("hello")
-  }
-
+  // (`connect` is tested in ClientTest...)
 
   "create database" in new Setup {
     if (isDevLocal) {
@@ -37,11 +40,7 @@ class ClientTest extends SyncSpec {
     } else {
       // create-database not implemented for Peer Server
       client.createDatabase("hello") must throwA(
-        new RuntimeException(
-          """createDatabase is not available with a client running against a Peer Server.
-            |Please create a database with the Peer class instead:
-            |Peer.createDatabase("datomic:<free/dev/pro>://<host>:<port>/hello")""".stripMargin
-        )
+        new RuntimeException(ErrorMsg.createDatabase("hello"))
       )
     }
   }
@@ -57,12 +56,13 @@ class ClientTest extends SyncSpec {
     } else {
       // delete-database not implemented for Peer Server
       client.deleteDatabase("hello") must throwA(
-        new RuntimeException(
-          """deleteDatabase is not available with a client running against a Peer Server.
-            |Please delete a database with the Peer class instead:
-            |Peer.deleteDatabase("datomic:<free/dev/pro>://<host>:<port>/hello")""".stripMargin
-        )
+        new RuntimeException(ErrorMsg.deleteDatabase("hello"))
       )
     }
+  }
+
+
+  "list databases" in new Setup {
+    client.listDatabases().asScala === List("hello")
   }
 }

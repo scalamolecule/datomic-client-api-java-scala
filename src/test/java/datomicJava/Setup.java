@@ -1,6 +1,7 @@
 package datomicJava;
 
 import datomic.Peer;
+import datomicJava.client.api.sync.TxReport;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.sync.*;
 import org.junit.Before;
@@ -34,45 +35,47 @@ public class Setup extends SchemaAndData {
     public void setUp() {
         if (system == "dev-local") {
             client = Datomic.clientDevLocal("Hello system name");
-
-            // Re-create db
-            client.deleteDatabase("hello");
-            client.deleteDatabase("world");
-            client.createDatabase("hello");
-            conn = client.connect("hello");
-            conn.transact(schemaDevLocal);
-
-            txReport = conn.transact(data);
+            resetDevLocalDb();
 
         } else if (system == "peer-server") {
-
             client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998");
-
-            // Using the db associated with the Peer Server connection
             conn = client.connect("hello");
-
-            // Install schema if necessary
-            if (
-                Datomic.q(
-                    "[:find ?e :where [?e :db/ident :movie/title]]",
-                    conn.db()
-                ).toString() == "[]"
-            ) {
-                println("Installing Peer Server hello db schema...");
-                conn.transact(schemaPeerServer);
-            }
-
-            // Retract current data
-            Datomic.q("[:find ?e :where [?e :movie/title _]]", conn.db())
-                .forEach(row ->
-                    conn.transact(list(list(":db/retractEntity", row.get(0))))
-                );
-
-            txReport = conn.transact(data);
+            resetPeerServerDb();
 
         } else {
             // todo: live cloud initialization
         }
+    }
+
+    public void resetDevLocalDb() {
+        // Re-create db
+        client.deleteDatabase("hello");
+        client.deleteDatabase("world");
+        client.createDatabase("hello");
+        conn = client.connect("hello");
+        conn.transact(schemaDevLocal);
+        txReport = conn.transact(data);
+    }
+
+    public void resetPeerServerDb() {
+        // Install schema if necessary
+        if (
+            Datomic.q(
+                "[:find ?e :where [?e :db/ident :movie/title]]",
+                conn.db()
+            ).toString() == "[]"
+        ) {
+            println("Installing Peer Server hello db schema...");
+            conn.transact(schemaPeerServer);
+        }
+
+        // Retract current data
+        Datomic.q("[:find ?e :where [?e :movie/title _]]", conn.db())
+            .forEach(row ->
+                conn.transact(list(list(":db/retractEntity", row.get(0))))
+            );
+
+        txReport = conn.transact(data);
     }
 
 

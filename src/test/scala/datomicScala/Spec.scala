@@ -11,7 +11,7 @@ import org.specs2.specification.core.{Fragments, Text}
 import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
-trait SyncSpec extends Specification with SchemaAndData {
+trait Spec extends Specification with SchemaAndData {
 
   var system  : String     = "Not set yet. Can be: dev-local / peer-server / cloud"
   var client  : Client     = null // set in setup
@@ -24,29 +24,30 @@ trait SyncSpec extends Specification with SchemaAndData {
       step(setupPeerServer()) ^
       fs.mapDescription(d => Text(s"$system: " + d.show))
 
-
   def setupDevLocal(): Unit = {
     system = "dev-local"
     client = Datomic.clientForDevLocal("Hello system name")
+    resetDevLocalDb()
+  }
 
+  def setupPeerServer(): Unit = {
+    system = "peer-server"
+    client = Datomic.clientForPeerServer("myaccesskey", "mysecret", "localhost:8998")
+    conn = client.connect("hello")
+    resetPeerServerDb()
+  }
+
+  def resetDevLocalDb(): Unit = {
     // Re-create db
     client.deleteDatabase("hello")
     client.deleteDatabase("world")
     client.createDatabase("hello")
     conn = client.connect("hello")
     conn.transact(schema(false))
-
     txReport = conn.transact(data)
   }
 
-
-  def setupPeerServer(): Unit = {
-    system = "peer-server"
-    client = Datomic.clientForPeerServer("myaccesskey", "mysecret", "localhost:8998")
-
-    // Using the db associated with the Peer Server connection
-    conn = client.connect("hello")
-
+  def resetPeerServerDb(): Unit = {
     // Install schema if necessary
     if (Datomic.q(
       "[:find ?e :where [?e :db/ident :movie/title]]",
@@ -66,8 +67,9 @@ trait SyncSpec extends Specification with SchemaAndData {
     txReport = conn.transact(data)
   }
 
+
   class Setup extends SchemaAndData with Scope {
-    lazy val isDevLocal = system == "dev-local"
+    val isDevLocal = system == "dev-local"
 
     // Databases before and after last tx (after == current)
     lazy val dbBefore = txReport.dbBefore

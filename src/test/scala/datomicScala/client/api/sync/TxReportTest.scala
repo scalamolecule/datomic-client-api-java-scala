@@ -1,14 +1,12 @@
 package datomicScala.client.api.sync
 
-import datomicScala.SyncSpec
+import datomicScala.Spec
 
 
-class TxReportTest extends SyncSpec {
+class TxReportTest extends Spec {
   sequential
 
-
   "4 txReport ops" in new Setup {
-
     films(txReport.dbBefore) == Nil
     films(txReport.dbAfter) == threeFilms
 

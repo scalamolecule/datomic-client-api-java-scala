@@ -1,36 +1,14 @@
 package datomicScala.client.api.async
 
-import datomicScala.AsyncSpec
+import datomic.Util
+import datomic.Util.{list, read}
+import datomicClojure.ErrorMsg
+import datomicScala.SpecAsync
 import datomicScala.client.api.Datom
 
 
-class AsyncConnectionTest extends AsyncSpec {
+class AsyncConnectionTest extends SpecAsync {
   sequential
-
-
-  "txRange" in new AsyncSetup {
-    // For some reason we can't compare (7, Array(...)) but separately goes fine:
-
-    // todo: manually selecting last tx - until all txs are returned
-    // (see AsyncConnection.txRange comments)
-    val txRange = conn.txRange(offset = 7, limit = 1).realize
-    txRange.last._1 === tAfter
-    txRange.last._2 === Array(
-      Datom(txIdAfter, 50, txInst, txIdAfter, true),
-      Datom(e1, a1, "The Goonies", txIdAfter, true),
-      Datom(e1, a2, "action/adventure", txIdAfter, true),
-      Datom(e1, a3, 1985, txIdAfter, true),
-      Datom(e2, a1, "Commando", txIdAfter, true),
-      Datom(e2, a2, "thriller/action", txIdAfter, true),
-      Datom(e2, a3, 1985, txIdAfter, true),
-      Datom(e3, a1, "Repo Man", txIdAfter, true),
-      Datom(e3, a2, "punk dystopia", txIdAfter, true),
-      Datom(e3, a3, 1984, txIdAfter, true)
-    )
-  }
-
-
-  // (`withDb` and `widh` are tested in DbTest...)
 
 
   "db" in new AsyncSetup {
@@ -61,4 +39,56 @@ class AsyncConnectionTest extends AsyncSpec {
       conn.sync(tAfter).realize !== dbAfter
     }
   }
+
+
+  "transact" in new AsyncSetup {
+    films(conn.db) === threeFilms
+    conn.transact(list(
+      Util.map(
+        read(":movie/title"), "Film 4",
+      )
+    )).realize
+    films(conn.db) === fourFilms
+
+    conn.transact(list()).realize must throwA(
+      new IllegalArgumentException(ErrorMsg.transact)
+    )
+
+    if (isDevLocal) resetDevLocalDb() else resetPeerServerDb()
+  }
+
+
+  "txRange" in new AsyncSetup {
+    val iterable: Iterable[(Long, Iterable[Datom])] = conn.txRange().realize
+    iterable.last._1 === tAfter
+    iterable.last._2.toList === List(
+      Datom(txIdAfter, 50, txInst, txIdAfter, true),
+      Datom(e1, a1, "The Goonies", txIdAfter, true),
+      Datom(e1, a2, "action/adventure", txIdAfter, true),
+      Datom(e1, a3, 1985, txIdAfter, true),
+      Datom(e2, a1, "Commando", txIdAfter, true),
+      Datom(e2, a2, "thriller/action", txIdAfter, true),
+      Datom(e2, a3, 1985, txIdAfter, true),
+      Datom(e3, a1, "Repo Man", txIdAfter, true),
+      Datom(e3, a2, "punk dystopia", txIdAfter, true),
+      Datom(e3, a3, 1984, txIdAfter, true)
+    )
+
+    val array: Array[(Long, Array[Datom])] = conn.txRangeArray().realize
+    array.last._1 === tAfter
+    array.last._2 === Array(
+      Datom(txIdAfter, 50, txInst, txIdAfter, true),
+      Datom(e1, a1, "The Goonies", txIdAfter, true),
+      Datom(e1, a2, "action/adventure", txIdAfter, true),
+      Datom(e1, a3, 1985, txIdAfter, true),
+      Datom(e2, a1, "Commando", txIdAfter, true),
+      Datom(e2, a2, "thriller/action", txIdAfter, true),
+      Datom(e2, a3, 1985, txIdAfter, true),
+      Datom(e3, a1, "Repo Man", txIdAfter, true),
+      Datom(e3, a2, "punk dystopia", txIdAfter, true),
+      Datom(e3, a3, 1984, txIdAfter, true)
+    )
+  }
+
+  // (`withDb` and `widh` are tested in AsyncDbTest...)
 }
