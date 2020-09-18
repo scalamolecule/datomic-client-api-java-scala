@@ -14,7 +14,7 @@ object Datomic extends ClojureBridge with AnomalyWrapper {
   require("datomic.client.api")
 
   // Providing AWSCredentialsProviderChain
-  def clientForCloud(
+  def clientCloud(
     region: String,
     system: String,
     endpoint: String,
@@ -28,7 +28,7 @@ object Datomic extends ClojureBridge with AnomalyWrapper {
   )
 
   // Providing creds-profile name
-  def clientForCloud(
+  def clientCloud(
     region: String,
     system: String,
     endpoint: String,
@@ -42,7 +42,7 @@ object Datomic extends ClojureBridge with AnomalyWrapper {
   )
 
 
-  def clientForDevLocal(
+  def clientDevLocal(
     system: String,
     storageDir: String = "" // overrides :storage-dir in ~/.datomic/dev-local.edn
   ): Client = Client(
@@ -51,7 +51,7 @@ object Datomic extends ClojureBridge with AnomalyWrapper {
   )
 
 
-  def clientForPeerServer(
+  def clientPeerServer(
     accessKey: String,
     secret: String,
     endpoint: String,

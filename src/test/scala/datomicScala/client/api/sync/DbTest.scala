@@ -211,7 +211,7 @@ class DbTest extends Spec {
       s"""{:db/id $eid, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
 
     // dev-local in-memory db will pull within 1 ms
-    if (!isDevLocal)
+    if (!isDevLocal) {
       conn.db.pull("[*]", eid, 1) must throwA(
         new clojure.lang.ExceptionInfo(
           "Datomic Client Timeout",
@@ -223,6 +223,7 @@ class DbTest extends Spec {
           )
         )
       )
+    }
   }
 
 

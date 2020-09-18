@@ -1,22 +1,20 @@
-package datomicJava.client.api.sync;
+package datomicJava.client.api.async;
 
 import datomicClojure.ErrorMsg;
-import datomicJava.Setup;
+import datomicJava.SetupAsync;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anEmptyMap;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
 import static datomic.Util.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThrows;
 
 @FixMethodOrder(MethodSorters.JVM)
-public class ClientTest extends Setup {
+public class AsyncClientTest extends SetupAsync {
 
-    public ClientTest(String name) {
+    public AsyncClientTest(String name) {
         system = name;
     }
 
@@ -53,14 +51,17 @@ public class ClientTest extends Setup {
     public void createDatabase() {
         if (isDevLocal()) {
             client.createDatabase("world");
-            assertThat(client.listDatabases(), is(list("world", "hello")));
+            assertThat(
+                client.listDatabases().realize(),
+                is(list("world", "hello"))
+            );
 
         } else {
             // create-database not implemented for Peer Server
 
             RuntimeException notImplemented = assertThrows(
                 RuntimeException.class,
-                () -> client.createDatabase("world")
+                () -> client.createDatabase("world").realize()
             );
             assertThat(
                 notImplemented.getMessage(),
@@ -73,14 +74,14 @@ public class ClientTest extends Setup {
     @Test
     public void deleteDatabase() {
         if (isDevLocal()) {
-            client.deleteDatabase("hello");
-            assertThat(client.listDatabases(), is(empty()));
+            client.deleteDatabase("hello").realize();
+            assertThat(client.listDatabases().realize(), is(empty()));
 
         } else {
             // delete-database not implemented for Peer Server
             RuntimeException notImplemented = assertThrows(
                 RuntimeException.class,
-                () -> client.deleteDatabase("hello")
+                () -> client.deleteDatabase("hello").realize()
             );
             assertThat(
                 notImplemented.getMessage(),
@@ -92,6 +93,9 @@ public class ClientTest extends Setup {
 
     @Test
     public void listDatabases() {
-        assertThat(client.listDatabases(), is(list("hello")));
+        assertThat(
+            client.listDatabases().realize(),
+            is(list("hello"))
+        );
     }
 }

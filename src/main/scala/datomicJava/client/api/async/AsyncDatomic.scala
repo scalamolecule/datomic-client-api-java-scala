@@ -18,7 +18,7 @@ object AsyncDatomic extends ClojureBridge {
   require("datomic.client.api.async")
 
   // Providing AWSCredentialsProviderChain
-  def clientForCloud(
+  def clientCloud(
     region: String,
     system: String,
     endpoint: String,
@@ -32,7 +32,7 @@ object AsyncDatomic extends ClojureBridge {
   )
 
   // Providing creds-profile name
-  def clientForCloud(
+  def clientCloud(
     region: String,
     system: String,
     endpoint: String,
@@ -46,7 +46,7 @@ object AsyncDatomic extends ClojureBridge {
   )
 
 
-  def clientForDevLocal(
+  def clientDevLocal(
     system: String,
     storageDir: String // overrides :storage-dir in ~/.datomic/dev-local.edn
   ): AsyncClient = {
@@ -56,12 +56,12 @@ object AsyncDatomic extends ClojureBridge {
     )
   }
 
-  def clientForDevLocal(
+  def clientDevLocal(
     system: String
-  ): AsyncClient = clientForDevLocal(system, "")
+  ): AsyncClient = clientDevLocal(system, "")
 
 
-  def clientForPeerServer(
+  def clientPeerServer(
     accessKey: String,
     secret: String,
     endpoint: String,
@@ -71,11 +71,11 @@ object AsyncDatomic extends ClojureBridge {
     InvokeAsync.clientPeerServer(accessKey, secret, endpoint, validateHostnames)
   )
 
-  def clientForPeerServer(
+  def clientPeerServer(
     accessKey: String,
     secret: String,
     endpoint: String,
-  ): AsyncClient = clientForPeerServer(accessKey, secret, endpoint, false)
+  ): AsyncClient = clientPeerServer(accessKey, secret, endpoint, false)
 
 
   // Query as data structure or String + optional :offset, :limit, :timeout params
@@ -90,7 +90,7 @@ object AsyncDatomic extends ClojureBridge {
 
   // Query as data structure
   @varargs
-  def q(query: jList[_], db: Db, args: Any*): Channel[jStream[_]] = {
+  def q(query: jList[_], db: AsyncDb, args: Any*): Channel[jStream[_]] = {
     q(Util.map(
       read(":query"), edn(query),
       read(":args"), list(db.datomicDb +: args: _*)
@@ -99,7 +99,7 @@ object AsyncDatomic extends ClojureBridge {
 
   // Query as String
   @varargs
-  def q(query: String, db: Db, args: Any*): Channel[jStream[_]] = {
+  def q(query: String, db: AsyncDb, args: Any*): Channel[jStream[_]] = {
     q(Util.map(
       read(":query"), read(query),
       read(":args"), list(db.datomicDb +: args: _*)
@@ -118,7 +118,7 @@ object AsyncDatomic extends ClojureBridge {
 
   // Query as data structure
   @varargs
-  def qseq(query: jList[_], db: Db, args: Any*): Channel[jStream[_]] = {
+  def qseq(query: jList[_], db: AsyncDb, args: Any*): Channel[jStream[_]] = {
     qseq(Util.map(
       read(":query"), edn(query),
       read(":args"), list(db.datomicDb +: args: _*)
@@ -127,7 +127,7 @@ object AsyncDatomic extends ClojureBridge {
 
   // Query as String
   @varargs
-  def qseq(query: String, db: Db, args: Any*): Channel[jStream[_]] = {
+  def qseq(query: String, db: AsyncDb, args: Any*): Channel[jStream[_]] = {
     qseq(Util.map(
       read(":query"), read(query),
       read(":args"), list(db.datomicDb +: args: _*)

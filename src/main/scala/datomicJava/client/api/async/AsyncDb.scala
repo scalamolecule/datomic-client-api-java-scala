@@ -2,7 +2,7 @@ package datomicJava.client.api.async
 
 import java.util.stream.{Stream => jStream}
 import java.util.{List => jList, Map => jMap}
-import clojure.lang.LazySeq
+import clojure.lang.{ASeq, LazySeq}
 import datomic.Util._
 import datomicClojure.{ErrorMsg, Invoke, InvokeAsync, Lookup}
 import datomicJava.Helper
@@ -42,8 +42,7 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     Channel[AsyncDb](
       AsyncDb(
         Channel[AnyRef](
-          InvokeAsync.`with`(withDb, stmts).asInstanceOf[jMap[_, _]]
-            .get(read(":db-after")).asInstanceOf[AnyRef]
+          InvokeAsync.`with`(withDb, stmts)
         ).realize.asInstanceOf[jMap[_, _]]
           .get(read(":db-after")).asInstanceOf[AnyRef]
       )
@@ -67,7 +66,7 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
    */
   def datoms(index: String, components: jList[_]): Channel[jStream[Datom]] = {
     Channel[jStream[Datom]](
-      streamOfDatoms(
+      Helper.streamOfDatoms(
         Channel[Any](
           InvokeAsync.datoms(datomicDb, index, components)
         ).realize
@@ -75,7 +74,7 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     )
   }
 
-  def indexRange[T](
+  def indexRange(
     attrId: String,
     start: Any,
     end: Any,
@@ -84,7 +83,7 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     limit: Int
   ): Channel[jStream[Datom]] = {
     Channel[jStream[Datom]](
-      streamOfDatoms(
+      Helper.streamOfDatoms(
         Channel[Any](
           InvokeAsync.indexRange(
             datomicDb, attrId, Option(start), Option(end), timeout, offset, limit
@@ -95,10 +94,10 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
   }
 
   def indexRange[T](attrId: String): Channel[jStream[Datom]] =
-    indexRange(attrId, None, None, 0, 0, 1000)
+    indexRange(attrId, null, null, 0, 0, 1000)
 
-  def indexRange[T](attrId: String, start: Option[Any]): Channel[jStream[Datom]] =
-    indexRange(attrId, start, None, 0, 0, 1000)
+  def indexRange[T](attrId: String, start: Long): Channel[jStream[Datom]] =
+    indexRange(attrId, start, null, 0, 0, 1000)
 
   def indexRange[T](
     attrId: String,
@@ -144,7 +143,7 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
         Invoke.indexPull(
           datomicDb, index, selector, start, reverse, timeout, offset, limit
         )
-      ).realize.asInstanceOf[LazySeq].stream()
+      ).realize.asInstanceOf[ASeq].stream()
     )
   }
 

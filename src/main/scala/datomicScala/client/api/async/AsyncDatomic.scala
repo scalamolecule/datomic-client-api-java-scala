@@ -15,7 +15,7 @@ object AsyncDatomic extends ClojureBridge {
   require("datomic.client.api.async")
 
   // Providing AWSCredentialsProviderChain
-  def clientForCloud(
+  def clientCloud(
     region: String,
     system: String,
     endpoint: String,
@@ -29,7 +29,7 @@ object AsyncDatomic extends ClojureBridge {
   )
 
   // Providing creds-profile name
-  def clientForCloud(
+  def clientCloud(
     region: String,
     system: String,
     endpoint: String,
@@ -43,7 +43,7 @@ object AsyncDatomic extends ClojureBridge {
   )
 
 
-  def clientForDevLocal(
+  def clientDevLocal(
     system: String,
     storageDir: String = "" // overrides :storage-dir in ~/.datomic/dev-local.edn
   ): AsyncClient = {
@@ -54,7 +54,7 @@ object AsyncDatomic extends ClojureBridge {
   }
 
 
-  def clientForPeerServer(
+  def clientPeerServer(
     accessKey: String,
     secret: String,
     endpoint: String,
@@ -74,7 +74,6 @@ object AsyncDatomic extends ClojureBridge {
     )
   }
 
-
   // Query as data structure
   def q(query: jList[_], db: AsyncDb, args: Any*): Channel[jStream[_]] = {
     q(Util.map(
@@ -90,6 +89,7 @@ object AsyncDatomic extends ClojureBridge {
       read(":args"), list(db.datomicDb +: args: _*)
     ))
   }
+
 
   // Query as data structure or String + optional :offset, :limit, :timeout params
   // (see tests)

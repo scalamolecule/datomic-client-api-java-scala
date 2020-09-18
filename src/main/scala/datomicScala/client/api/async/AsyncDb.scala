@@ -75,10 +75,10 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
   }
 
 
-  def indexRange[T](
+  def indexRange(
     attrId: String,
-    start: Option[T] = None,
-    end: Option[T] = None,
+    start: Option[Any] = None,
+    end: Option[Any] = None,
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000

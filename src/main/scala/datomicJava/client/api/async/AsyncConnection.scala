@@ -1,10 +1,12 @@
 package datomicJava.client.api.async
 
+import java.lang.{Iterable => jIterable}
 import java.util.{List => jList, Map => jMap}
 import datomic.Util._
 import datomicClojure.{ErrorMsg, Invoke, InvokeAsync}
 import datomicJava.Helper
 import datomicJava.client.api.Datom
+import javafx.util.Pair
 
 
 case class AsyncConnection(connChannel: Channel[AnyRef]) {
@@ -32,7 +34,6 @@ case class AsyncConnection(connChannel: Channel[AnyRef]) {
   def transact(stmts: jList[_]): Channel[AsyncTxReport] = {
     if (stmts.isEmpty)
       throw new IllegalArgumentException(ErrorMsg.transact)
-
     Channel[AsyncTxReport](
       AsyncTxReport(
         Channel[jMap[_, _]](
@@ -49,17 +50,20 @@ case class AsyncConnection(connChannel: Channel[AnyRef]) {
     timeout: Int,
     offset: Int,
     limit: Int
-  ): Channel[Array[(Long, Array[Datom])]] = {
-    val startOpt: Option[Long] = if (start == 0) None else Some(start)
-    val endOpt  : Option[Long] = if (end == 0) None else Some(end)
-    val rawTxs0                = Channel[AnyRef](
-      Invoke.txRange(connChannel.realize, startOpt, endOpt, timeout, offset, limit)
+  ): Channel[jIterable[Pair[Long, jIterable[Datom]]]] = {
+    val startOpt = if (start == 0) None else Some(start)
+    val endOpt   = if (end == 0) None else Some(end)
+    val rawTxs0  = Channel[AnyRef](
+      Invoke.txRange(
+        connChannel.realize, startOpt, endOpt, timeout, offset, limit
+      )
     ).realize
-    Channel[Array[(Long, Array[Datom])]](
+    Channel[jIterable[Pair[Long, jIterable[Datom]]]](
       Helper.nestedTxsIterable(isDevLocal, rawTxs0)
     )
   }
-  def txRange(): Channel[Array[(Long, Array[Datom])]] = txRange(0, 0, 0, 0, 1000)
+  def txRange(): Channel[jIterable[Pair[Long, jIterable[Datom]]]] =
+    txRange(0, 0, 0, 0, 1000)
 
 
   def txRangeArray(
@@ -68,17 +72,20 @@ case class AsyncConnection(connChannel: Channel[AnyRef]) {
     timeout: Int,
     offset: Int,
     limit: Int
-  ): Channel[Array[(Long, Array[Datom])]] = {
-    val startOpt: Option[Long] = if (start == 0) None else Some(start)
-    val endOpt  : Option[Long] = if (end == 0) None else Some(end)
-    val rawTxs0                = Channel[AnyRef](
-      Invoke.txRange(connChannel.realize, startOpt, endOpt, timeout, offset, limit)
+  ): Channel[Array[Pair[Long, Array[Datom]]]] = {
+    val startOpt = if (start == 0) None else Some(start)
+    val endOpt   = if (end == 0) None else Some(end)
+    val rawTxs0  = Channel[AnyRef](
+      Invoke.txRange(
+        connChannel.realize, startOpt, endOpt, timeout, offset, limit
+      )
     ).realize
-    Channel[Array[(Long, Array[Datom])]](
+    Channel[Array[Pair[Long, Array[Datom]]]](
       Helper.nestedTxsArray(isDevLocal, rawTxs0)
     )
   }
-  def txRangeArray(): Channel[Array[(Long, Array[Datom])]] = txRangeArray(0, 0, 0, 0, 1000)
+  def txRangeArray(): Channel[Array[Pair[Long, Array[Datom]]]] =
+    txRangeArray(0, 0, 0, 0, 1000)
 
 
   // Convenience method for single invocation from connection

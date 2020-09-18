@@ -31,18 +31,18 @@ class DatomicTest extends Spec {
 
         // Retrieve client for a specific system
         // (this one has been created in SetupSpec)
-        val client: Client = Datomic.clientForDevLocal("Hello system name")
+        val client: Client = Datomic.clientDevLocal("Hello system name")
 
         // Confirm that client is valid and can connect to a database
         client.connect("hello")
 
         // Wrong system name
-        Datomic.clientForDevLocal("x").connect("hello") must throwA(
+        Datomic.clientDevLocal("x").connect("hello") must throwA(
           NotFound("Db not found: hello")
         )
 
         // Wrong db name
-        Datomic.clientForDevLocal("Hello system name").connect("y") must throwA(
+        Datomic.clientDevLocal("Hello system name").connect("y") must throwA(
           NotFound("Db not found: y")
         )
       }
@@ -62,7 +62,7 @@ class DatomicTest extends Spec {
          */
 
         val client: Client =
-          Datomic.clientForPeerServer("myaccesskey", "mysecret", "localhost:8998")
+          Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
 
         // Confirm that client is valid and can connect to a database
         client.connect("hello")
@@ -70,7 +70,7 @@ class DatomicTest extends Spec {
         // Note that a Client is returned immediately without contacting
         // a server and can thus be invalid.
         val client2: Client =
-          Datomic.clientForPeerServer("admin", "nice-try", "localhost:8998")
+          Datomic.clientPeerServer("admin", "nice-try", "localhost:8998")
 
         // Invalid setup shows on first call to server
         try {
@@ -98,14 +98,14 @@ class DatomicTest extends Spec {
         }
 
         // Wrong endpoint
-        Datomic.clientForPeerServer("myaccesskey", "mysecret", "x")
+        Datomic.clientPeerServer("myaccesskey", "mysecret", "x")
           .connect("hello") must throwA(
           NotFound("x: nodename nor servname provided, or not known")
         )
       }
 
       case "cloud" => {
-        val client1: Client = Datomic.clientForCloud(
+        val client1: Client = Datomic.clientCloud(
           "us-east-1",
           "mysystem",
           "http://entry.us-east-1.mysystem.datomic.net:8182/",
@@ -116,7 +116,7 @@ class DatomicTest extends Spec {
 
         // with credentials profile name
         // Uncomment and test if a cloud system is available
-        val client2: Client = Datomic.clientForCloud(
+        val client2: Client = Datomic.clientCloud(
           "us-east-1",
           "mysystem",
           "http://entry.us-east-1.mysystem.datomic.net:8182/",

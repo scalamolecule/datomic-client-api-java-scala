@@ -100,8 +100,8 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) {
   def pull(selector: String, eid: Any): jMap[_, _] =
     pull(selector, eid, 0, 0, 1000)
 
-  def pull(selector: String, eid: Any, limit: Int): jMap[_, _] =
-    pull(selector, eid, 0, 0, limit)
+  def pull(selector: String, eid: Any, timeout: Int): jMap[_, _] =
+    pull(selector, eid, timeout, 0, 1000)
 
 
   def indexPull(

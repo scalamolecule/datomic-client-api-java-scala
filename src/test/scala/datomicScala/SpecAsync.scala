@@ -4,6 +4,7 @@ import java.util.{Date, List => jList}
 import clojure.lang.PersistentVector
 import datomic.Peer
 import datomic.Util.list
+import datomicClojure.Invoke.types
 import datomicScala.client.api.async._
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
@@ -30,18 +31,18 @@ trait SpecAsync extends Specification with SchemaAndData {
 
   def setupDevLocal(): Unit = {
     system = "dev-local"
-    client = AsyncDatomic.clientForDevLocal("free")
-    resetDevLocalDb()
+    client = AsyncDatomic.clientDevLocal("Hello system name")
+//    resetDevLocalDb()
   }
 
 
   def setupPeerServer(): Unit = {
     system = "peer-server"
-    client = AsyncDatomic.clientForPeerServer("myaccesskey", "mysecret", "localhost:8998")
+    client = AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
 
     // Using the db associated with the Peer Server connection
     conn = client.connect("hello")
-    resetPeerServerDb()
+//    resetPeerServerDb()
   }
 
   def resetDevLocalDb(): Unit = {
@@ -77,7 +78,9 @@ trait SpecAsync extends Specification with SchemaAndData {
 
   class AsyncSetup extends SchemaAndData with Scope {
 
-    lazy val isDevLocal = system == "dev-local"
+    val isDevLocal = system == "dev-local"
+
+    if (isDevLocal) resetDevLocalDb() else resetPeerServerDb()
 
     // Databases before and after last tx (after == current)
     lazy val dbBefore = txReport.dbBefore
@@ -99,7 +102,7 @@ trait SpecAsync extends Specification with SchemaAndData {
 
     // Ids of the three attributes
     val List(a1, a2, a3) = if (system == "dev-local")
-      List(73, 74, 75) else List(63, 64, 65)
+      List(73, 74, 75) else List(72, 73, 74)
 
     def films(db: AsyncDb): Seq[String] = {
       val res = AsyncDatomic.q(filmQuery, db).realize

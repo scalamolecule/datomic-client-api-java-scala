@@ -26,15 +26,15 @@ trait Spec extends Specification with SchemaAndData {
 
   def setupDevLocal(): Unit = {
     system = "dev-local"
-    client = Datomic.clientForDevLocal("Hello system name")
-    resetDevLocalDb()
+    client = Datomic.clientDevLocal("Hello system name")
+//    resetDevLocalDb()
   }
 
   def setupPeerServer(): Unit = {
     system = "peer-server"
-    client = Datomic.clientForPeerServer("myaccesskey", "mysecret", "localhost:8998")
+    client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
     conn = client.connect("hello")
-    resetPeerServerDb()
+//    resetPeerServerDb()
   }
 
   def resetDevLocalDb(): Unit = {
@@ -69,7 +69,10 @@ trait Spec extends Specification with SchemaAndData {
 
 
   class Setup extends SchemaAndData with Scope {
+
     val isDevLocal = system == "dev-local"
+
+    if (isDevLocal) resetDevLocalDb() else resetPeerServerDb()
 
     // Databases before and after last tx (after == current)
     lazy val dbBefore = txReport.dbBefore

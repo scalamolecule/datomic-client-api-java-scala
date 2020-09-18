@@ -14,7 +14,7 @@ class AsyncClientTest extends SpecAsync {
   "administer system" in new AsyncSetup {
     // todo: Not available for Peer Server?
 
-    client.administerSystem("hellox") === Util.map()
+    client.administerSystem("hello") === Util.map()
 
     client.administerSystem(
       Util.map(
@@ -48,11 +48,8 @@ class AsyncClientTest extends SpecAsync {
 
   "delete database" in new AsyncSetup {
     if (isDevLocal) {
-      // Since we run mutable tests in the Scala test suit,
-      // the 'world' db created in the test above is still here.
-      client.listDatabases().realize.asScala.sorted === List("hello", "world")
-      client.deleteDatabase("world")
-      client.listDatabases().realize.asScala === List("hello")
+      client.deleteDatabase("hello")
+      client.listDatabases().realize.asScala === List()
     } else {
       // delete-database not implemented for Peer Server
       client.deleteDatabase("hello") must throwA(

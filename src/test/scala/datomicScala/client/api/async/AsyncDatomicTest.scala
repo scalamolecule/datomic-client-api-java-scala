@@ -1,14 +1,10 @@
 package datomicScala.client.api.async
 
-import java.util
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util.{list, _}
-import datomicScala.client.api.sync.{Client, Datomic}
 import datomicScala.{Forbidden, NotFound, SpecAsync}
-import scala.::
 import scala.jdk.StreamConverters._
-import scala.jdk.CollectionConverters._
 
 
 class AsyncDatomicTest extends SpecAsync {
@@ -40,18 +36,18 @@ class AsyncDatomicTest extends SpecAsync {
 
         // Retrieve client for a specific system
         // (this one has been created in SetupSpec)
-        val client: AsyncClient = AsyncDatomic.clientForDevLocal("Hello system name")
+        val client: AsyncClient = AsyncDatomic.clientDevLocal("Hello system name")
 
         // Confirm that client is valid and can connect to a database
         client.connect("hello")
 
         // Wrong system name
-        AsyncDatomic.clientForDevLocal("x").connect("hello") must throwA(
+        AsyncDatomic.clientDevLocal("x").connect("hello") must throwA(
           NotFound("Db not found: hello")
         )
 
         // Wrong db name
-        AsyncDatomic.clientForDevLocal("Hello system name").connect("y") must throwA(
+        AsyncDatomic.clientDevLocal("Hello system name").connect("y") must throwA(
           NotFound("Db not found: y")
         )
       }
@@ -71,7 +67,7 @@ class AsyncDatomicTest extends SpecAsync {
          */
 
         val client: AsyncClient =
-          AsyncDatomic.clientForPeerServer("myaccesskey", "mysecret", "localhost:8998")
+          AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
 
         // Confirm that client is valid and can connect to a database
         client.connect("hello")
@@ -79,7 +75,7 @@ class AsyncDatomicTest extends SpecAsync {
         // Note that a Client is returned immediately without contacting
         // a server and can thus be invalid.
         val client2: AsyncClient =
-          AsyncDatomic.clientForPeerServer("admin", "nice-try", "localhost:8998")
+          AsyncDatomic.clientPeerServer("admin", "nice-try", "localhost:8998")
 
         // Invalid setup shows on first call to server
         try {
@@ -107,14 +103,14 @@ class AsyncDatomicTest extends SpecAsync {
         }
 
         // Wrong endpoint
-        AsyncDatomic.clientForPeerServer("myaccesskey", "mysecret", "x")
+        AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "x")
           .connect("hello") must throwA(
           NotFound("x: nodename nor servname provided, or not known")
         )
       }
 
       case "cloud" => {
-        val client1: AsyncClient = AsyncDatomic.clientForCloud(
+        val client1: AsyncClient = AsyncDatomic.clientCloud(
           "us-east-1",
           "mysystem",
           "http://entry.us-east-1.mysystem.datomic.net:8182/",
@@ -125,7 +121,7 @@ class AsyncDatomicTest extends SpecAsync {
 
         // with credentials profile name
         // Uncomment and test if a cloud system is available
-        val client2: AsyncClient = AsyncDatomic.clientForCloud(
+        val client2: AsyncClient = AsyncDatomic.clientCloud(
           "us-east-1",
           "mysystem",
           "http://entry.us-east-1.mysystem.datomic.net:8182/",

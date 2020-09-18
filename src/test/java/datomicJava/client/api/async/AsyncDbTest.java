@@ -1,31 +1,33 @@
-package datomicJava.client.api.sync;
+package datomicJava.client.api.async;
 
 import clojure.lang.ExceptionInfo;
-import datomicJava.Setup;
-import datomicJava.client.api.sync.TxReport;
+import datomicJava.SetupAsync;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.DbStats;
+import datomicJava.client.api.async.AsyncDatomic;
+import datomicJava.client.api.async.AsyncDb;
+import datomicJava.client.api.async.AsyncTxReport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import java.util.*;
+
 import static datomic.Util.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThrows;
 
-import java.util.*;
-
 @FixMethodOrder(MethodSorters.JVM)
-public class DbTest extends Setup {
+public class AsyncDbTest extends SetupAsync {
 
-    public DbTest(String name) {
+    public AsyncDbTest(String name) {
         system = name;
     }
 
     @Test
     public void stats() {
-        Db db = conn.db();
+        AsyncDb db = conn.db();
         assertThat(db.dbName(), is("hello"));
         assertThat(db.basisT(), is(tAfter()));
         assertThat(db.asOfT(), is(0L));
@@ -54,17 +56,17 @@ public class DbTest extends Setup {
                 )
             );
 
-            assertThat(db.dbStats().datoms(), is(dbStats.datoms()));
+            assertThat(db.dbStats().realize().datoms(), is(dbStats.datoms()));
             assertThat(
-                db.dbStats().attrs().get(":db.install/partition"),
+                db.dbStats().realize().attrs().get(":db.install/partition"),
                 is(dbStats.attrs().get(":db.install/partition"))
             );
 
         } else {
             // Peer server db is not re-created on each test,
             // so we can only test some stable values
-            assertThat(db.dbStats().datoms(), is(greaterThan(0L)));
-            assertThat(db.dbStats().attrs().get(":db.install/partition"), is(3L));
+            assertThat(db.dbStats().realize().datoms(), is(greaterThan(0L)));
+            assertThat(db.dbStats().realize().attrs().get(":db.install/partition"), is(3L));
         }
 
         assertThat(db.asOf(tBefore()).dbName(), is("hello"));
@@ -128,16 +130,16 @@ public class DbTest extends Setup {
 
     @Test
     public void with() {
-        Object wDb = conn.withDb();
-        Db db = conn.db();
+        Object wDb = conn.withDb().realize();
+        AsyncDb db = conn.db();
 
         // Updated `with` db value
-        Db wDb2 = db.with(wDb, film4);
+        AsyncDb wDb2 = db.with(wDb, film4).realize();
 
         assertThat(films(wDb2), is(fourFilms));
 
         // Add more data to `wDb2`
-        Db wDb3 = db.with(wDb2.datomicDb(), film5);
+        AsyncDb wDb3 = db.with(wDb2.datomicDb(), film5).realize();
         assertThat(films(wDb3), is(fiveFilms));
 
         // Current state is unaffected
@@ -170,7 +172,7 @@ public class DbTest extends Setup {
             assertThat(films(conn.db().history()), is(threeFilms));
 
             // As long as we only add data, current/history will be the same
-            TxReport tx = conn.transact(film4);
+            AsyncTxReport tx = conn.transact(film4).realize();
             assertThat(films(conn.db()), is(fourFilms));
             assertThat(films(conn.db().history()), is(fourFilms));
 
@@ -184,12 +186,14 @@ public class DbTest extends Setup {
             assertThat(films(conn.db().history()), is(fourFilms));
 
             // History of movie title assertions and retractions
-            Collection<List<Object>> history = Datomic.q(
+            Iterator<List<Object>> history = (Iterator<List<Object>>) AsyncDatomic.q(
                 "[:find ?tx ?added ?movie-title :where [_ :movie/title ?movie-title ?tx ?added]]",
                 conn.db().history() // Use history database
-            );
+            ).realize().iterator();
             List<String> historyStr = new ArrayList<>();
-            history.forEach(row -> historyStr.add(row.toString()));
+            while (history.hasNext()) {
+                historyStr.add(history.next().toString());
+            }
             Collections.sort(historyStr);
             assertThat(
                 historyStr,
@@ -212,7 +216,8 @@ public class DbTest extends Setup {
 
     @Test
     public void datoms() {
-        Iterator<Datom> it = conn.db().datoms(":avet", list(read(":movie/title"))).iterator();
+        Iterator<Datom> it = conn.db()
+            .datoms(":avet", list(read(":movie/title"))).realize().iterator();
         List<String> films = new ArrayList<>();
         while (it.hasNext()) {
             films.add(it.next().v().toString());
@@ -224,7 +229,8 @@ public class DbTest extends Setup {
     @Test
     public void indexRange() {
 
-        Iterator<Datom> datoms = conn.db().indexRange(":movie/title").iterator();
+        Iterator<Datom> datoms = conn.db()
+            .indexRange(":movie/title").realize().iterator();
 
         List<Datom> datomsCheck = new ArrayList<>();
         datomsCheck.add(new Datom(e2(), a1(), "Commando", txIdAfter(), true));
@@ -240,7 +246,7 @@ public class DbTest extends Setup {
     @Test
     public void pull() {
         // Pull last movie
-        Map entity = conn.db().pull("[*]", eid());
+        Map entity = conn.db().pull("[*]", eid()).realize();
         assertThat(entity.get(read(":db/id")), is(eid()));
         assertThat(entity.get(read(":movie/title")), is("Repo Man"));
         assertThat(entity.get(read(":movie/genre")), is("punk dystopia"));
@@ -250,7 +256,7 @@ public class DbTest extends Setup {
         if (!isDevLocal()) {
             ExceptionInfo timedOut = assertThrows(
                 ExceptionInfo.class,
-                () -> conn.db().pull("[*]", eid(), 1)
+                () -> conn.db().pull("[*]", eid(), 1, 0, 0)
             );
             assertThat(timedOut.getMessage(), is("Datomic Client Timeout"));
             assertThat(timedOut.getData(), is(
@@ -270,7 +276,7 @@ public class DbTest extends Setup {
             ":avet",
             "[:movie/title :movie/release-year]",
             "[:movie/release-year 1985]"
-        ).iterator();
+        ).realize().iterator();
 
         // 2 films pulled from index
         Map<?, ?> film1 = entities.next();

@@ -16,13 +16,26 @@ object InvokeAsync extends Invoke {
 }
 
 trait Invoke extends ClojureBridge {
+  // sync/async fn call
   val fn: String => IFn
 
-  private def timeoutOpt(timeout: Int): String = if (timeout == 0) "" else s":timeout $timeout"
-  private def offsetOpt(offset: Int): String = if (offset == 0) "" else s":offset $offset"
-  private def limitOpt(limit: Int): String = if (limit == 0) "" else s":limit $limit"
-  private def startOpt(start: Option[Any]): String = start.fold("")(s => s":start $s")
-  private def endOpt(end: Option[Any]): String = end.fold("")(s => s":end $s")
+  private def positive(key: String, n: Int, default: Int = 0): String = n match {
+    case `default`  => ""
+    case n if n < 1 => throw new IllegalArgumentException(ErrorMsg.zeroNeg)
+    case n          => s":$key $n"
+  }
+  private def timeoutOpt(timeout: Int): String = positive("timeout", timeout)
+  private def offsetOpt(offset: Int): String = positive("offset", offset)
+  private def limitOpt(limit: Int): String = positive("limit", limit, 1000)
+
+  private def anyOpt(key: String, opt: Option[Any]): String = opt match {
+    case None            => ""
+    case Some(s: String) => s""":$key "${read(s)}""""
+    case Some(v)         => s":$key $v"
+  }
+
+  private def longOpt(key: String, opt: Option[Long]): String =
+    opt.fold("")(n => s":$key $n")
 
 
   def administerSystem(
@@ -233,8 +246,8 @@ trait Invoke extends ClojureBridge {
       read(
         s"""{
            |:attrid $attrId
-           |${startOpt(start)}
-           |${endOpt(end)}
+           |${anyOpt("start", start)}
+           |${anyOpt("end", end)}
            |${timeoutOpt(timeout)}
            |${offsetOpt(offset)}
            |${limitOpt(limit)}
@@ -250,7 +263,6 @@ trait Invoke extends ClojureBridge {
     offset: Int = 0,
     limit: Int = 1000
   ): AnyRef = {
-//  ): jList[String] = {
     fn("list-databases").invoke(
       datomicClient,
       read(
@@ -260,7 +272,7 @@ trait Invoke extends ClojureBridge {
            |${limitOpt(limit)}
            |}""".stripMargin
       )
-    )//.asInstanceOf[jList[String]]
+    )
   }
 
 
@@ -326,8 +338,8 @@ trait Invoke extends ClojureBridge {
       datomicConn,
       read(
         s"""{
-           |${startOpt(start)}
-           |${endOpt(end)}
+           |${longOpt("start", start)}
+           |${longOpt("end", end)}
            |${timeoutOpt(timeout)}
            |${offsetOpt(offset)}
            |${limitOpt(limit)}
@@ -340,7 +352,7 @@ trait Invoke extends ClojureBridge {
   def `with`(
     withDb: AnyRef,
     stmts: jList[_]
-  ):AnyRef = {
+  ): AnyRef = {
     fn("with").invoke(
       withDb,
       read(s"{:tx-data ${edn(stmts)}}")

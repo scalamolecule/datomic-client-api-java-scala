@@ -48,11 +48,8 @@ class ClientTest extends Spec {
 
   "delete database" in new Setup {
     if (isDevLocal) {
-      // Since we run mutable tests in the Scala test suit,
-      // the 'world' db created in the test above is still here.
-      client.listDatabases().asScala.sorted === List("hello", "world")
-      client.deleteDatabase("world")
-      client.listDatabases().asScala === List("hello")
+      client.deleteDatabase("hello")
+      client.listDatabases().asScala === List()
     } else {
       // delete-database not implemented for Peer Server
       client.deleteDatabase("hello") must throwA(

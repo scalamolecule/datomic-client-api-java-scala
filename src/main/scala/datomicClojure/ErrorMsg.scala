@@ -20,4 +20,6 @@ object ErrorMsg {
       "subsequently with `<Db-object>.datomicDb`."
 
   def indexPull: String = "Index can only be :avet or :aevt"
+
+  def zeroNeg: String = "Limit can't be 0 or negative"
 }
