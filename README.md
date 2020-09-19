@@ -99,7 +99,7 @@ asynchronicity - but an infrastructure has been prepared to implement it.
 This library presumes that you have a Datomic installation downloaded. It can
 be a free/starter/pro version, although the free version is a bit behind and
 won't provide all functionality. It's recommended to download an up-to-date
- version of starter/pro. On older versions of Datomic, some functionalithy might
+ version of starter/pro. On older versions of Datomic, some functionality might
  not be available. The `qseq` method was added in version 1.0.6165 for instance.
 
 To use with dev-local, please download and install the [dev-tools][dev-tools].
