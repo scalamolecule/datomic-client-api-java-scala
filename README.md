@@ -53,7 +53,7 @@ in a `Connection` class and so on. We end up with 4 classes and their methods:
   - `connect`
   - `createDatase`
   - `deleteDatase`
-  - `listDatases`
+  - `listDatabases`
 - [Connection][code Connection]: 
   - `db`
   - `sync`
