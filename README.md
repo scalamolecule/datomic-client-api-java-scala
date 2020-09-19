@@ -17,8 +17,8 @@ Java and Scala:
 Using the facade in a live Cloud setting has not yet been tested. But since 
 dev-local is equivalent and works fine, Cloud should too.
 
-Note that this library is not an official release from Datomic and is still under
-development.
+Note that this library is an independent release not associated with 
+Datomic/Cognitect.
 
 ## Java/Scala
 
