@@ -63,7 +63,7 @@ public class DatomicTest extends Setup {
             // todo - Shouldn't this throw a failure exception?
             NotFound wrongDbName = assertThrows(
                 NotFound.class,
-                () -> AsyncDatomic.clientDevLocal("Hello system name").connect("7")
+                () -> AsyncDatomic.clientDevLocal("Hello system name").connect("y")
             );
             assertThat(wrongDbName.msg(), is("Db not found: y"));
 
