@@ -116,7 +116,7 @@ To see how you can call the client api from Java, please take a look at the test
 - [Java sync tests][java sync]
 - [Java async tests][java async] (work in progress...)
 
-Run the Java tests by right-clicking on the test.java.datomicJava.client package
+Run the Java tests by right-clicking on the `test.java.datomicJava.client` package
 in the project view (in IntelliJ) and choose Run -> Tests in 'client' (or run 
 individual tests similarly).
 
@@ -128,7 +128,7 @@ Check out the Scala facade here:
 - [Scala sync tests][scala sync]
 - [Scala async tests][scala async] (work in progress...)
 
-Run the Scala tests by right-clicking on the test.scala.datomicScala.client package
+Run the Scala tests by right-clicking on the `test.scala.datomicScala.client` package
 in the project view (in IntelliJ) and choose Run -> Specs2 in 'client' (or run 
 individual tests similarly).
 
