@@ -1,7 +1,7 @@
 import sbt.Keys._
 import sbt.librarymanagement.Resolver.mavenLocal
 
-name := "datomic-client-api-scala"
+name := "datomic-client-api-java-scala"
 version := "0.1.0"
 scalaVersion := "2.13.3"
 
@@ -38,6 +38,7 @@ libraryDependencies ++= Seq(
   "com.datomic" % "client-cloud" % "0.8.102",
 
   // Dev-local
+  // Please download from https://cognitect.com/dev-tools and install locally per included instructions
   "com.datomic" % "dev-local" % "0.9.195",
 
   "us.bpsm" % "edn-java" % "0.7.1",
