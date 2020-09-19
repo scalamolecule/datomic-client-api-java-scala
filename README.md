@@ -108,6 +108,10 @@ Running dev-local doesn't require a transactor process to be running.
 To use with peer-server, please start a [transactor][transactor] first and then 
 a [Peer Server][peer-server].
 
+Clone the project and open in your IDE to explore.
+```
+git clone https://github.com/scalamolecule/datomic-client-api-java-scala.git
+```
 
 ## Using with Java
 
