@@ -51,8 +51,8 @@ in a `Connection` class and so on. We end up with 4 classes and their methods:
 - [Client][code Client]: 
   - `administerSystem`
   - `connect`
-  - `createDatase`
-  - `deleteDatase`
+  - `createDatabase`
+  - `deleteDatabase`
   - `listDatabases`
 - [Connection][code Connection]: 
   - `db`
