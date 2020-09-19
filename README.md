@@ -90,8 +90,8 @@ async implementation strategy...
 For now, a custom temporary `Channel` wrapper object is created encapsulating the 
 returned Clojure Channel. The Channel wrapper has a `realize` method that simply 
 calls the Clojure `<!!` function to retrieve the content of the clojure Channel. 
-So, until a proper Java/Scala return types decided on, there's effectively no 
-asynchronicity, but an infrastructure has been prepared to implement it.
+So, until a proper Java/Scala return type is decided on, there's effectively no 
+asynchronicity - but an infrastructure has been prepared to implement it.
 
 
 ## Setup
