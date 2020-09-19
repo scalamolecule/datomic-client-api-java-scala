@@ -20,31 +20,44 @@ public class AsyncClientTest extends SetupAsync {
 
     @Test
     public void administerSystem() {
-        // todo: Not available for Peer Server?
-        assertThat(
-            client.administerSystem("hello"),
-            is(anEmptyMap())
-        );
+        if (system == "peer-server") {
+            RuntimeException nonExistingDb = assertThrows(
+                RuntimeException.class,
+                () -> client.administerSystem("hello")
+            );
+            assertThat(
+                nonExistingDb.getMessage(),
+                is(ErrorMsg.administerSystem())
+            );
 
-        assertThat(
-            client.administerSystem(
-                map(
-                    read(":db-name"), "hello",
-                    read(":action"), read(":upgrade-schema")
-                )
-            ),
-            is(anEmptyMap())
-        );
+        } else {
 
-        // todo - why doesn't this throw a failure exception?
-        RuntimeException nonExistingDb = assertThrows(
-            RuntimeException.class,
-            () -> client.administerSystem("xyz")
-        );
-        assertThat(
-            nonExistingDb.getMessage(),
-            is("Some failure message...")
-        );
+            // todo: Not available for Peer Server?
+            assertThat(
+                client.administerSystem("hello"),
+                is(anEmptyMap())
+            );
+
+            assertThat(
+                client.administerSystem(
+                    map(
+                        read(":db-name"), "hello",
+                        read(":action"), read(":upgrade-schema")
+                    )
+                ),
+                is(anEmptyMap())
+            );
+
+            // todo - why doesn't this throw a failure exception with dev-local?
+            RuntimeException nonExistingDb = assertThrows(
+                RuntimeException.class,
+                () -> client.administerSystem("xyz")
+            );
+            assertThat(
+                nonExistingDb.getMessage(),
+                is("Some failure message...")
+            );
+        }
     }
 
     @Test

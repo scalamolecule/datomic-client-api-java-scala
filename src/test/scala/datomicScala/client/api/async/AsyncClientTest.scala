@@ -12,23 +12,30 @@ class AsyncClientTest extends SpecAsync {
 
 
   "administer system" in new AsyncSetup {
-    // todo: Not available for Peer Server?
-
-    client.administerSystem("hello") === Util.map()
-
-    client.administerSystem(
-      Util.map(
-        read(":db-name"), "hello",
-        read(":action"), read(":upgrade-schema"),
+    if (system == "peer-server") {
+      // administer-system not implemented for Peer Server
+      client.administerSystem("hello") must throwA(
+        new RuntimeException(ErrorMsg.administerSystem)
       )
-    ) === Util.map()
+    } else {
+      // db name
+      client.administerSystem("hello") === Util.map()
 
-    // todo - why doesn't this throw a failure exception?
-    client.administerSystem("xyz") must throwA(
-      new RuntimeException(
-        """Some failure message...""".stripMargin
+      // args map
+      client.administerSystem(
+        Util.map(
+          read(":db-name"), "hello",
+          read(":action"), read(":upgrade-schema"),
+        )
+      ) === Util.map()
+
+      // todo - why doesn't this throw a failure exception with dev-local?
+      client.administerSystem("xyz") must throwA(
+        new RuntimeException(
+          """Some failure message...""".stripMargin
+        )
       )
-    )
+    }
   }
 
   // (`connect` is tested in AsyncClientTest...)

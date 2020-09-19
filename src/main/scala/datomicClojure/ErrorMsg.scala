@@ -2,6 +2,9 @@ package datomicClojure
 
 object ErrorMsg {
 
+  def administerSystem: String =
+    "administerSystem is not available with a client running against a Peer Server."
+
   def createDatabase(dbName: String): String =
     s"""createDatabase is not available with a client running against a Peer Server.
        |Please create a database with the Peer class instead:

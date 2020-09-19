@@ -9,6 +9,7 @@ import datomicScala.{Forbidden, NotFound, Spec}
 class DatomicTest extends Spec {
   sequential
 
+
   "create client" >> {
     system match {
       case "dev-local" => {
@@ -37,11 +38,13 @@ class DatomicTest extends Spec {
         client.connect("hello")
 
         // Wrong system name
+        // todo - Shouldn't this throw a failure exception?
         Datomic.clientDevLocal("x").connect("hello") must throwA(
           NotFound("Db not found: hello")
         )
 
         // Wrong db name
+        // todo - Shouldn't this throw a failure exception?
         Datomic.clientDevLocal("Hello system name").connect("y") must throwA(
           NotFound("Db not found: y")
         )

@@ -12,9 +12,6 @@ class AsyncDatomicTest extends SpecAsync {
 
 
   "create client" >> {
-
-    // Not much of a test really - just checking that we can produce some clients
-
     system match {
       case "dev-local" => {
         /*
@@ -42,11 +39,13 @@ class AsyncDatomicTest extends SpecAsync {
         client.connect("hello")
 
         // Wrong system name
+        // todo - Shouldn't this throw a failure exception?
         AsyncDatomic.clientDevLocal("x").connect("hello") must throwA(
           NotFound("Db not found: hello")
         )
 
         // Wrong db name
+        // todo - Shouldn't this throw a failure exception?
         AsyncDatomic.clientDevLocal("Hello system name").connect("y") must throwA(
           NotFound("Db not found: y")
         )

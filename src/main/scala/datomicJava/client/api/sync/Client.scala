@@ -34,6 +34,8 @@ case class Client(
    * @return Diagnostive value or throwing a failure exception
    */
   def administerSystem(options: jMap[_, _]): jMap[_, _] = catchAnomaly {
+    if (forPeerServer)
+      throw new RuntimeException(ErrorMsg.administerSystem)
     Invoke.administerSystem(datomicClient, options)
   }
 

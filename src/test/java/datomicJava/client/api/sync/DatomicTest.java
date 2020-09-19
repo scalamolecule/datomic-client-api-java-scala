@@ -3,6 +3,7 @@ package datomicJava.client.api.sync;
 import datomicJava.Setup;
 import datomicJava.Forbidden;
 import datomicJava.NotFound;
+import datomicJava.client.api.async.AsyncDatomic;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -50,12 +51,21 @@ public class DatomicTest extends Setup {
             // Confirm that client is valid and can connect to a database
             client.connect("hello");
 
-            // System name 'x' has not been established
-            NotFound notFound = assertThrows(
+            // Wrong system name
+            // todo - Shouldn't this throw a failure exception?
+            NotFound wrongSystemName = assertThrows(
                 NotFound.class,
                 () -> Datomic.clientDevLocal("x").connect("hello")
             );
-            assertThat(notFound.msg(), is("Db not found: hello"));
+            assertThat(wrongSystemName.msg(), is("Db not found: hello"));
+
+            // Wrong db name
+            // todo - Shouldn't this throw a failure exception?
+            NotFound wrongDbName = assertThrows(
+                NotFound.class,
+                () -> AsyncDatomic.clientDevLocal("Hello system name").connect("7")
+            );
+            assertThat(wrongDbName.msg(), is("Db not found: y"));
 
 
         } else if (system == "peer-server") {
