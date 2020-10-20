@@ -201,10 +201,10 @@ Marc Grue. Licensed under the [Apache License 2.0][apache2].
 [scala Connection]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
 [scala Db]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Db.scala
 
-[java Datomic]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Datomic.scala
-[java Client]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
-[java Connection]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
-[java Db]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Db.scala
+[java Datomic]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/java/datomicJava/client/api/sync/Datomic.scala
+[java Client]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/java/datomicJava/client/api/sync/Client.scala
+[java Connection]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/java/datomicJava/client/api/sync/Client.scala
+[java Db]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/java/datomicJava/client/api/sync/Db.scala
 
 [dev-tools]: https://docs.datomic.com/cloud/dev-local.html
 [peer-server]: https://docs.datomic.com/on-prem/peer-server.html
