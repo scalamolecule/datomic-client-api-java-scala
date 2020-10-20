@@ -24,6 +24,7 @@ public class AsyncClientTest extends SetupAsync {
     @Test
     public void administerSystem() {
         if (system == "peer-server") {
+            // administer-system not implemented for Peer Server
             RuntimeException nonExistingDb = assertThrows(
                 RuntimeException.class,
                 () -> client.administerSystem("hello")
@@ -35,7 +36,6 @@ public class AsyncClientTest extends SetupAsync {
 
         } else {
 
-            // todo: Not available for Peer Server?
             assertThat(
                 client.administerSystem("hello"),
                 is(anEmptyMap())

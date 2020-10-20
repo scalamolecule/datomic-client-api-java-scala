@@ -63,11 +63,7 @@ case class Channel[T](
       case "conflict"    => Conflict(msg)
       case "fault"       => Fault(msg)
       case "busy"        => Busy(msg)
-
-      // todo
-      //      case "forbidden" => Forbidden(httpResult(e))
-
-      case _ => throw new IllegalArgumentException(
+      case _             => throw new IllegalArgumentException(
         "Unexpected Anomaly:\n" + anomalyMap
       )
     }
