@@ -41,20 +41,20 @@ The implementation has largely followed the structure of the
 Clojure functions of the Client api taking a Connection object are encapsulated 
 in a `Connection` class and so on. We end up with 4 classes and their methods:
 
-- `Datomic` (similar to `Peer`) [Scala][scala Datomic] | [Java][java Datomic] 
+- [Datomic][code Datomic] (similar to `Peer`)
   - `clientCloud` (providing AWSCredentialsProviderChain)
   - `clientCloud` (providing creds-profile name)
   - `clientDevLocal`
   - `clientPeerServer`
   - `q`
   - `qseq`
-- `Client`  [Scala][scala Client] | [Java][java Client]
+- [Client][code Client]: 
   - `administerSystem`
   - `connect`
   - `createDatabase`
   - `deleteDatabase`
   - `listDatabases`
-- `Connection` [Scala][scala Connection] | [Java][java Connection] 
+- [Connection][code Connection]: 
   - `db`
   - `sync`
   - `transact`
@@ -62,7 +62,7 @@ in a `Connection` class and so on. We end up with 4 classes and their methods:
   - `txRangeArray` (convenience method for populated Array)
   - `widh` (convenience method for single invocation)
   - `withDb`
-- `Db` [Scala][scala Db] | [Java][java Db] 
+- [Db][code Db]: 
   - `dbStats`
   - `asOf`
   - `since`
@@ -196,16 +196,10 @@ Marc Grue. Licensed under the [Apache License 2.0][apache2].
 [scala sync]: https://github.com/scalamolecule/datomic-client-api-java-scala/tree/master/src/test/scala/datomicScala/client/api/sync
 [scala async]: https://github.com/scalamolecule/datomic-client-api-java-scala/tree/master/src/test/scala/datomicScala/client/api/async
 
-[scala Datomic]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Datomic.scala
-[scala Client]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
-[scala Connection]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
-[scala Db]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Db.scala
-
-[java Datomic]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/java/datomicJava/client/api/sync/Datomic.scala
-[java Client]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/java/datomicJava/client/api/sync/Client.scala
-[java Connection]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/java/datomicJava/client/api/sync/Client.scala
-[java Db]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/java/datomicJava/client/api/sync/Db.scala
-
+[code Datomic]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Datomic.scala
+[code Client]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
+[code Connection]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
+[code Db]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Db.scala
 [dev-tools]: https://docs.datomic.com/cloud/dev-local.html
 [peer-server]: https://docs.datomic.com/on-prem/peer-server.html
 [transactor]: https://docs.datomic.com/on-prem/transactor.html
