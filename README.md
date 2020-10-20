@@ -41,20 +41,20 @@ The implementation has largely followed the structure of the
 Clojure functions of the Client api taking a Connection object are encapsulated 
 in a `Connection` class and so on. We end up with 4 classes and their methods:
 
-- [Datomic][code Datomic] (similar to `Peer`)
+- `Datomic` (similar to `Peer`) [Scala][scala Datomic] | [Java][java Datomic] 
   - `clientCloud` (providing AWSCredentialsProviderChain)
   - `clientCloud` (providing creds-profile name)
   - `clientDevLocal`
   - `clientPeerServer`
   - `q`
   - `qseq`
-- [Client][code Client]: 
+- `Client`  [Scala][scala Client] | [Java][java Client]
   - `administerSystem`
   - `connect`
   - `createDatabase`
   - `deleteDatabase`
   - `listDatabases`
-- [Connection][code Connection]: 
+- `Connection` [Scala][scala Connection] | [Java][java Connection] 
   - `db`
   - `sync`
   - `transact`
@@ -62,7 +62,7 @@ in a `Connection` class and so on. We end up with 4 classes and their methods:
   - `txRangeArray` (convenience method for populated Array)
   - `widh` (convenience method for single invocation)
   - `withDb`
-- [Db][code Db]: 
+- `Db` [Scala][scala Db] | [Java][java Db] 
   - `dbStats`
   - `asOf`
   - `since`
@@ -88,14 +88,14 @@ The datomic client async api for Java generally returns a `CompletableFutue` of
 a custom `Channel` type.
 
 Once the Future has completed, chunked results can be retrieved by calling 
-`chunk` one or more times on the `Channel` object until the Clojure Channels is empty.
+`chunk` one or more times on the `Channel` object until the Clojure Channel is empty.
 
 Each chunk is a custom `Either` type that can be either a `Left` 
 projection with a `CognitectAnomaly` or a `Right` projection containing the 
 successful result of a type `T` for the operation in question. That way, the 
 result can be type checked for an anomaly or a success.
 
-When the Clojure Channel is empty, `Right(null)` is returned. Consuming code 
+When the Clojure Channel is empty, `Right(null)` is returned. Consuming Java code 
 might therefore want to check for such terminating null value (when needed). 
 
 - See [Java async tests][java async]
@@ -182,7 +182,7 @@ libraryDependencies += "org.scalamolecule" % "datomic-client-api-java-scala" % "
 
 
 ## Author / License
-By Marc Grue. Licensed under the [Apache License 2.0][apache2].
+Marc Grue. Licensed under the [Apache License 2.0][apache2].
 
 
 [datomic]: https://www.datomic.com
@@ -192,14 +192,20 @@ By Marc Grue. Licensed under the [Apache License 2.0][apache2].
 [async]: https://docs.datomic.com/client-api/datomic.client.api.async.html
 
 [java sync]: https://github.com/scalamolecule/datomic-client-api-java-scala/tree/master/src/test/java/datomicJava/client/api/sync
-[java async]: https://github.com/scalamolecule/datomic-client-api-java-scala/tree/master/src/test/java/datomicJava/client/api/sync
+[java async]: https://github.com/scalamolecule/datomic-client-api-java-scala/tree/master/src/test/java/datomicJava/client/api/async
 [scala sync]: https://github.com/scalamolecule/datomic-client-api-java-scala/tree/master/src/test/scala/datomicScala/client/api/sync
 [scala async]: https://github.com/scalamolecule/datomic-client-api-java-scala/tree/master/src/test/scala/datomicScala/client/api/async
 
-[code Datomic]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Datomic.scala
-[code Client]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
-[code Connection]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
-[code Db]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Db.scala
+[scala Datomic]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Datomic.scala
+[scala Client]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
+[scala Connection]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
+[scala Db]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Db.scala
+
+[java Datomic]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Datomic.scala
+[java Client]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
+[java Connection]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
+[java Db]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Db.scala
+
 [dev-tools]: https://docs.datomic.com/cloud/dev-local.html
 [peer-server]: https://docs.datomic.com/on-prem/peer-server.html
 [transactor]: https://docs.datomic.com/on-prem/transactor.html
