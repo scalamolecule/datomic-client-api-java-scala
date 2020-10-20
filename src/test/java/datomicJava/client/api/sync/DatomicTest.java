@@ -3,7 +3,6 @@ package datomicJava.client.api.sync;
 import datomicJava.Setup;
 import datomicJava.Forbidden;
 import datomicJava.NotFound;
-import datomicJava.client.api.async.AsyncDatomic;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -52,7 +51,6 @@ public class DatomicTest extends Setup {
             client.connect("hello");
 
             // Wrong system name
-            // todo - Shouldn't this throw a failure exception?
             NotFound wrongSystemName = assertThrows(
                 NotFound.class,
                 () -> Datomic.clientDevLocal("x").connect("hello")
@@ -60,10 +58,9 @@ public class DatomicTest extends Setup {
             assertThat(wrongSystemName.msg(), is("Db not found: hello"));
 
             // Wrong db name
-            // todo - Shouldn't this throw a failure exception?
             NotFound wrongDbName = assertThrows(
                 NotFound.class,
-                () -> AsyncDatomic.clientDevLocal("Hello system name").connect("y")
+                () -> Datomic.clientDevLocal("Hello system name").connect("y")
             );
             assertThat(wrongDbName.msg(), is("Db not found: y"));
 

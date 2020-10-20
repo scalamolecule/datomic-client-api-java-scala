@@ -4,11 +4,12 @@ import java.util.{Date, List => jList}
 import clojure.lang.PersistentVector
 import datomic.Peer
 import datomic.Util.list
-import datomicClojure.Invoke.types
 import datomicScala.client.api.async._
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.specification.core.{Fragments, Text}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
@@ -19,6 +20,9 @@ trait SpecAsync extends Specification with SchemaAndData {
   var client  : AsyncClient     = null // set in setup
   var conn    : AsyncConnection = null // set in setup
   var txReport: AsyncTxReport   = null // set in setup
+
+  // Convenience await (name 'await' is already used by specs2)
+  def waitFor[T](body: => Future[T]): T = Await.result(body, Duration.Inf)
 
   // todo: awaiting to find a way to invoke data as maps against Peer Server
     override def map(fs: => Fragments): Fragments =
@@ -41,38 +45,39 @@ trait SpecAsync extends Specification with SchemaAndData {
     client = AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
 
     // Using the db associated with the Peer Server connection
-    conn = client.connect("hello")
+    conn = waitFor(client.connect("hello")).toOption.get
 //    resetPeerServerDb()
   }
 
   def resetDevLocalDb(): Unit = {
     // Re-create db
-    client.deleteDatabase("hello").realize
-    client.deleteDatabase("world").realize
-    client.createDatabase("hello").realize
-    conn = client.connect("hello")
-    conn.transact(schema(false)).realize
-    txReport = conn.transact(data).realize
+    waitFor(client.deleteDatabase("hello"))
+    waitFor(client.deleteDatabase("world"))
+    waitFor(client.createDatabase("hello"))
+    conn = waitFor(client.connect("hello")).toOption.get
+    waitFor(conn.transact(schema(false))).toOption.get
+    txReport = waitFor(conn.transact(data)).toOption.get
   }
 
   def resetPeerServerDb(): Unit = {
     // Install schema if necessary
-    if (AsyncDatomic.q(
+    if (waitFor(AsyncDatomic.q(
       "[:find ?e :where [?e :db/ident :movie/title]]",
       conn.db
-    ).realize.toString == "[]") {
+    )).head.toOption.get.toString == "[]") {
       println("Installing Peer Server hello db schema...")
-      conn.transact(schema(true)).realize
+      waitFor(conn.transact(schema(true))).toOption.get
     }
 
     // Retract current data
-    AsyncDatomic.q("[:find ?e :where [?e :movie/title _]]", conn.db).realize
+    waitFor(AsyncDatomic.q("[:find ?e :where [?e :movie/title _]]", conn.db))
+      .head.toOption.get
       .asInstanceOf[jList[_]].forEach { l =>
       val eid: Any = l.asInstanceOf[jList[_]].get(0)
-      conn.transact(list(list(":db/retractEntity", eid))).realize
+      waitFor(conn.transact(list(list(":db/retractEntity", eid)))).toOption.get
     }
 
-    txReport = conn.transact(data).realize
+    txReport = waitFor(conn.transact(data)).toOption.get
   }
 
 
@@ -105,9 +110,9 @@ trait SpecAsync extends Specification with SchemaAndData {
       List(73, 74, 75) else List(72, 73, 74)
 
     def films(db: AsyncDb): Seq[String] = {
-      val res = AsyncDatomic.q(filmQuery, db).realize
-      if (res != null) {
-        res.iterator().asScala.toList
+      val lazyList = waitFor(AsyncDatomic.q(filmQuery, db))
+      if (lazyList.nonEmpty) {
+        lazyList.head.toOption.get.iterator().asScala.toList
           .map(row => row.asInstanceOf[PersistentVector].asScala.toList.head.toString)
           .sorted
       } else Nil

@@ -1,9 +1,13 @@
 package datomicScala.client.api.async
 
+import java.util.stream
+import java.util.stream.{Stream => jStream}
+import cats.effect.IO
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util.{list, _}
-import datomicScala.{Forbidden, NotFound, SpecAsync}
+import datomicScala.{CognitectAnomaly, Forbidden, NotFound, SpecAsync}
+import scala.concurrent.Future
 import scala.jdk.StreamConverters._
 
 
@@ -39,19 +43,18 @@ class AsyncDatomicTest extends SpecAsync {
         client.connect("hello")
 
         // Wrong system name
-        // todo - Shouldn't this throw a failure exception?
-        AsyncDatomic.clientDevLocal("x").connect("hello") must throwA(
+        waitFor(AsyncDatomic.clientDevLocal("x").connect("hello")) === Left(
           NotFound("Db not found: hello")
         )
 
         // Wrong db name
-        // todo - Shouldn't this throw a failure exception?
-        AsyncDatomic.clientDevLocal("Hello system name").connect("y") must throwA(
+        waitFor(AsyncDatomic.clientDevLocal("Hello system name").connect("y")) === Left(
           NotFound("Db not found: y")
         )
       }
 
       case "peer-server" => {
+        // TODO: async peer server not available before bug fix
         /*
           To run tests against a Peer Server do these 3 steps first:
 
@@ -74,7 +77,7 @@ class AsyncDatomicTest extends SpecAsync {
         // Note that a Client is returned immediately without contacting
         // a server and can thus be invalid.
         val client2: AsyncClient =
-          AsyncDatomic.clientPeerServer("admin", "nice-try", "localhost:8998")
+        AsyncDatomic.clientPeerServer("admin", "nice-try", "localhost:8998")
 
         // Invalid setup shows on first call to server
         try {
@@ -103,7 +106,7 @@ class AsyncDatomicTest extends SpecAsync {
 
         // Wrong endpoint
         AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "x")
-          .connect("hello") must throwA(
+          .connect("hello") === Left(
           NotFound("x: nodename nor servname provided, or not known")
         )
       }
@@ -134,49 +137,91 @@ class AsyncDatomicTest extends SpecAsync {
   }
 
 
+  // fs2 collides with specs2, so we need to call this outside the test body
+  def fs2StreamOfChunks(db: AsyncDb, chunkSize: Int)
+  : fs2.Stream[IO, Either[CognitectAnomaly, jStream[_]]] = {
+    AsyncDatomic.qStream(
+      Util.map(
+        read(":query"),
+        """[:find ?movie-title
+          |:where [_ :movie/title ?movie-title]]""".stripMargin,
+        read(":args"), list(db.datomicDb),
+        read(":chunk"), chunkSize,
+      )
+    )
+  }
+
+  // db will only be available inside test
+  val streamOfChunksOf1: AsyncDb => fs2.Stream[IO, Either[CognitectAnomaly, jStream[_]]] =
+    (db: AsyncDb) => fs2StreamOfChunks(db, 1)
+
+
   "q" in new AsyncSetup {
 
-    // query & args / String
-    AsyncDatomic.q(
-      """[:find ?movie-title
-        |:where [_ :movie/title ?movie-title]]""".stripMargin,
-      conn.db
-    ).realize.toScala(List) ===
-      List(list("Commando"), list("The Goonies"), list("Repo Man"))
+    // query & args / String - with intermediary type resolutions
+    val futureLazyChunks: Future[LazyList[Either[CognitectAnomaly, jStream[_]]]] =
+      AsyncDatomic.q(
+        """[:find ?movie-title
+          |:where [_ :movie/title ?movie-title]]""".stripMargin,
+        conn.db
+      )
+    val lazyChunks: LazyList[Either[CognitectAnomaly, jStream[_]]] = waitFor(futureLazyChunks)
+    val firstChunk: Either[CognitectAnomaly, jStream[_]] = lazyChunks.head
+    val chunkDataOptional: Option[jStream[_]] = firstChunk.toOption
+    val chunkData: jStream[_] = chunkDataOptional.get
+    val chunkDataScala: List[Any] = chunkData.toScala(List)
+    chunkDataScala === List(
+      list("Commando"), list("The Goonies"), list("Repo Man")
+    )
 
     // Input arg(s)
-    AsyncDatomic.q(
+    waitFor(AsyncDatomic.q(
       """[:find ?movie-title
         |:in $ ?year
         |:where [?e :movie/release-year ?year]
         |       [?e :movie/title ?movie-title]
         |]""".stripMargin,
       conn.db, 1984
-    ).realize.toScala(List) === List(list("Repo Man"))
+    )).head.toOption.get.toScala(List) === List(
+      list("Repo Man")
+    )
+
+    waitFor(AsyncDatomic.q(
+      """[:find ?movie-title
+        |:in $ ?year
+        |:where [?e :movie/release-year ?year]
+        |       [?e :movie/title ?movie-title]
+        |]""".stripMargin,
+      conn.db, 1984
+    )).head.toOption.get.toScala(List) === List(
+      list("Repo Man")
+    )
 
     // query & args / data structure
-    AsyncDatomic.q(
+    waitFor(AsyncDatomic.q(
       list(
         read(":find"), read("?title"),
         read(":where"), list(read("_"), read(":movie/title"), read("?title"))
       ),
       conn.db
-    ).realize.toScala(List) ===
-      List(list("Commando"), list("The Goonies"), list("Repo Man"))
+    )).head.toOption.get.toScala(List) === List(
+      list("Commando"), list("The Goonies"), list("Repo Man")
+    )
 
     // arg-map / String
-    AsyncDatomic.q(
+    waitFor(AsyncDatomic.q(
       Util.map(
         read(":query"),
         """[:find ?movie-title
           |:where [_ :movie/title ?movie-title]]""".stripMargin,
         read(":args"), list(conn.db.datomicDb),
       )
-    ).realize.toScala(List) ===
-      List(list("Commando"), list("The Goonies"), list("Repo Man"))
+    )).head.toOption.get.toScala(List) === List(
+      list("Commando"), list("The Goonies"), list("Repo Man")
+    )
 
     // arg-map / data structure
-    AsyncDatomic.q(
+    waitFor(AsyncDatomic.q(
       Util.map(
         read(":query"), list(
           read(":find"), read("?title"),
@@ -184,11 +229,12 @@ class AsyncDatomicTest extends SpecAsync {
         ),
         read(":args"), list(conn.db.datomicDb)
       )
-    ).realize.toScala(List) ===
-      List(list("Commando"), list("The Goonies"), list("Repo Man"))
+    )).head.toOption.get.toScala(List) === List(
+      list("Commando"), list("The Goonies"), list("Repo Man")
+    )
 
     // arg-map / String with :limit
-    AsyncDatomic.q(
+    waitFor(AsyncDatomic.q(
       Util.map(
         read(":query"),
         """[:find ?movie-title
@@ -196,10 +242,12 @@ class AsyncDatomicTest extends SpecAsync {
         read(":args"), list(conn.db.datomicDb),
         read(":limit"), 2,
       )
-    ).realize.toScala(List) === List(list("Commando"), list("The Goonies"))
+    )).head.toOption.get.toScala(List) === List(
+      list("Commando"), list("The Goonies")
+    )
 
     // arg-map / String with :offset, :limit :timeout
-    AsyncDatomic.q(
+    waitFor(AsyncDatomic.q(
       Util.map(
         read(":query"),
         """[:find ?movie-title
@@ -209,7 +257,67 @@ class AsyncDatomicTest extends SpecAsync {
         read(":limit"), 1,
         read(":timeout"), 2000,
       )
-    ).realize.toScala(List) === List(list("The Goonies"))
+    )).head.toOption.get.toScala(List) === List(
+      list("The Goonies")
+    )
+
+    // Chunks
+    def chunksOf(chunkSize: Int): LazyList[Either[CognitectAnomaly, stream.Stream[_]]] = {
+      waitFor(AsyncDatomic.q(
+        Util.map(
+          read(":query"),
+          """[:find ?movie-title
+            |:where [_ :movie/title ?movie-title]]""".stripMargin,
+          read(":args"), list(conn.db.datomicDb),
+          read(":chunk"), chunkSize,
+        )
+      ))
+    }
+
+    // Retrieve successive chunks
+
+    // First chunk is fetched and memoized in LazyList
+    val res1 = chunksOf(1)
+    // Memoized first chunk retrieved
+    res1(0).toOption.get.toScala(List) === List(list("Commando"))
+    // Second chunk is fetched
+    res1(1).toOption.get.toScala(List) === List(list("The Goonies"))
+    // Third chunk is fetched
+    res1(2).toOption.get.toScala(List) === List(list("Repo Man"))
+    // Empty tail is also evaluated to calculate size
+    res1.size === 3
+
+    val res2 = chunksOf(2)
+    res2(0).toOption.get.toScala(List) === List(list("Commando"), list("The Goonies"))
+    res2(1).toOption.get.toScala(List) === List(list("Repo Man"))
+    res2.size === 2
+
+    val res3 = chunksOf(3)
+    res3(0).toOption.get.toScala(List) ===
+      List(list("Commando"), list("The Goonies"), list("Repo Man"))
+    res3.size === 1
+
+
+    // Alternatively get chunk from fs2 Stream (example implementation)
+    // This allows the first chunk to be lazy also.
+    // Usage is flexible and follows pure fp principles but is verbose too:
+
+    // Create Stream
+    streamOfChunksOf1(conn.db)
+      // Get first chunk Stream
+      .head
+      .compile
+      .toList
+      // evaluate first chunk (call <!!)
+      .unsafeRunSync()
+      // get chunk
+      .head
+      // Convert Right value to Option
+      .toOption
+      // Get java Stream of data
+      .get
+      .toScala(List) ===
+      List(list("Commando"))
   }
 
 
@@ -218,49 +326,51 @@ class AsyncDatomicTest extends SpecAsync {
   "qseq" in new AsyncSetup {
 
     // query & args / String
-    AsyncDatomic.qseq(
+    waitFor(AsyncDatomic.qseq(
       """[:find ?movie-title
         |:where [_ :movie/title ?movie-title]]""".stripMargin,
       conn.db
-    ).realize.toScala(LazyList) === LazyList(
+    )).head.toOption.get.toScala(List) === List(
       list("Commando"), list("The Goonies"), list("Repo Man"),
     )
 
     // Input arg(s)
-    AsyncDatomic.qseq(
+    waitFor(AsyncDatomic.qseq(
       """[:find ?movie-title
         |:in $ ?year
         |:where [?e :movie/release-year ?year]
         |       [?e :movie/title ?movie-title]
         |]""".stripMargin,
       conn.db, 1984
-    ).realize.toScala(List) === LazyList(list("Repo Man"))
+    )).head.toOption.get.toScala(List) === List(
+      list("Repo Man")
+    )
 
     // qseq query & args / data structure
-    AsyncDatomic.qseq(
+    waitFor(AsyncDatomic.qseq(
       list(
         read(":find"), read("?title"),
         read(":where"), list(read("_"), read(":movie/title"), read("?title"))
       ),
       conn.db
-    ).realize.toScala(LazyList) === LazyList(
+    )).head.toOption.get.toScala(List) === List(
       list("Commando"), list("The Goonies"), list("Repo Man"),
     )
 
     // qseq arg-map / String
-    AsyncDatomic.qseq(
+    waitFor(AsyncDatomic.qseq(
       Util.map(
         read(":query"),
         """[:find ?movie-title
           |:where [_ :movie/title ?movie-title]]""".stripMargin,
         read(":args"), list(conn.db.datomicDb),
       )
-    ).realize.toScala(LazyList) === LazyList(
+    )).head.toOption.get.toScala(List) === List(
       list("Commando"), list("The Goonies"), list("Repo Man"),
     )
 
     // arg-map / data structure
-    AsyncDatomic.qseq(
+    waitFor(AsyncDatomic.qseq(
       Util.map(
         read(":query"), list(
           read(":find"), read("?title"),
@@ -268,12 +378,12 @@ class AsyncDatomicTest extends SpecAsync {
         ),
         read(":args"), list(conn.db.datomicDb)
       )
-    ).realize.toScala(LazyList) === LazyList(
+    )).head.toOption.get.toScala(List) === List(
       list("Commando"), list("The Goonies"), list("Repo Man"),
     )
 
     // arg-map / String with :limit
-    AsyncDatomic.qseq(
+    waitFor(AsyncDatomic.qseq(
       Util.map(
         read(":query"),
         """[:find ?movie-title
@@ -281,12 +391,12 @@ class AsyncDatomicTest extends SpecAsync {
         read(":args"), list(conn.db.datomicDb),
         read(":limit"), 2,
       )
-    ).realize.toScala(LazyList) === LazyList(
+    )).head.toOption.get.toScala(List) === List(
       list("Commando"), list("The Goonies"),
     )
 
     // arg-map / String with :offset, :limit :timeout
-    AsyncDatomic.qseq(
+    waitFor(AsyncDatomic.qseq(
       Util.map(
         read(":query"),
         """[:find ?movie-title
@@ -296,7 +406,7 @@ class AsyncDatomicTest extends SpecAsync {
         read(":limit"), 1,
         read(":timeout"), 2000,
       )
-    ).realize.toScala(LazyList) === LazyList(
+    )).head.toOption.get.toScala(List) === List(
       list("The Goonies"),
     )
   }

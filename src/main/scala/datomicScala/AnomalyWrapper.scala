@@ -40,9 +40,16 @@ trait AnomalyWrapper {
     } catch {
       case e: ExceptionInfo =>
         val ae = anomalyCat(e) match {
-          case "not-found" => NotFound(anomalyMsg(e))
-          case "forbidden" => Forbidden(httpResult(e))
-          case other       => new RuntimeException("Unexpected anomaly: " + other)
+          case "not-found"   => NotFound(anomalyMsg(e))
+          case "forbidden"   => Forbidden(httpResult(e))
+          case "unavailable" => Unavailable(anomalyMsg(e))
+          case "interrupted" => Interrupted(anomalyMsg(e))
+          case "incorrect"   => Incorrect(anomalyMsg(e))
+          case "unsupported" => Unsupported(anomalyMsg(e))
+          case "conflict"    => Conflict(anomalyMsg(e))
+          case "fault"       => Fault(anomalyMsg(e))
+          case "busy"        => Busy(anomalyMsg(e))
+          case other         => new RuntimeException("Unexpected anomaly: " + other)
         }
         throw ae
 

@@ -26,7 +26,12 @@ trait Invoke extends ClojureBridge {
   }
   private def timeoutOpt(timeout: Int): String = positive("timeout", timeout)
   private def offsetOpt(offset: Int): String = positive("offset", offset)
-  private def limitOpt(limit: Int): String = positive("limit", limit, 1000)
+
+  private def limitOpt(limit: Int): String = limit match {
+    case -1         => ":limit -1"
+    case n if n < 1 => throw new IllegalArgumentException(ErrorMsg.limit)
+    case n          => s":limit $n"
+  }
 
   private def anyOpt(key: String, opt: Option[Any]): String = opt match {
     case None            => ""

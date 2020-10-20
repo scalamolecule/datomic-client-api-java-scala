@@ -2,19 +2,18 @@ package datomicJava.client.api.sync;
 
 import clojure.lang.ExceptionInfo;
 import datomicJava.Setup;
-import datomicJava.client.api.sync.TxReport;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.DbStats;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import java.util.*;
+
 import static datomic.Util.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThrows;
-
-import java.util.*;
 
 @FixMethodOrder(MethodSorters.JVM)
 public class DbTest extends Setup {

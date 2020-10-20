@@ -55,7 +55,11 @@ class ConnectionTest extends Spec {
 
 
   "txRange" in new Setup {
-    val iterable: Iterable[(Long, Iterable[Datom])] = conn.txRange()
+
+    // Limit -1 sets no-limit
+    // (necessary for Peer Server datom accumulation exceeding default 1000)
+
+    val iterable: Iterable[(Long, Iterable[Datom])] = conn.txRange(limit = -1)
     iterable.last._1 === tAfter
     iterable.last._2.toList === List(
       Datom(txIdAfter, 50, txInst, txIdAfter, true),
@@ -70,7 +74,7 @@ class ConnectionTest extends Spec {
       Datom(e3, a3, 1984, txIdAfter, true)
     )
 
-    val array: Array[(Long, Array[Datom])] = conn.txRangeArray()
+    val array: Array[(Long, Array[Datom])] = conn.txRangeArray(limit = -1)
     array.last._1 === tAfter
     array.last._2 === Array(
       Datom(txIdAfter, 50, txInst, txIdAfter, true),

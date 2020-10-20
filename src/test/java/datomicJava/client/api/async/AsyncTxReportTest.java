@@ -3,6 +3,8 @@ package datomicJava.client.api.async;
 import datomicJava.SetupAsync;
 import org.junit.Test;
 
+import java.util.concurrent.ExecutionException;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
@@ -15,7 +17,7 @@ public class AsyncTxReportTest extends SetupAsync {
     }
 
     @Test
-    public void txReportOps() {
+    public void txReportOps() throws ExecutionException, InterruptedException {
         assertThat(films(txReport.dbBefore()), is(empty()));
         assertThat(films(txReport.dbAfter()), is(threeFilms));
 

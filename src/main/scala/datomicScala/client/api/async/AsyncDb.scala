@@ -5,21 +5,21 @@ import java.util.{List => jList, Map => jMap}
 import clojure.lang.ASeq
 import datomic.Util._
 import datomicClojure.{ErrorMsg, Invoke, InvokeAsync, Lookup}
-import datomicScala.Helper
 import datomicScala.client.api.{Datom, DbStats}
+import datomicScala.{CognitectAnomaly, Helper}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 
 case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
 
-  def dbStats: Channel[DbStats] = {
-    Channel[DbStats](
-      Helper.dbStats(
-        isDevLocal,
-        Channel[jMap[_, _]](
-          InvokeAsync.dbStats(datomicDb)
-        ).realize
-      )
-    )
+  def dbStats: Future[Either[CognitectAnomaly, DbStats]] = Future {
+    Channel[jMap[_, _]](
+      InvokeAsync.dbStats(datomicDb)
+    ).lazyList.head match {
+      case Right(dbStats) => Channel[DbStats](Helper.dbStats(isDevLocal, dbStats)).lazyList.head
+      case Left(anomaly)  => Left(anomaly)
+    }
   }
 
 
@@ -35,17 +35,23 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
       InvokeAsync.since(datomicDb, t)
     )
 
-  def `with`(withDb: AnyRef, stmts: jList[_]): Channel[AsyncDb] = {
+  def `with`(withDb: AnyRef, stmts: jList[_])
+  : Future[Either[CognitectAnomaly, AsyncDb]] = {
     if (withDb.isInstanceOf[AsyncDb])
       throw new IllegalArgumentException(ErrorMsg.`with`)
-
-    Channel[AsyncDb](
-      AsyncDb(
-        Channel[AnyRef](
-          InvokeAsync.`with`(withDb, stmts)
-        ).realize.asInstanceOf[jMap[_, _]]
-          .get(read(":db-after")).asInstanceOf[AnyRef]
-      )
+    Future(
+      Channel[AnyRef](
+        InvokeAsync.`with`(withDb, stmts)
+      ).lazyList.head match {
+        case Right(withDb) =>
+          Channel[AsyncDb](
+            AsyncDb(
+              withDb.asInstanceOf[jMap[_, _]]
+                .get(read(":db-after")).asInstanceOf[AnyRef]
+            )
+          ).lazyList.head
+        case Left(anomaly) => Left(anomaly)
+      }
     )
   }
 
@@ -64,14 +70,14 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
    *                   result.
    * @return List[datomicFacade.client.api.Datom] Wrapped Datoms with a unified api
    */
-  def datoms(index: String, components: jList[_]): Channel[jStream[Datom]] = {
-    Channel[jStream[Datom]](
-      Helper.streamOfDatoms(
-        Channel[Any](
-          InvokeAsync.datoms(datomicDb, index, components)
-        ).realize
-      )
-    )
+  def datoms(index: String, components: jList[_])
+  : Future[Either[CognitectAnomaly, jStream[Datom]]] = Future {
+    Channel[Any](
+      InvokeAsync.datoms(datomicDb, index, components)
+    ).lazyList.head match {
+      case Right(datoms) => Channel[jStream[Datom]](Helper.streamOfDatoms(datoms)).lazyList.head
+      case Left(anomaly) => Left(anomaly)
+    }
   }
 
 
@@ -82,16 +88,15 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): Channel[jStream[Datom]] = {
-    Channel[jStream[Datom]](
-      Helper.streamOfDatoms(
-        Channel[Any](
-          InvokeAsync.indexRange(
-            datomicDb, attrId, start, end, timeout, offset, limit
-          )
-        ).realize
+  ): Future[Either[CognitectAnomaly, jStream[Datom]]] = Future {
+    Channel[Any](
+      InvokeAsync.indexRange(
+        datomicDb, attrId, start, end, timeout, offset, limit
       )
-    )
+    ).lazyList.head match {
+      case Right(datoms) => Channel[jStream[Datom]](Helper.streamOfDatoms(datoms)).lazyList.head
+      case Left(anomaly) => Left(anomaly)
+    }
   }
 
 
@@ -103,12 +108,12 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): Channel[jMap[_, _]] = {
+  ): Future[Either[CognitectAnomaly, jMap[_, _]]] = Future {
     Channel[jMap[_, _]](
       InvokeAsync.pull(
         datomicDb, selector, eid, timeout, offset, limit
       )
-    )
+    ).lazyList.head
   }
 
 
@@ -120,15 +125,18 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): Channel[jStream[_]] = {
+  ): Future[Either[CognitectAnomaly, jStream[_]]] = {
     if (!Seq(":avet", ":aevt").contains(index))
       throw new IllegalArgumentException(ErrorMsg.indexPull)
-    Channel[jStream[_]](
+    Future(
       Channel[Any](
         Invoke.indexPull(
           datomicDb, index, selector, start, reverse, timeout, offset, limit
         )
-      ).realize.asInstanceOf[ASeq].stream()
+      ).lazyList.head match {
+        case Right(indexPull) => Channel[jStream[_]](indexPull.asInstanceOf[ASeq].stream()).lazyList.head
+        case Left(anomaly)    => Left(anomaly)
+      }
     )
   }
 }

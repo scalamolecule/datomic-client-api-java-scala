@@ -10,7 +10,7 @@ import scala.jdk.CollectionConverters._
 class AsyncClientTest extends SpecAsync {
   sequential
 
-
+  // (same as sync version)
   "administer system" in new AsyncSetup {
     if (system == "peer-server") {
       // administer-system not implemented for Peer Server
@@ -42,8 +42,9 @@ class AsyncClientTest extends SpecAsync {
 
   "create database" in new AsyncSetup {
     if (isDevLocal) {
-      client.createDatabase("world")
-      client.listDatabases().realize.asScala.sorted === List("hello", "world")
+      waitFor(client.createDatabase("world"))
+      waitFor(client.listDatabases()).toOption.get.asScala.sorted === List("hello", "world")
+
     } else {
       // create-database not implemented for Peer Server
       client.createDatabase("world") must throwA(
@@ -55,8 +56,8 @@ class AsyncClientTest extends SpecAsync {
 
   "delete database" in new AsyncSetup {
     if (isDevLocal) {
-      client.deleteDatabase("hello")
-      client.listDatabases().realize.asScala === List()
+      waitFor(client.deleteDatabase("hello"))
+      waitFor(client.listDatabases()).toOption.get.asScala === List()
     } else {
       // delete-database not implemented for Peer Server
       client.deleteDatabase("hello") must throwA(
@@ -67,6 +68,6 @@ class AsyncClientTest extends SpecAsync {
 
 
   "list databases" in new AsyncSetup {
-    client.listDatabases().realize.asScala === List("hello")
+    waitFor(client.listDatabases()).toOption.get.asScala === List("hello")
   }
 }

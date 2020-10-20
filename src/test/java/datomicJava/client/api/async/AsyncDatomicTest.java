@@ -1,14 +1,14 @@
 package datomicJava.client.api.async;
 
+import datomicJava.CognitectAnomaly;
 import datomicJava.Forbidden;
 import datomicJava.NotFound;
 import datomicJava.SetupAsync;
-import datomicJava.client.api.async.AsyncClient;
-import datomicJava.client.api.async.AsyncDatomic;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static datomic.Util.*;
@@ -26,7 +26,7 @@ public class AsyncDatomicTest extends SetupAsync {
     }
 
     @Test
-    public void createClient() {
+    public void createClient() throws ExecutionException, InterruptedException {
         if (system == "dev-local") {
           /*
             Install dev-local (https://docs.datomic.com/cloud/dev-local.html)
@@ -53,20 +53,20 @@ public class AsyncDatomicTest extends SetupAsync {
             client.connect("hello");
 
             // Wrong system name
-            // todo - Shouldn't this throw a failure exception?
-            NotFound wrongSystemName = assertThrows(
-                NotFound.class,
-                () -> AsyncDatomic.clientDevLocal("x").connect("hello")
+            assertThat(
+                ((Left<CognitectAnomaly, ?>) AsyncDatomic
+                    .clientDevLocal("x").connect("hello").get()
+                ).left_value().msg(),
+                is("Db not found: hello")
             );
-            assertThat(wrongSystemName.msg(), is("Db not found: hello"));
 
             // Wrong db name
-            // todo - Shouldn't this throw a failure exception?
-            NotFound wrongDbName = assertThrows(
-                NotFound.class,
-                () -> AsyncDatomic.clientDevLocal("Hello system name").connect("y")
+            assertThat(
+                ((Left<CognitectAnomaly, ?>) AsyncDatomic
+                    .clientDevLocal("Hello system name").connect("y").get()
+                ).left_value().msg(),
+                is("Db not found: y")
             );
-            assertThat(wrongDbName.msg(), is("Db not found: y"));
 
 
         } else if (system == "peer-server") {
@@ -132,55 +132,55 @@ public class AsyncDatomicTest extends SetupAsync {
 
 
     @Test
-    public void q() {
+    public void q() throws ExecutionException, InterruptedException {
 
         // query & args / String
         assertThat(
-            AsyncDatomic.q(
+            ((Right<?, Stream<?>>) AsyncDatomic.q(
                 "[:find ?movie-title :where [_ :movie/title ?movie-title]]",
                 conn.db()
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(list(list("Commando"), list("The Goonies"), list("Repo Man")).toArray())
         );
 
         // Input arg(s)
         assertThat(
-            AsyncDatomic.q(
+            ((Right<?, Stream<?>>) AsyncDatomic.q(
                 "[:find ?movie-title " +
                     ":in $ ?year " +
                     ":where [?e :movie/release-year ?year]" +
                     "       [?e :movie/title ?movie-title]]",
                 conn.db(), 1984L
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(list(list("Repo Man")).toArray())
         );
 
         // query & args / data structure
         assertThat(
-            AsyncDatomic.q(
+            ((Right<?, Stream<?>>) AsyncDatomic.q(
                 list(
                     read(":find"), read("?title"),
                     read(":where"), list(read("_"), read(":movie/title"), read("?title"))
                 ),
                 conn.db()
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(list(list("Commando"), list("The Goonies"), list("Repo Man")).toArray())
         );
 
         // arg-map / String
         assertThat(
-            AsyncDatomic.q(
+            ((Right<?, Stream<?>>) AsyncDatomic.q(
                 map(
                     read(":query"), "[:find ?movie-title :where [_ :movie/title ?movie-title]]",
                     read(":args"), list(conn.db().datomicDb())
                 )
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(list(list("Commando"), list("The Goonies"), list("Repo Man")).toArray())
         );
 
         // arg-map / data structure
         assertThat(
-            AsyncDatomic.q(
+            ((Right<?, Stream<?>>) AsyncDatomic.q(
                 map(
                     read(":query"), list(
                         read(":find"), read("?title"),
@@ -188,25 +188,25 @@ public class AsyncDatomicTest extends SetupAsync {
                     ),
                     read(":args"), list(conn.db().datomicDb())
                 )
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(list(list("Commando"), list("The Goonies"), list("Repo Man")).toArray())
         );
 
         // arg-map / String with :limit
         assertThat(
-            AsyncDatomic.q(
+            ((Right<?, Stream<?>>) AsyncDatomic.q(
                 map(
                     read(":query"), "[:find ?movie-title :where [_ :movie/title ?movie-title]]",
                     read(":args"), list(conn.db().datomicDb()),
                     read(":limit"), 2
                 )
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(list(list("Commando"), list("The Goonies")).toArray())
         );
 
         // arg-map / String with :offset, :limit :timeout
         assertThat(
-            AsyncDatomic.q(
+            ((Right<?, Stream<?>>) AsyncDatomic.q(
                 map(
                     read(":query"), "[:find ?movie-title :where [_ :movie/title ?movie-title]]",
                     read(":args"), list(conn.db().datomicDb()),
@@ -214,50 +214,50 @@ public class AsyncDatomicTest extends SetupAsync {
                     read(":limit"), 1,
                     read(":timeout"), 2000
                 )
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(list(list("The Goonies")).toArray())
         );
     }
 
 
     @Test
-    public void qseq() {
+    public void qseq() throws ExecutionException, InterruptedException {
 
         // query & args / String
         assertThat(
-            AsyncDatomic.qseq(
+            ((Right<?, Stream<?>>) AsyncDatomic.qseq(
                 "[:find ?movie-title :where [_ :movie/title ?movie-title]]",
                 conn.db()
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(Stream.of(list("Commando"), list("The Goonies"), list("Repo Man")).toArray())
         );
 
         // query & args / data structure
         assertThat(
-            AsyncDatomic.qseq(
+            ((Right<?, Stream<?>>) AsyncDatomic.qseq(
                 list(
                     read(":find"), read("?title"),
                     read(":where"), list(read("_"), read(":movie/title"), read("?title"))
                 ),
                 conn.db()
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(Stream.of(list("Commando"), list("The Goonies"), list("Repo Man")).toArray())
         );
 
         // arg-map / String
         assertThat(
-            AsyncDatomic.qseq(
+            ((Right<?, Stream<?>>) AsyncDatomic.qseq(
                 map(
                     read(":query"), "[:find ?movie-title :where [_ :movie/title ?movie-title]]",
                     read(":args"), list(conn.db().datomicDb())
                 )
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(Stream.of(list("Commando"), list("The Goonies"), list("Repo Man")).toArray())
         );
 
         // arg-map / data structure
         assertThat(
-            AsyncDatomic.qseq(
+            ((Right<?, Stream<?>>) AsyncDatomic.qseq(
                 map(
                     read(":query"), list(
                         read(":find"), read("?title"),
@@ -265,25 +265,25 @@ public class AsyncDatomicTest extends SetupAsync {
                     ),
                     read(":args"), list(conn.db().datomicDb())
                 )
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(Stream.of(list("Commando"), list("The Goonies"), list("Repo Man")).toArray())
         );
 
         // arg-map / String with :limit
         assertThat(
-            AsyncDatomic.qseq(
+            ((Right<?, Stream<?>>) AsyncDatomic.qseq(
                 map(
                     read(":query"), "[:find ?movie-title :where [_ :movie/title ?movie-title]]",
                     read(":args"), list(conn.db().datomicDb()),
                     read(":limit"), 2
                 )
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(Stream.of(list("Commando"), list("The Goonies")).toArray())
         );
 
         // arg-map / String with :offset, :limit :timeout
         assertThat(
-            AsyncDatomic.qseq(
+            ((Right<?, Stream<?>>) AsyncDatomic.qseq(
                 map(
                     read(":query"), "[:find ?movie-title :where [_ :movie/title ?movie-title]]",
                     read(":args"), list(conn.db().datomicDb()),
@@ -291,7 +291,7 @@ public class AsyncDatomicTest extends SetupAsync {
                     read(":limit"), 1,
                     read(":timeout"), 2000
                 )
-            ).realize().toArray(),
+            ).get().chunk()).right_value().toArray(),
             is(Stream.of(list("The Goonies")).toArray())
         );
     }

@@ -11,6 +11,7 @@ class AsyncConnectionTest extends SpecAsync {
   sequential
 
 
+  // (same as sync version)
   "db" in new AsyncSetup {
     // Test if repeated calls do conn.db returns the same db value (/object)
     val db = conn.db
@@ -28,29 +29,29 @@ class AsyncConnectionTest extends SpecAsync {
   "sync" in new AsyncSetup {
 
     // Db value the same
-    conn.sync(tAfter).realize.equals(dbAfter)
+    conn.sync(tAfter).equals(dbAfter)
 
     // Db object identity
     if (isDevLocal) {
       // Same db object
-      conn.sync(tAfter).realize === dbAfter
+      conn.sync(tAfter) === dbAfter
     } else {
       // Db object copy
-      conn.sync(tAfter).realize !== dbAfter
+      conn.sync(tAfter) !== dbAfter
     }
   }
 
 
   "transact" in new AsyncSetup {
     films(conn.db) === threeFilms
-    conn.transact(list(
+    waitFor(conn.transact(list(
       Util.map(
         read(":movie/title"), "Film 4",
       )
-    )).realize
+    ))).toOption.get
     films(conn.db) === fourFilms
 
-    conn.transact(list()).realize must throwA(
+    waitFor(conn.transact(list())) must throwA(
       new IllegalArgumentException(ErrorMsg.transact)
     )
 
@@ -59,7 +60,11 @@ class AsyncConnectionTest extends SpecAsync {
 
 
   "txRange" in new AsyncSetup {
-    val iterable: Iterable[(Long, Iterable[Datom])] = conn.txRange().realize
+
+    // Limit -1 sets no-limit
+    // (necessary for Peer Server datom accumulation exceeding default 1000)
+
+    val iterable: Iterable[(Long, Iterable[Datom])] = waitFor(conn.txRange(limit = -1)).toOption.get
     iterable.last._1 === tAfter
     iterable.last._2.toList === List(
       Datom(txIdAfter, 50, txInst, txIdAfter, true),
@@ -74,7 +79,7 @@ class AsyncConnectionTest extends SpecAsync {
       Datom(e3, a3, 1984, txIdAfter, true)
     )
 
-    val array: Array[(Long, Array[Datom])] = conn.txRangeArray().realize
+    val array: Array[(Long, Array[Datom])] = waitFor(conn.txRangeArray(limit = -1)).toOption.get
     array.last._1 === tAfter
     array.last._2 === Array(
       Datom(txIdAfter, 50, txInst, txIdAfter, true),

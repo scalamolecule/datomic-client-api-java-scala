@@ -24,5 +24,7 @@ object ErrorMsg {
 
   def indexPull: String = "Index can only be :avet or :aevt"
 
-  def zeroNeg: String = "Limit can't be 0 or negative"
+  def zeroNeg: String = "Number can't be 0 or negative"
+
+  def limit: String = "Limit can only be a positive number or -1 for 'no limit'"
 }

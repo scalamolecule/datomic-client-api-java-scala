@@ -6,6 +6,9 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
 import static datomic.Util.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -61,11 +64,11 @@ public class AsyncClientTest extends SetupAsync {
     }
 
     @Test
-    public void createDatabase() {
+    public void createDatabase() throws ExecutionException, InterruptedException {
         if (isDevLocal()) {
             client.createDatabase("world");
             assertThat(
-                client.listDatabases().realize(),
+                ((Right<?, List<String>>) client.listDatabases().get()).right_value(),
                 is(list("world", "hello"))
             );
 
@@ -74,7 +77,7 @@ public class AsyncClientTest extends SetupAsync {
 
             RuntimeException notImplemented = assertThrows(
                 RuntimeException.class,
-                () -> client.createDatabase("world").realize()
+                () -> client.createDatabase("world").get()
             );
             assertThat(
                 notImplemented.getMessage(),
@@ -85,16 +88,19 @@ public class AsyncClientTest extends SetupAsync {
 
 
     @Test
-    public void deleteDatabase() {
+    public void deleteDatabase() throws ExecutionException, InterruptedException {
         if (isDevLocal()) {
-            client.deleteDatabase("hello").realize();
-            assertThat(client.listDatabases().realize(), is(empty()));
+            client.deleteDatabase("hello").get();
+            assertThat(
+                ((Right<?, List<String>>) client.listDatabases().get()).right_value(),
+                is(empty())
+            );
 
         } else {
             // delete-database not implemented for Peer Server
             RuntimeException notImplemented = assertThrows(
                 RuntimeException.class,
-                () -> client.deleteDatabase("hello").realize()
+                () -> client.deleteDatabase("hello").get()
             );
             assertThat(
                 notImplemented.getMessage(),
@@ -105,9 +111,9 @@ public class AsyncClientTest extends SetupAsync {
 
 
     @Test
-    public void listDatabases() {
+    public void listDatabases() throws ExecutionException, InterruptedException {
         assertThat(
-            client.listDatabases().realize(),
+            ((Right<?, List<String>>) client.listDatabases().get()).right_value(),
             is(list("hello"))
         );
     }

@@ -25,7 +25,7 @@ class AsyncDbTest extends SpecAsync {
     db.isHistory === false
 
     if (isDevLocal) {
-      db.dbStats.realize === DbStats(
+      waitFor(db.dbStats).toOption.get === DbStats(
         243,
         Some(Map(
           ":db.install/partition" -> 3,
@@ -48,8 +48,9 @@ class AsyncDbTest extends SpecAsync {
     } else {
       // Peer server db is not re-created on each test,
       // so we can only test some stable values
-      db.dbStats.realize.datoms >= 0
-      db.dbStats.realize.attrs.get(":db.install/partition") === 3
+      val dbStats = waitFor(db.dbStats).toOption.get
+      dbStats.datoms >= 0
+      dbStats.attrs.get(":db.install/partition") === 3
     }
 
     db.asOf(tBefore).dbName === "hello"
@@ -110,16 +111,16 @@ class AsyncDbTest extends SpecAsync {
 
 
   "with" in new AsyncSetup {
-    val wDb = conn.withDb.realize
-    val db  = conn.db
+    val wDb = waitFor(conn.withDb).toOption.get
+    val db = conn.db
 
     // Updated `with` db value
-    val wDb2 = db.`with`(wDb, film4).realize
+    val wDb2 = waitFor(db.`with`(wDb, film4)).toOption.get
 
     films(wDb2) === fourFilms
 
     // Add more data to `wDb2`
-    val wDb3 = db.`with`(wDb2.datomicDb, film5).realize
+    val wDb3 = waitFor(db.`with`(wDb2.datomicDb, film5)).toOption.get
     films(wDb3) === (fourFilms :+ "Film 5").sorted
 
     // Current state is unaffected
@@ -129,10 +130,10 @@ class AsyncDbTest extends SpecAsync {
 
   "with - single invocation" in new AsyncSetup {
     // As a convenience, a single-invocation shorter version of `with`:
-    films(conn.widh(film4)) === fourFilms
+    films(waitFor(conn.widh(film4)).toOption.get) === fourFilms
 
     // Applying another data set still augments the original db
-    films(conn.widh(film5)) === (threeFilms :+ "Film 5").sorted
+    films(waitFor(conn.widh(film5)).toOption.get) === (threeFilms :+ "Film 5").sorted
 
     // Current state is unaffected
     films(conn.db) === threeFilms
@@ -151,24 +152,24 @@ class AsyncDbTest extends SpecAsync {
       films(conn.db.history) == threeFilms
 
       // As long as we only add data, current/history will be the same
-      val tx = conn.transact(film4).realize
+      val tx = waitFor(conn.transact(film4)).toOption.get
       films(conn.db) == fourFilms
       films(conn.db.history) == fourFilms
 
       // Now retract the last entity
       val retractedEid = tx.txData.toScala(List).last.e
-      conn.transact(list(list(read(":db/retractEntity"), retractedEid)))
+      waitFor(conn.transact(list(list(read(":db/retractEntity"), retractedEid))))
       films(conn.db) == threeFilms
       films(conn.db.history) == fourFilms
 
       // History of movie title assertions and retractions
-      AsyncDatomic.q(
+      waitFor(AsyncDatomic.q(
         """[:find ?movie-title ?tx ?added
           |:where [_ :movie/title ?movie-title ?tx ?added]]""".stripMargin,
 
         // Use history database
         conn.db.history
-      ).realize.iterator().asScala.toList
+      )).head.toOption.get.iterator().asScala.toList
         .map { row =>
           val List(v, tx, added) = row.asInstanceOf[PersistentVector].asScala.toList
           (v.toString, tx.asInstanceOf[Long], added.asInstanceOf[Boolean])
@@ -190,15 +191,15 @@ class AsyncDbTest extends SpecAsync {
 
 
   "datoms" in new AsyncSetup {
-    conn.db.datoms(
+    waitFor(conn.db.datoms(
       ":avet",
       list(read(":movie/title"))
-    ).realize.toScala(List).map(_.v.toString).sorted === threeFilms
+    )).toOption.get.toScala(List).map(_.v.toString).sorted === threeFilms
   }
 
 
   "indexRange" in new AsyncSetup {
-    conn.db.indexRange(":movie/title").realize.toScala(List).sortBy(_.e) === List(
+    waitFor(conn.db.indexRange(":movie/title")).toOption.get.toScala(List).sortBy(_.e) === List(
       Datom(e1, a1, "The Goonies", txIdAfter, true),
       Datom(e2, a1, "Commando", txIdAfter, true),
       Datom(e3, a1, "Repo Man", txIdAfter, true),
@@ -207,15 +208,15 @@ class AsyncDbTest extends SpecAsync {
 
 
   "pull" in new AsyncSetup {
-    conn.db.pull("[*]", eid).realize.toString ===
+    waitFor(conn.db.pull("[*]", eid)).toOption.get.toString ===
       s"""{:db/id $eid, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
 
-    conn.db.pull("[*]", eid, 1000).realize.toString ===
+    waitFor(conn.db.pull("[*]", eid, 1000)).toOption.get.toString ===
       s"""{:db/id $eid, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
 
     // dev-local in-memory db will pull within 1 ms
     if (!isDevLocal)
-      conn.db.pull("[*]", eid, 1).realize must throwA(
+      waitFor(conn.db.pull("[*]", eid, 1)).toOption.get must throwA(
         new clojure.lang.ExceptionInfo(
           "Datomic Client Timeout",
           new PersistentArrayMap(
@@ -232,11 +233,11 @@ class AsyncDbTest extends SpecAsync {
   "indexPull" in new AsyncSetup {
 
     // Pull lazy java Stream of indexes
-    val javaStream: jStream[_] = conn.db.indexPull(
+    val javaStream: jStream[_] = waitFor(conn.db.indexPull(
       ":avet",
       "[:movie/title :movie/release-year]",
       "[:movie/release-year 1985]"
-    ).realize
+    )).toOption.get
 
     // Lazily convert to scala LazyList
     val scalaLazyList: LazyList[Any] = javaStream.toScala(LazyList)
@@ -245,7 +246,7 @@ class AsyncDbTest extends SpecAsync {
     scalaLazyList.size === 2
 
     // LazyList in Scala can be accessed multiple times contrary to java Stream
-    // that can only be consumed once, like an Iterator.
+    // that can only be consumed once (like an Iterator).
     val firstFilm = scalaLazyList.head
 
     // The underlying type of pulled indexes are clojure.lang.PersistentArrayMaps

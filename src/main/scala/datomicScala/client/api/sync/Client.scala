@@ -6,7 +6,6 @@ import datomic.Util.read
 import datomic.client.api.protocols.{Client => DatomicClient}
 import datomicClojure.{ErrorMsg, Invoke}
 import datomicScala.AnomalyWrapper
-import datomicScala.Helper._
 
 case class Client(
   forPeerServer: Boolean,

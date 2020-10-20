@@ -4,14 +4,13 @@ import clojure.lang.ExceptionInfo;
 import datomicJava.SetupAsync;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.DbStats;
-import datomicJava.client.api.async.AsyncDatomic;
-import datomicJava.client.api.async.AsyncDb;
-import datomicJava.client.api.async.AsyncTxReport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import static datomic.Util.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -26,7 +25,7 @@ public class AsyncDbTest extends SetupAsync {
     }
 
     @Test
-    public void stats() {
+    public void stats() throws ExecutionException, InterruptedException {
         AsyncDb db = conn.db();
         assertThat(db.dbName(), is("hello"));
         assertThat(db.basisT(), is(tAfter()));
@@ -56,17 +55,30 @@ public class AsyncDbTest extends SetupAsync {
                 )
             );
 
-            assertThat(db.dbStats().realize().datoms(), is(dbStats.datoms()));
             assertThat(
-                db.dbStats().realize().attrs().get(":db.install/partition"),
+                ((Right<?, DbStats>) db.dbStats().get())
+                    .right_value().datoms(),
+                is(dbStats.datoms())
+            );
+            assertThat(
+                ((Right<?, DbStats>) db.dbStats().get())
+                    .right_value().attrs().get(":db.install/partition"),
                 is(dbStats.attrs().get(":db.install/partition"))
             );
 
         } else {
             // Peer server db is not re-created on each test,
             // so we can only test some stable values
-            assertThat(db.dbStats().realize().datoms(), is(greaterThan(0L)));
-            assertThat(db.dbStats().realize().attrs().get(":db.install/partition"), is(3L));
+            assertThat(
+                ((Right<?, DbStats>) db.dbStats().get())
+                    .right_value().datoms(),
+                is(greaterThan(0L))
+            );
+            assertThat(
+                ((Right<?, DbStats>) db.dbStats().get())
+                    .right_value().attrs().get(":db.install/partition"),
+                is(3L)
+            );
         }
 
         assertThat(db.asOf(tBefore()).dbName(), is("hello"));
@@ -102,7 +114,7 @@ public class AsyncDbTest extends SetupAsync {
 
 
     @Test
-    public void asOf() {
+    public void asOf() throws ExecutionException, InterruptedException {
 
         // Current state
         assertThat(films(conn.db()), is(threeFilms));
@@ -119,7 +131,7 @@ public class AsyncDbTest extends SetupAsync {
 
 
     @Test
-    public void since() {
+    public void since() throws ExecutionException, InterruptedException {
         // State created since previous t
         assertThat(films(conn.db().since(tBefore())), is(threeFilms));
 
@@ -129,17 +141,17 @@ public class AsyncDbTest extends SetupAsync {
 
 
     @Test
-    public void with() {
-        Object wDb = conn.withDb().realize();
+    public void with() throws ExecutionException, InterruptedException {
+        Object wDb = ((Right<?, Object>) conn.withDb().get()).right_value();
         AsyncDb db = conn.db();
 
         // Updated `with` db value
-        AsyncDb wDb2 = db.with(wDb, film4).realize();
+        AsyncDb wDb2 = ((Right<?, AsyncDb>) db.with(wDb, film4).get()).right_value();
 
         assertThat(films(wDb2), is(fourFilms));
 
         // Add more data to `wDb2`
-        AsyncDb wDb3 = db.with(wDb2.datomicDb(), film5).realize();
+        AsyncDb wDb3 = ((Right<?, AsyncDb>) db.with(wDb2.datomicDb(), film5).get()).right_value();
         assertThat(films(wDb3), is(fiveFilms));
 
         // Current state is unaffected
@@ -148,19 +160,25 @@ public class AsyncDbTest extends SetupAsync {
 
 
     @Test
-    public void withSingleInvocation() {
+    public void withSingleInvocation() throws ExecutionException, InterruptedException {
         // As a convenience, a single-invocation shorter version of `with`:
-        assertThat(films(conn.widh(film4)), is(fourFilms));
+        assertThat(
+            films(((Right<?, AsyncDb>) conn.widh(film4).get()).right_value()),
+            is(fourFilms)
+        );
 
         // Applying another data set still augments the original db
-        assertThat(films(conn.widh(film4and5)), is(fiveFilms));
+        assertThat(
+            films(((Right<?, AsyncDb>) conn.widh(film4and5).get()).right_value()),
+            is(fiveFilms)
+        );
 
         // Current state is unaffected
         assertThat(films(conn.db()), is(threeFilms));
     }
 
     @Test
-    public void history() {
+    public void history() throws ExecutionException, InterruptedException {
 
         // Not testing Peer Server history since history is accumulating when we
         // can't re-create database for each test without shutting down Peer Server.
@@ -172,7 +190,7 @@ public class AsyncDbTest extends SetupAsync {
             assertThat(films(conn.db().history()), is(threeFilms));
 
             // As long as we only add data, current/history will be the same
-            AsyncTxReport tx = conn.transact(film4).realize();
+            AsyncTxReport tx = ((Right<?, AsyncTxReport>) conn.transact(film4).get()).right_value();
             assertThat(films(conn.db()), is(fourFilms));
             assertThat(films(conn.db().history()), is(fourFilms));
 
@@ -180,16 +198,17 @@ public class AsyncDbTest extends SetupAsync {
             Iterator<Datom> it = tx.txData().iterator();
             long lastEid = 0L;
             while (it.hasNext()) lastEid = it.next().e();
-            conn.transact(list(list(read(":db/retractEntity"), lastEid)));
+            conn.transact(list(list(read(":db/retractEntity"), lastEid))).get(); // await Future
 
             assertThat(films(conn.db()), is(threeFilms));
             assertThat(films(conn.db().history()), is(fourFilms));
 
             // History of movie title assertions and retractions
-            Iterator<List<Object>> history = (Iterator<List<Object>>) AsyncDatomic.q(
+            Stream<?> stream = ((Right<?, Stream<?>>) AsyncDatomic.q(
                 "[:find ?tx ?added ?movie-title :where [_ :movie/title ?movie-title ?tx ?added]]",
                 conn.db().history() // Use history database
-            ).realize().iterator();
+            ).get().chunk()).right_value();
+            Iterator<List<Object>> history = (Iterator<List<Object>>) stream.iterator();
             List<String> historyStr = new ArrayList<>();
             while (history.hasNext()) {
                 historyStr.add(history.next().toString());
@@ -215,9 +234,10 @@ public class AsyncDbTest extends SetupAsync {
 
 
     @Test
-    public void datoms() {
-        Iterator<Datom> it = conn.db()
-            .datoms(":avet", list(read(":movie/title"))).realize().iterator();
+    public void datoms() throws ExecutionException, InterruptedException {
+        Iterator<Datom> it = ((Right<?, Stream<Datom>>) conn.db()
+            .datoms(":avet", list(read(":movie/title"))).get())
+            .right_value().iterator();
         List<String> films = new ArrayList<>();
         while (it.hasNext()) {
             films.add(it.next().v().toString());
@@ -227,10 +247,11 @@ public class AsyncDbTest extends SetupAsync {
     }
 
     @Test
-    public void indexRange() {
+    public void indexRange() throws ExecutionException, InterruptedException {
 
-        Iterator<Datom> datoms = conn.db()
-            .indexRange(":movie/title").realize().iterator();
+        Iterator<Datom> datoms = ((Right<?, Stream<Datom>>) conn.db()
+            .indexRange(":movie/title").get())
+            .right_value().iterator();
 
         List<Datom> datomsCheck = new ArrayList<>();
         datomsCheck.add(new Datom(e2(), a1(), "Commando", txIdAfter(), true));
@@ -244,9 +265,9 @@ public class AsyncDbTest extends SetupAsync {
     }
 
     @Test
-    public void pull() {
+    public void pull() throws ExecutionException, InterruptedException {
         // Pull last movie
-        Map entity = conn.db().pull("[*]", eid()).realize();
+        Map entity = ((Right<?, Map<?, ?>>) conn.db().pull("[*]", eid()).get()).right_value();
         assertThat(entity.get(read(":db/id")), is(eid()));
         assertThat(entity.get(read(":movie/title")), is("Repo Man"));
         assertThat(entity.get(read(":movie/genre")), is("punk dystopia"));
@@ -270,13 +291,14 @@ public class AsyncDbTest extends SetupAsync {
 
     // since 1.0.61.65
     @Test
-    public void indexPull() {
+    public void indexPull() throws ExecutionException, InterruptedException {
         // Pull from :avet index
-        Iterator<Map<?, ?>> entities = (Iterator<Map<?, ?>>) conn.db().indexPull(
+        Right<?, Stream<?>> right = ((Right<?, Stream<?>>) conn.db().indexPull(
             ":avet",
             "[:movie/title :movie/release-year]",
             "[:movie/release-year 1985]"
-        ).realize().iterator();
+        ).get());
+        Iterator<Map<?, ?>> entities = (Iterator<Map<?, ?>>) right.right_value().iterator();
 
         // 2 films pulled from index
         Map<?, ?> film1 = entities.next();

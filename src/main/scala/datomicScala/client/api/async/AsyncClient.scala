@@ -4,7 +4,9 @@ import java.util.{List => jList, Map => jMap}
 import datomic.Util
 import datomic.Util._
 import datomicClojure._
-import datomicScala.AnomalyWrapper
+import datomicScala.{AnomalyWrapper, CognitectAnomaly}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 
 case class AsyncClient(
@@ -40,41 +42,45 @@ case class AsyncClient(
 
   def administerSystem(dbName: String): jMap[_, _] = administerSystem(
     Util.map(
-      read(":xdb-name"), read(dbName),
+      read(":db-name"), read(dbName),
       read(":action"), read(":upgrade-schema"),
     )
   )
 
 
-  def connect(dbName: String): AsyncConnection = {
-    AsyncConnection(
-      Channel(
-        InvokeAsync.connect(asyncDatomicClient, dbName)
-      )
-    )
+  def connect(dbName: String): Future[Either[CognitectAnomaly, AsyncConnection]] = Future {
+    Channel[AnyRef](
+      InvokeAsync.connect(asyncDatomicClient, dbName)
+    ).lazyList.head match {
+      case Right(datomicConn) => Right(AsyncConnection(datomicConn))
+      case Left(anomaly)      => Left(anomaly)
+    }
   }
 
 
   def createDatabase(
     dbName: String,
     timeout: Int = 0
-  ): Channel[Boolean] = catchAnomaly {
+  ): Future[Either[CognitectAnomaly, Boolean]] = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.createDatabase(dbName))
-    Channel[Boolean](
-      InvokeAsync.createDatabase(asyncDatomicClient, dbName, timeout)
+    Future(
+      Channel[Boolean](
+        InvokeAsync.createDatabase(asyncDatomicClient, dbName, timeout)
+      ).lazyList.head
     )
   }
-
 
   def deleteDatabase(
     dbName: String,
     timeout: Int = 0
-  ): Channel[Boolean] = catchAnomaly {
+  ): Future[Either[CognitectAnomaly, Boolean]] = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.deleteDatabase(dbName))
-    Channel[Boolean](
-      InvokeAsync.deleteDatabase(asyncDatomicClient, dbName, timeout)
+    Future(
+      Channel[Boolean](
+        InvokeAsync.deleteDatabase(asyncDatomicClient, dbName, timeout)
+      ).lazyList.head
     )
   }
 
@@ -83,9 +89,9 @@ case class AsyncClient(
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): Channel[jList[String]] = catchAnomaly {
+  ): Future[Either[CognitectAnomaly, jList[String]]] = Future {
     Channel[jList[String]](
       InvokeAsync.listDatabase(asyncDatomicClient, timeout, offset, limit)
-    )
+    ).lazyList.head
   }
 }

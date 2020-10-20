@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
 
 import static datomic.Util.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,24 +44,24 @@ public class AsyncConnectionTest extends SetupAsync {
     public void sync() {
         if (isDevLocal()) {
             // Same db object
-            assertThat(conn.sync(tAfter()).realize(), is(dbAfter()));
+            assertThat(conn.sync(tAfter()), is(dbAfter()));
         } else {
             // todo? Does sync call need to create a new db object
             //  or could it be memoized/cached?
             // New db object
-            assertThat(conn.sync(tAfter()).realize(), not(dbAfter()));
+            assertThat(conn.sync(tAfter()), not(dbAfter()));
         }
     }
 
 
     @Test
-    public void transact() {
+    public void transact() throws ExecutionException, InterruptedException {
         assertThat(films(conn.db()), is(threeFilms));
         conn.transact(list(
             map(
                 read(":movie/title"), "Film 4"
             )
-        ));
+        )).get(); // Await future completion
         assertThat(films(conn.db()), is(fourFilms));
 
         IllegalArgumentException emptyTx = assertThrows(
@@ -75,10 +76,15 @@ public class AsyncConnectionTest extends SetupAsync {
 
 
     @Test
-    public void txRange() {
+    public void txRange() throws ExecutionException, InterruptedException {
+
+        // Limit -1 sets no-limit
+        // (necessary for Peer Server datom accumulation exceeding default 1000)
+
         // Lazy retrieval with Iterable
         final Iterator<Pair<Object, Iterable<Datom>>> it =
-            conn.txRange().realize().iterator();
+            ((Right<?, Iterable<Pair<Object, Iterable<Datom>>>>)conn.txRange(-1).get())
+                .right_value().iterator();
         Pair<Object, Iterable<Datom>> lastTx = it.next();
         while (it.hasNext()) {
             lastTx = it.next();
@@ -89,8 +95,9 @@ public class AsyncConnectionTest extends SetupAsync {
         ));
 
         // Array
-        final Pair[] it2 = conn.txRangeArray().realize();
-        Pair<Object, Datom[]> lastTx2 = (Pair<Object, Datom[]>) it2[it2.length - 1];
+        final Pair<Object, Datom[]>[] it2 =
+            ((Right<?, Pair<Object, Datom[]>[]>)conn.txRangeArray(-1).get()).right_value();
+        Pair<Object, Datom[]> lastTx2 = it2[it2.length - 1];
         assertThat(lastTx2.getKey(), is(tAfter()));
         assertThat(lastTx2.getValue()[0], is(
             new Datom(txIdAfter(), 50, txInst(), txIdAfter(), true)

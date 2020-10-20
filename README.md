@@ -43,7 +43,7 @@ in a `Connection` class and so on. We end up with 4 classes and their methods:
 
 - [Datomic][code Datomic] (similar to `Peer`)
   - `clientCloud` (providing AWSCredentialsProviderChain)
-  - `clientCloud` (providing crreds-profile name)
+  - `clientCloud` (providing creds-profile name)
   - `clientDevLocal`
   - `clientPeerServer`
   - `q`
@@ -81,17 +81,55 @@ Each language namespace has a `sync` and `async` package which
 corresponds to the two Datomic client api sync/async versions. All the above 
 methods are implemented for each package.
 
-The datomic client async api mostly returns Clojure Channels. It still has to be
-sorted out what the best equivalent type/implementation in Java/Scala should be. 
-Channels are a bit like Streams but might not sufficiently capture the 
-functionality of Clojure Channels. Expert advice is needed for a possible 
-async implementation strategy...
 
-For now, a custom temporary `Channel` wrapper object is created encapsulating the 
-returned Clojure Channel. The Channel wrapper has a `realize` method that simply 
-calls the Clojure `<!!` function to retrieve the content of the clojure Channel. 
-So, until a proper Java/Scala return type is decided on, there's effectively no 
-asynchronicity - but an infrastructure has been prepared to implement it.
+## Java async
+
+The datomic client async api for Java generally returns a `CompletableFutue` of
+a custom `Channel` type.
+
+Once the Future has completed, chunked results can be retrieved by calling 
+`chunk` one or more times on the `Channel` object until the Clojure Channels is empty.
+
+Each chunk is a custom `Either` type that can be either a `Left` 
+projection with a `CognitectAnomaly` or a `Right` projection containing the 
+successful result of a type `T` for the operation in question. That way, the 
+result can be type checked for an anomaly or a success.
+
+When the Clojure Channel is empty, `Right(null)` is returned. Consuming code 
+might therefore want to check for such terminating null value (when needed). 
+
+- See [Java async tests][java async]
+
+
+## Java sync
+
+The datomic client sync api for Java returns the result as is (equivalent to
+the type `T` of the async api).
+
+Cognitect anomalies are thrown as runtime exceptions.
+
+- See [Java sync tests][java sync]
+
+
+## Scala async
+
+The datomic client async api for Scala returns a `Future` of a `LazyList` of
+chunks of data. The first (head) chunk of the `LazyList` is eargerly evaluated
+and subsequent chunks can be retrieved lazily by simply looping the `LazyList`.
+
+Each chunk in the `LazyList` is an `Either` of either a `Left[CognitectAnomaly]`
+or a `Right[T]` where `T` is the main result type.
+
+- See [Scala async tests][scala async]
+
+## Scala sync
+
+The datomic client sync api for Scala returns the result as is (equivalent to
+the type `T` of the async api).
+
+Cognitect anomalies are thrown as runtime exceptions.
+
+- See [Scala sync tests][scala sync]
 
 
 ## Setup
@@ -113,24 +151,11 @@ Clone the project and open in your IDE to explore.
 git clone https://github.com/scalamolecule/datomic-client-api-java-scala.git
 ```
 
-## Using with Java
-
-To see how you can call the client api from Java, please take a look at the tests:
-
-- [Java sync tests][java sync]
-- [Java async tests][java async] (work in progress...)
+## Testing
 
 Run the Java tests by right-clicking on the `test.java.datomicJava.client` package
 in the project view (in IntelliJ) and choose Run -> Tests in 'client' (or run 
 individual tests similarly).
-
-
-## Using with Scala
-
-Check out the Scala facade here:
-
-- [Scala sync tests][scala sync]
-- [Scala async tests][scala async] (work in progress...)
 
 Run the Scala tests by right-clicking on the `test.scala.datomicScala.client` package
 in the project view (in IntelliJ) and choose Run -> Specs2 in 'client' (or run 
@@ -139,27 +164,20 @@ individual tests similarly).
 
 ## Use with your project
 
-Until the project is published on Sonatype, you can publish it to your local repo:
+This library is available on [Maven Central][maven].
 
-```
-git clone https://github.com/scalamolecule/datomic-client-api-java-scala.git
-cd datomic-client-api-java-scala
-sbt publishLocal
-```
-(if Java folks don't have `sbt` available, please install with `brew install sbt`)
-
-And make a dependency in your project with
-
+Add Java dependency in POM file:
 ```
 <dependency>
     <groupId>org.scalamolecule</groupId>
     <artifactId>datomic-client-api-java-scala</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
 </dependency>
 ```
-or in sbt build file:
+
+Add Scala dependency in sbt build file:
 ```
-libraryDependencies += "org.scalamolecule" % "datomic-client-api-java-scala" % "0.1.0"
+libraryDependencies += "org.scalamolecule" % "datomic-client-api-java-scala" % "0.2.0"
 ```
 
 
@@ -186,3 +204,4 @@ By Marc Grue. Licensed under the [Apache License 2.0][apache2].
 [peer-server]: https://docs.datomic.com/on-prem/peer-server.html
 [transactor]: https://docs.datomic.com/on-prem/transactor.html
 [apache2]: http://en.wikipedia.org/wiki/Apache_license
+[maven]: https://repo1.maven.org/maven2/org/scalamolecule/datomic-client-api-java-scala/

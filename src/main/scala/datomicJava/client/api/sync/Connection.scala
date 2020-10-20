@@ -46,6 +46,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     Helper.nestedTxsIterable(isDevLocal, rawTxs0)
   }
   def txRange(): jIterable[Pair[Long, jIterable[Datom]]] = txRange(0, 0, 0, 0, 1000)
+  def txRange(limit: Int): jIterable[Pair[Long, jIterable[Datom]]] = txRange(0, 0, 0, 0, limit)
 
 
   def txRangeArray(
@@ -63,6 +64,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     Helper.nestedTxsArray(isDevLocal, rawTxs0)
   }
   def txRangeArray(): Array[Pair[Long, Array[Datom]]] = txRangeArray(0, 0, 0, 0, 1000)
+  def txRangeArray(limit: Int): Array[Pair[Long, Array[Datom]]] = txRangeArray(0, 0, 0, 0, limit)
 
 
   // Convenience method for single invocation from connection

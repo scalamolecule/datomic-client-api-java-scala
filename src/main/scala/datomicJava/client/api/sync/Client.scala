@@ -12,7 +12,6 @@ case class Client(
   datomicClient: DatomicClient
 ) extends ClojureBridge with AnomalyWrapper {
 
-
   /**
    * Upgrading Datomic Schema
    *
@@ -52,7 +51,6 @@ case class Client(
   }
 
 
-
   def createDatabase(
     dbName: String,
     timeout: Int
@@ -62,7 +60,6 @@ case class Client(
     Invoke.createDatabase(datomicClient, dbName, timeout).asInstanceOf[Boolean]
   }
   def createDatabase(dbName: String): Boolean = createDatabase(dbName, 0)
-
 
 
   def deleteDatabase(
@@ -77,8 +74,6 @@ case class Client(
 
 
   // If using Peer Server, this will only show the single db that the Peer Server connects to.
-
-
   def listDatabases(
     timeout: Int,
     offset: Int,

@@ -1,7 +1,8 @@
 package datomicJava;
 
 import datomic.Peer;
-import datomicClojure.Invoke;
+import datomicJava.client.api.async.Either;
+import datomicJava.client.api.async.Right;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.async.*;
 import org.junit.Before;
@@ -9,6 +10,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static datomic.Util.list;
@@ -33,14 +35,14 @@ public class SetupAsync extends SchemaAndData {
     }
 
     @Before
-    public void setUp() {
+    public void setUp() throws ExecutionException, InterruptedException {
         if (system == "dev-local") {
             client = AsyncDatomic.clientDevLocal("Hello system name");
             resetDevLocalDb();
 
         } else if (system == "peer-server") {
             client = AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998");
-            conn = client.connect("hello");
+            conn = ((Right<?, AsyncConnection>) client.connect("hello").get()).right_value();
             resetPeerServerDb();
 
         } else {
@@ -48,40 +50,48 @@ public class SetupAsync extends SchemaAndData {
         }
     }
 
-    public void resetDevLocalDb() {
+    public void resetDevLocalDb() throws ExecutionException, InterruptedException {
         // Re-create db
-        client.deleteDatabase("hello").realize();
-        client.deleteDatabase("world").realize();
-        client.createDatabase("hello").realize();
-        conn = client.connect("hello");
-        conn.transact(schemaDevLocal).realize();
-        txReport = conn.transact(data).realize();
+        client.deleteDatabase("hello").get();
+        client.deleteDatabase("world").get();
+        client.createDatabase("hello").get();
+        conn = ((Right<?, AsyncConnection>) client.connect("hello").get()).right_value();
+        conn.transact(schemaDevLocal).get();
+        txReport = ((Right<?, AsyncTxReport>) conn.transact(data).get()).right_value();
     }
 
-    public void resetPeerServerDb() {
+    public void resetPeerServerDb() throws ExecutionException, InterruptedException {
         // Install schema if necessary
         if (
             AsyncDatomic.q(
                 "[:find ?e :where [?e :db/ident :movie/title]]",
                 conn.db()
-            ).realize().toString() == "[]"
+            ).get().toString() == "[]"
         ) {
             println("Installing Peer Server hello db schema...");
-            conn.transact(schemaPeerServer).realize();
+            conn.transact(schemaPeerServer).get();
         }
 
-        // Retract current data
-        ((List<List<Object>>) AsyncDatomic.q(
+        // Retract current data with current ids
+        Either<CognitectAnomaly, Stream<?>> firstChunk = AsyncDatomic.q(
             "[:find ?e :where [?e :movie/title _]]",
             conn.db()
-        ).realize())
-            .forEach(row ->
-                conn.transact(
-                    list(list(":db/retractEntity", row.get(0)))
-                ).realize()
-            );
+        ).get().chunk();
+        Stream<?> rows = ((Right<?, Stream<?>>) firstChunk).right_value();
+        rows.forEach(row -> {
+                try {
+                    conn.transact(
+                        list(list(":db/retractEntity", ((List<?>) row).get(0)))
+                    ).get();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+        );
 
-        txReport = conn.transact(data).realize();
+        txReport = ((Right<?, AsyncTxReport>) conn.transact(data).get()).right_value();
     }
 
 
@@ -159,12 +169,14 @@ public class SetupAsync extends SchemaAndData {
     }
 
     // Convenience retriever
-    public List<String> films(AsyncDb db) {
-        List<String> titles = new ArrayList<String>();
-        Stream<List<String>> raw = (Stream<List<String>>) AsyncDatomic.q(filmQuery, db).realize();
-        if(raw == null)
+    public List<String> films(AsyncDb db) throws ExecutionException, InterruptedException {
+        List<String> titles = new ArrayList<>();
+        Channel<Stream<?>> chunks = AsyncDatomic.q(filmQuery, db).get();
+        Either<CognitectAnomaly, Stream<?>> firstChunk = chunks.chunk();
+        Stream<?> rows = ((Right<?, Stream<?>>) firstChunk).right_value();
+        if (rows == null)
             return list();
-        for(Iterator<List<String>> it = raw.iterator(); it.hasNext();)
+        for (Iterator<List<String>> it = (Iterator<List<String>>) rows.iterator(); it.hasNext(); )
             titles.add(it.next().get(0));
         Collections.sort(titles);
         return titles;

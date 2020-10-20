@@ -3,8 +3,8 @@ package datomicScala.client.api.async
 import java.util.stream.{Stream => jStream}
 import java.util.{Map => jMap}
 import datomic.Util._
-import datomicScala.client.api.Datom
 import datomicScala.Helper._
+import datomicScala.client.api.Datom
 
 /** Facade to Datomic transaction report */
 case class AsyncTxReport(rawTxReport: jMap[_, _]) {

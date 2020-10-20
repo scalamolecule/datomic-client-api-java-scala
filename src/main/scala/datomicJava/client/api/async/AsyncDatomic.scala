@@ -1,13 +1,13 @@
 package datomicJava.client.api.async
 
-import java.util.stream.{Stream => jStream}
+import java.util.concurrent.CompletableFuture
+import java.util.stream.Stream
 import java.util.{List => jList, Map => jMap}
 import clojure.lang.LazySeq
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util._
 import datomicClojure.{ClojureBridge, InvokeAsync}
-import datomicJava.client.api.sync.Db
 import scala.annotation.varargs
 
 
@@ -80,17 +80,20 @@ object AsyncDatomic extends ClojureBridge {
 
   // Query as data structure or String + optional :offset, :limit, :timeout params
   // (see tests)
-  def q(argMap: jMap[_, _]): Channel[jStream[_]] = {
-    Channel[jStream[_]](
-      InvokeAsync.q(argMap),
-      Some((res: AnyRef) => res.asInstanceOf[LazySeq].stream)
-    )
+  def q(argMap: jMap[_, _])
+  : CompletableFuture[Channel[Stream[_]]] = {
+    CompletableFuture.supplyAsync { () =>
+      Channel[Stream[_]](
+        InvokeAsync.q(argMap),
+        Some((res: AnyRef) => res.asInstanceOf[LazySeq].stream)
+      )
+    }
   }
-
 
   // Query as data structure
   @varargs
-  def q(query: jList[_], db: AsyncDb, args: Any*): Channel[jStream[_]] = {
+  def q(query: jList[_], db: AsyncDb, args: Any*)
+  : CompletableFuture[Channel[Stream[_]]] = {
     q(Util.map(
       read(":query"), edn(query),
       read(":args"), list(db.datomicDb +: args: _*)
@@ -99,7 +102,8 @@ object AsyncDatomic extends ClojureBridge {
 
   // Query as String
   @varargs
-  def q(query: String, db: AsyncDb, args: Any*): Channel[jStream[_]] = {
+  def q(query: String, db: AsyncDb, args: Any*)
+  : CompletableFuture[Channel[Stream[_]]] = {
     q(Util.map(
       read(":query"), read(query),
       read(":args"), list(db.datomicDb +: args: _*)
@@ -109,16 +113,20 @@ object AsyncDatomic extends ClojureBridge {
 
   // Query as data structure or String + optional :offset, :limit, :timeout params
   // (see tests)
-  def qseq(map: jMap[_, _]): Channel[jStream[_]] = {
-    Channel[jStream[_]](
-      datomicAsyncFn("qseq").invoke(map),
-      Some((res: AnyRef) => res.asInstanceOf[LazySeq].stream)
-    )
+  def qseq(map: jMap[_, _])
+  : CompletableFuture[Channel[Stream[_]]] = {
+    CompletableFuture.supplyAsync { () =>
+      Channel[Stream[_]](
+        datomicAsyncFn("qseq").invoke(map),
+        Some((res: AnyRef) => res.asInstanceOf[LazySeq].stream)
+      )
+    }
   }
 
   // Query as data structure
   @varargs
-  def qseq(query: jList[_], db: AsyncDb, args: Any*): Channel[jStream[_]] = {
+  def qseq(query: jList[_], db: AsyncDb, args: Any*)
+  : CompletableFuture[Channel[Stream[_]]] = {
     qseq(Util.map(
       read(":query"), edn(query),
       read(":args"), list(db.datomicDb +: args: _*)
@@ -127,7 +135,8 @@ object AsyncDatomic extends ClojureBridge {
 
   // Query as String
   @varargs
-  def qseq(query: String, db: AsyncDb, args: Any*): Channel[jStream[_]] = {
+  def qseq(query: String, db: AsyncDb, args: Any*)
+  : CompletableFuture[Channel[Stream[_]]] = {
     qseq(Util.map(
       read(":query"), read(query),
       read(":args"), list(db.datomicDb +: args: _*)

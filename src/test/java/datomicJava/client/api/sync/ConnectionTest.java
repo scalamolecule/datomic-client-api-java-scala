@@ -82,8 +82,12 @@ public class ConnectionTest extends Setup {
 
     @Test
     public void txRange() {
+
+        // Limit -1 sets no-limit
+        // (necessary for Peer Server datom accumulation exceeding default 1000)
+
         // Lazy retrieval with Iterable
-        final Iterator<Pair<Object, Iterable<Datom>>> it = conn.txRange().iterator();
+        final Iterator<Pair<Object, Iterable<Datom>>> it = conn.txRange(-1).iterator();
         Pair<Object, Iterable<Datom>> lastTx = it.next();
         while (it.hasNext()) {
             lastTx = it.next();
@@ -94,7 +98,7 @@ public class ConnectionTest extends Setup {
         ));
 
         // Array
-        final Pair[] it2 = conn.txRangeArray();
+        final Pair[] it2 = conn.txRangeArray(-1);
         Pair<Object, Datom[]> lastTx2 = (Pair<Object, Datom[]>) it2[it2.length - 1];
         assertThat(lastTx2.getKey(), is(tAfter()));
         assertThat(lastTx2.getValue()[0], is(

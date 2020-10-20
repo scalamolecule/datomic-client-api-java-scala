@@ -1,10 +1,12 @@
 package datomicJava.client.api.async
 
+import java.util.concurrent.CompletableFuture
 import java.util.{List => jList, Map => jMap}
 import datomic.Util
 import datomic.Util._
 import datomicClojure.{ClojureBridge, ErrorMsg, InvokeAsync}
-import datomicJava.AnomalyWrapper
+import datomicJava.client.api.async
+import datomicJava.{AnomalyWrapper, CognitectAnomaly}
 
 
 case class AsyncClient(
@@ -45,40 +47,50 @@ case class AsyncClient(
     )
   )
 
-
-  def connect(dbName: String): AsyncConnection = {
-    AsyncConnection(
-      Channel(
+  def connect(dbName: String): CompletableFuture[Either[CognitectAnomaly, AsyncConnection]] = {
+    CompletableFuture.supplyAsync { () =>
+      Channel[AnyRef](
         InvokeAsync.connect(asyncDatomicClient, dbName)
-      )
-    )
+      ).chunk match {
+        case Right(datomicConn) => async.Right(AsyncConnection(datomicConn))
+        case Left(anomaly)      => async.Left(anomaly)
+      }
+    }
   }
 
 
   def createDatabase(
     dbName: String,
     timeout: Int
-  ): Channel[Boolean] = {
+  ): CompletableFuture[Either[CognitectAnomaly, Boolean]] = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.createDatabase(dbName))
-    Channel[Boolean](
-      InvokeAsync.createDatabase(asyncDatomicClient, dbName, timeout)
-    )
+    CompletableFuture.supplyAsync { () =>
+      Channel[Boolean](
+        InvokeAsync.createDatabase(asyncDatomicClient, dbName, timeout)
+      ).chunk
+    }
   }
-  def createDatabase(dbName: String): Channel[Boolean] = createDatabase(dbName, 0)
+
+  def createDatabase(dbName: String): CompletableFuture[Either[CognitectAnomaly, Boolean]] =
+    createDatabase(dbName, 0)
 
 
   def deleteDatabase(
     dbName: String,
     timeout: Int
-  ): Channel[Boolean] = catchAnomaly {
+  ): CompletableFuture[Either[CognitectAnomaly, Boolean]] = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.deleteDatabase(dbName))
-    Channel[Boolean](
-      InvokeAsync.deleteDatabase(asyncDatomicClient, dbName, timeout)
-    )
+    CompletableFuture.supplyAsync { () =>
+      Channel[Boolean](
+        InvokeAsync.deleteDatabase(asyncDatomicClient, dbName, timeout)
+      ).chunk
+    }
   }
-  def deleteDatabase(dbName: String): Channel[Boolean] = deleteDatabase(dbName, 0)
+
+  def deleteDatabase(dbName: String): CompletableFuture[Either[CognitectAnomaly, Boolean]] =
+    deleteDatabase(dbName, 0)
 
 
   // If using Peer Server, this will only show the single db that Peer Server connects to.
@@ -87,11 +99,17 @@ case class AsyncClient(
     timeout: Int,
     offset: Int,
     limit: Int
-  ): Channel[jList[String]] = catchAnomaly {
-    Channel[jList[String]](
-      InvokeAsync.listDatabase(asyncDatomicClient, timeout, offset, limit)
-    )
+  ): CompletableFuture[Either[CognitectAnomaly, jList[String]]] = {
+    CompletableFuture.supplyAsync { () =>
+      Channel[jList[String]](
+        InvokeAsync.listDatabase(asyncDatomicClient, timeout, offset, limit)
+      ).chunk
+    }
   }
-  def listDatabases(): Channel[jList[String]] = listDatabases(0, 0, 1000)
-  def listDatabases(limit: Int): Channel[jList[String]] = listDatabases(0, 0, limit)
+
+  def listDatabases(): CompletableFuture[Either[CognitectAnomaly, jList[String]]] =
+    listDatabases(0, 0, 1000)
+
+  def listDatabases(limit: Int): CompletableFuture[Either[CognitectAnomaly, jList[String]]] =
+    listDatabases(0, 0, limit)
 }

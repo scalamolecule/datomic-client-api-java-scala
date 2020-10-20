@@ -244,7 +244,7 @@ class DbTest extends Spec {
     scalaLazyList.size === 2
 
     // LazyList in Scala can be accessed multiple times contrary to java Stream
-    // that can only be consumed once, like an Iterator.
+    // that can only be consumed once (like an Iterator).
     val firstFilm = scalaLazyList.head
 
     // The underlying type of pulled indexes are clojure.lang.PersistentArrayMaps
