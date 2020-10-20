@@ -198,8 +198,9 @@ Marc Grue. Licensed under the [Apache License 2.0][apache2].
 
 [code Datomic]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Datomic.scala
 [code Client]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
-[code Connection]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Client.scala
+[code Connection]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Connection.scala
 [code Db]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Db.scala
+
 [dev-tools]: https://docs.datomic.com/cloud/dev-local.html
 [peer-server]: https://docs.datomic.com/on-prem/peer-server.html
 [transactor]: https://docs.datomic.com/on-prem/transactor.html
