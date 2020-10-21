@@ -23,6 +23,7 @@ public class ClientTest extends Setup {
     @Test
     public void administerSystem() {
         if (system == "peer-server") {
+            // administer-system not implemented for Peer Server
             RuntimeException nonExistingDb = assertThrows(
                 RuntimeException.class,
                 () -> client.administerSystem("hello")

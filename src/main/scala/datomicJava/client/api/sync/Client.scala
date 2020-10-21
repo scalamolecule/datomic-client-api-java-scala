@@ -9,7 +9,7 @@ import datomicJava.AnomalyWrapper
 
 case class Client(
   forPeerServer: Boolean,
-  datomicClient: DatomicClient
+  datomicClient: AnyRef
 ) extends ClojureBridge with AnomalyWrapper {
 
   /**

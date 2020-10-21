@@ -161,6 +161,11 @@ Run the Scala tests by right-clicking on the `test.scala.datomicScala.client` pa
 in the project view (in IntelliJ) and choose Run -> Specs2 in 'client' (or run 
 individual tests similarly).
 
+### Temporary limitation
+Due to a bug in the Peer Server async implementation, all asynchronous Peer 
+Server tests don't pass since we can't build a Client with map data. Hopefully
+this will be solved soon, and then all asynchronous Peer Server tests should pass.
+
 
 ## Use with your project
 

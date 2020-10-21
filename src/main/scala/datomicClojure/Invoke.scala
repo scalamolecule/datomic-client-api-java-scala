@@ -66,7 +66,7 @@ trait Invoke extends ClojureBridge {
     endpoint: String,
     credsProvider: AWSCredentialsProviderChain,
     proxyPort: Int
-  ): protocols.Client = {
+  ): AnyRef = {
     fn("client").invoke(
       read(
         s"""{
@@ -77,7 +77,7 @@ trait Invoke extends ClojureBridge {
            |:creds-provider $credsProvider
            |:proxy-port $proxyPort
            |}""".stripMargin)
-    ).asInstanceOf[datomic.client.api.protocols.Client]
+    )
   }
 
   def clientCloudCredsProfile(
@@ -86,7 +86,7 @@ trait Invoke extends ClojureBridge {
     endpoint: String,
     credsProfile: String,
     proxyPort: Int
-  ): protocols.Client = {
+  ): AnyRef = {
     fn("client").invoke(
       read(
         s"""{
@@ -97,13 +97,13 @@ trait Invoke extends ClojureBridge {
            |:creds-profile "$credsProfile"
            |:proxy-port $proxyPort
            |}""".stripMargin)
-    ).asInstanceOf[datomic.client.api.protocols.Client]
+    )
   }
 
   def clientDevLocal(
     system: String,
     storageDir: String // overrides :storage-dir in ~/.datomic/dev-local.edn
-  ): protocols.Client = {
+  ): AnyRef = {
     val storage = if (storageDir.nonEmpty)
       s""":storage-dir "$storageDir"""".stripMargin else ""
     fn("client").invoke(
@@ -113,7 +113,7 @@ trait Invoke extends ClojureBridge {
            |:system "$system"
            |$storage
            |}""".stripMargin)
-    ).asInstanceOf[datomic.client.api.protocols.Client]
+    )
   }
 
   def clientPeerServer(
@@ -121,7 +121,7 @@ trait Invoke extends ClojureBridge {
     secret: String,
     endpoint: String,
     validateHostnames: Boolean
-  ): protocols.Client = {
+  ): AnyRef = {
     fn("client").invoke(
       read(
         s"""{
@@ -131,7 +131,7 @@ trait Invoke extends ClojureBridge {
            |:endpoint "$endpoint"
            |:validate-hostnames $validateHostnames
            |}""".stripMargin)
-    ).asInstanceOf[datomic.client.api.protocols.Client]
+    )
   }
 
   def connect(

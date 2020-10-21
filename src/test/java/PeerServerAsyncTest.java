@@ -21,23 +21,23 @@ public class PeerServerAsyncTest {
         Clojure.var("clojure.core", "require").invoke(read("datomic.client.api.async"));
 
         Object client = Clojure.var("datomic.client.api.async", "client").invoke(
-            read(
-                "{:server-type :peer-server, " +
-                    ":access-key \"myaccesskey\", " +
-                    ":secret \"mysecret\", " +
-                    ":endpoint \"localhost:8998\", " +
-                    ":validate-hostnames false" +
-                    "}"
-            )
-
-            // Can't use map
-//            map(
-//                read(":server-type"), read(":peer-server"),
-//                read(":access-key"), "myaccesskey",
-//                read(":secret"), "mysecret",
-//                read(":endpoint"), "localhost:8998",
-//                read(":validate-hostnames"), read("false")
+//            read(
+//                "{:server-type :peer-server, " +
+//                    ":access-key \"myaccesskey\", " +
+//                    ":secret \"mysecret\", " +
+//                    ":endpoint \"localhost:8998\", " +
+//                    ":validate-hostnames false" +
+//                    "}"
 //            )
+
+            // Can't use map - seems to be a bug in datomic
+            map(
+                read(":server-type"), read(":peer-server"),
+                read(":access-key"), "myaccesskey",
+                read(":secret"), "mysecret",
+                read(":endpoint"), "localhost:8998",
+                read(":validate-hostnames"), read("false")
+            )
         );
 
         Object connCh = Clojure.var("datomic.client.api.async", "connect").invoke(

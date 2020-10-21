@@ -9,7 +9,7 @@ import datomicScala.AnomalyWrapper
 
 case class Client(
   forPeerServer: Boolean,
-  datomicClient: DatomicClient
+  datomicClient: AnyRef
 ) extends AnomalyWrapper {
 
 

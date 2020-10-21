@@ -27,14 +27,12 @@ trait Spec extends Specification with SchemaAndData {
   def setupDevLocal(): Unit = {
     system = "dev-local"
     client = Datomic.clientDevLocal("Hello system name")
-//    resetDevLocalDb()
   }
 
   def setupPeerServer(): Unit = {
     system = "peer-server"
     client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
     conn = client.connect("hello")
-//    resetPeerServerDb()
   }
 
   def resetDevLocalDb(): Unit = {

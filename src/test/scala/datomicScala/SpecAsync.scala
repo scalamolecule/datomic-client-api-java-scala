@@ -27,16 +27,15 @@ trait SpecAsync extends Specification with SchemaAndData {
   // todo: awaiting to find a way to invoke data as maps against Peer Server
     override def map(fs: => Fragments): Fragments =
       step(setupDevLocal()) ^
-        fs.mapDescription(d => Text(s"$system: " + d.show))
-//        fs.mapDescription(d => Text(s"$system: " + d.show)) ^
-//        step(setupPeerServer()) ^
 //        fs.mapDescription(d => Text(s"$system: " + d.show))
+        fs.mapDescription(d => Text(s"$system: " + d.show)) ^
+        step(setupPeerServer()) ^
+        fs.mapDescription(d => Text(s"$system: " + d.show))
 
 
   def setupDevLocal(): Unit = {
     system = "dev-local"
     client = AsyncDatomic.clientDevLocal("Hello system name")
-//    resetDevLocalDb()
   }
 
 
@@ -46,7 +45,6 @@ trait SpecAsync extends Specification with SchemaAndData {
 
     // Using the db associated with the Peer Server connection
     conn = waitFor(client.connect("hello")).toOption.get
-//    resetPeerServerDb()
   }
 
   def resetDevLocalDb(): Unit = {
