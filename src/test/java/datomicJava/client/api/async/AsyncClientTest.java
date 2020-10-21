@@ -66,7 +66,7 @@ public class AsyncClientTest extends SetupAsync {
     @Test
     public void createDatabase() throws ExecutionException, InterruptedException {
         if (isDevLocal()) {
-            client.createDatabase("world");
+            client.createDatabase("world").get();
             assertThat(
                 ((Right<?, List<String>>) client.listDatabases().get()).right_value(),
                 is(list("world", "hello"))

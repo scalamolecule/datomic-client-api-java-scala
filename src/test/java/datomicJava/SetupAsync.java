@@ -29,8 +29,8 @@ public class SetupAsync extends SchemaAndData {
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
             {"dev-local"},
-            // todo: run when map-bug is fixed
-//            {"peer-server"}
+            // todo: when map-bug is fixed, these should pass:
+            {"peer-server"}
         });
     }
 
