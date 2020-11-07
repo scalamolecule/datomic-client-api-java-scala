@@ -12,17 +12,17 @@ import javafx.util.Pair
 
 case class AsyncConnection(datomicConn: AnyRef) {
 
-  lazy private val isDevLocal = db.datomicDb.isInstanceOf[datomic.core.db.Db]
+  lazy private val isDevLocal = db.datomicDb.isInstanceOf[clojure.lang.IPersistentMap]
 
 
   def db: AsyncDb = AsyncDb(InvokeAsync.db(datomicConn))
 
 
   def sync(t: Long): AsyncDb = AsyncDb(
-    Channel[datomic.core.db.Db](
+    Channel[AnyRef](
       InvokeAsync.sync(datomicConn, t)
       // Assuming no anomalies
-    ).chunk.asInstanceOf[Right[_, datomic.core.db.Db]].right_value
+    ).chunk.asInstanceOf[Right[_, AnyRef]].right_value
   )
 
 

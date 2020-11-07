@@ -6,16 +6,11 @@ import java.util.stream.{StreamSupport, Stream => jStream}
 import java.util.{Spliterator, Spliterators, Iterator => jIterator, Map => jMap}
 import clojure.lang._
 import datomic.Util.read
-import datomic.core.db.Datum
 import datomicScala.client.api.{Datom, DbStats}
 import scala.jdk.CollectionConverters._
 
 
 object Helper {
-
-  def getDatom(d: Datum): Datom = Datom(
-    d.e, d.a, d.v, d.tx.asInstanceOf[Long], d.added()
-  )
 
   def getDatom(d: ILookup): Datom = Datom(
     d.valAt(read(":e")).asInstanceOf[Long],
@@ -34,12 +29,8 @@ object Helper {
       case lazySeq: LazySeq => mkStream(
         new jIterator[Datom] {
           val it: jIterator[_] = lazySeq.iterator
-          var d : Datum        = null
           override def hasNext: Boolean = it.hasNext
-          override def next(): Datom = {
-            d = it.next.asInstanceOf[Datum]
-            Datom(d.e, d.a, d.v, d.tx.asInstanceOf[Long], d.added())
-          }
+          override def next(): Datom = getDatom(it.next.asInstanceOf[ILookup])
         }
       )
 
@@ -48,19 +39,8 @@ object Helper {
       case iterable: java.lang.Iterable[_] => mkStream(
         new jIterator[Datom] {
           val it: jIterator[_] = iterable.iterator
-          var d : ILookup      = null
-          def valAt(d: ILookup, key: String): Any = d.valAt(read(key))
           override def hasNext: Boolean = it.hasNext
-          override def next(): Datom = {
-            d = it.next.asInstanceOf[ILookup]
-            Datom(
-              valAt(d, ":e").asInstanceOf[Long],
-              valAt(d, ":a"),
-              valAt(d, ":v"),
-              valAt(d, ":tx").asInstanceOf[Long],
-              valAt(d, ":added").asInstanceOf[Boolean]
-            )
-          }
+          override def next(): Datom = getDatom(it.next.asInstanceOf[ILookup])
         }
       )
     }
@@ -92,11 +72,9 @@ object Helper {
               val txDatoms = new Iterable[Datom] {
                 override def iterator: Iterator[Datom] = {
                   new Iterator[Datom] {
-                    private val it = rawTxDatoms.iterator()
-                    override def hasNext: Boolean = it.hasNext
-                    override def next(): Datom = {
-                      getDatom(it.next.asInstanceOf[Datum])
-                    }
+                    private val it2 = rawTxDatoms.iterator()
+                    override def hasNext: Boolean = it2.hasNext
+                    override def next(): Datom = getDatom(it2.next.asInstanceOf[ILookup])
                   }
                 }
               }
@@ -155,7 +133,7 @@ object Helper {
         val txDatoms    = new Array[Datom](rawTxDatoms.size())
         var j           = 0
         rawTxDatoms.forEach { d0 =>
-          txDatoms(j) = getDatom(d0.asInstanceOf[Datum])
+          txDatoms(j) = getDatom(d0.asInstanceOf[ILookup])
           j += 1
         }
         txs(i) = (t, txDatoms)

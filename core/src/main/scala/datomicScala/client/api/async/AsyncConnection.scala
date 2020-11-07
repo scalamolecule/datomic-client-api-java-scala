@@ -11,14 +11,13 @@ import scala.concurrent.Future
 
 case class AsyncConnection(datomicConn: AnyRef) {
 
-  lazy private val isDevLocal = db.datomicDb.isInstanceOf[datomic.core.db.Db]
-
+  lazy private val isDevLocal = db.datomicDb.isInstanceOf[clojure.lang.IPersistentMap]
 
   def db: AsyncDb = AsyncDb(InvokeAsync.db(datomicConn))
 
 
   def sync(t: Long): AsyncDb = AsyncDb(
-    Channel[datomic.core.db.Db](
+    Channel[AnyRef](
       InvokeAsync.sync(datomicConn, t)
     ).lazyList.head.toOption.get // Assuming no anomalies
   )

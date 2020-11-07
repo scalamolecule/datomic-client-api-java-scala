@@ -2,9 +2,9 @@ package datomicClojure
 
 import datomic.Util.read
 
-class Lookup(datomicDb: AnyRef) {
+class Lookup(datomicDb: AnyRef) extends ClojureBridge {
 
-  lazy protected val isDevLocal = datomicDb.isInstanceOf[datomic.core.db.Db]
+  lazy protected val isDevLocal = datomicDb.isInstanceOf[clojure.lang.IPersistentMap]
 
   // todo? Implement valAt(":db-name") on dev-local?
   def dbName: String = valAt[String](if (isDevLocal) ":id" else ":db-name").get
@@ -15,11 +15,11 @@ class Lookup(datomicDb: AnyRef) {
 
   def sinceT: Long = valAt[Long](":since").getOrElse(0)
 
-  // todo? Implement valAt(":history") on dev-local?
-  def isHistory: Boolean = if (isDevLocal)
-    datomicDb.asInstanceOf[datomic.core.db.Db].isHistory
-  else
+  def isHistory: Boolean = if (isDevLocal) {
+    valAt[Boolean](":history?").getOrElse(false)
+  } else {
     valAt[Boolean](":history").getOrElse(false)
+  }
 
   private def valAt[T](key: String): Option[T] = {
     // dev-local and Peer Server have different implementations

@@ -70,7 +70,6 @@ object Datomic extends ClojureBridge with AnomalyWrapper {
 
   // Query as data structure
   def q(query: jList[_], db: Db, args: Any*): jCollection[jList[AnyRef]] = {
-    //    q(edn(query), db, args: _*)
     q(Util.map(
       read(":query"), edn(query),
       read(":args"), list(db.datomicDb +: args: _*)

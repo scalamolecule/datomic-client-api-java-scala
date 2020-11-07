@@ -26,13 +26,22 @@ trait Spec extends Specification with SchemaAndData {
 
   def setupDevLocal(): Unit = {
     system = "dev-local"
+    println(1)
     client = Datomic.clientDevLocal("Hello system name")
   }
 
   def setupPeerServer(): Unit = {
     system = "peer-server"
     client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
-    conn = client.connect("hello")
+    conn = try {
+      client.connect("hello")
+    } catch {
+      case e: CognitectAnomaly =>
+        println(e)
+        println(e.msg)
+        throw e
+      case t: Throwable        => throw t
+    }
   }
 
   def resetDevLocalDb(): Unit = {

@@ -11,8 +11,7 @@ import javafx.util.Pair
 
 case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
-  lazy private val isDevLocal = db.datomicDb.isInstanceOf[datomic.core.db.Db]
-
+  lazy private val isDevLocal = db.datomicDb.isInstanceOf[clojure.lang.IPersistentMap]
 
   def db: Db = catchAnomaly {
     Db(Invoke.db(datomicConn))

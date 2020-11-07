@@ -6,16 +6,11 @@ import java.util.stream.{StreamSupport, Stream => jStream}
 import java.util.{Spliterator, Spliterators, Iterator => jIterator, Map => jMap}
 import clojure.lang._
 import datomic.Util.read
-import datomic.core.db.Datum
 import datomicJava.client.api.{Datom, DbStats}
 import javafx.util.Pair
 import scala.jdk.CollectionConverters._
 
 object Helper {
-
-  def getDatom(d: Datum): Datom = Datom(
-    d.e, d.a, d.v, d.tx.asInstanceOf[Long], d.added()
-  )
 
   def getDatom(d: ILookup): Datom = Datom(
     d.valAt(read(":e")).asInstanceOf[Long],
@@ -34,7 +29,7 @@ object Helper {
         new jIterator[Datom] {
           val it: jIterator[_] = lazySeq.iterator
           override def hasNext: Boolean = it.hasNext
-          override def next(): Datom = getDatom(it.next.asInstanceOf[Datum])
+          override def next(): Datom = getDatom(it.next.asInstanceOf[ILookup])
         }
       )
 
@@ -79,7 +74,7 @@ object Helper {
                     private val it = rawTxDatoms.iterator()
                     override def hasNext: Boolean = it.hasNext
                     override def next(): Datom = {
-                      getDatom(it.next.asInstanceOf[Datum])
+                      getDatom(it.next.asInstanceOf[ILookup])
                     }
                   }
                 }
@@ -138,7 +133,7 @@ object Helper {
         val txDatoms    = new Array[Datom](rawTxDatoms.size())
         var j           = 0
         rawTxDatoms.forEach { d0 =>
-          txDatoms(j) = getDatom(d0.asInstanceOf[Datum])
+          txDatoms(j) = getDatom(d0.asInstanceOf[ILookup])
           j += 1
         }
         txs(i) = new Pair(t, txDatoms)

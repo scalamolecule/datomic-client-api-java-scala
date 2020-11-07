@@ -176,14 +176,29 @@ Add Java dependency in POM file:
 <dependency>
     <groupId>org.scalamolecule</groupId>
     <artifactId>datomic-client-api-java-scala</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
+</dependency>
+
+<!-- If using dev-local -->
+<dependency>
+    <groupId>com.datomic</groupId>
+    <artifactId>dev-local</artifactId>
+    <version>0.9.225</version>
 </dependency>
 ```
 
 Add Scala dependency in sbt build file:
 ```
-libraryDependencies += "org.scalamolecule" % "datomic-client-api-java-scala" % "0.2.0"
+libraryDependencies ++= Seq(
+  "org.scalamolecule" % "datomic-client-api-java-scala" % "0.3.0",
+  
+  // If using dev-local
+  "com.datomic" % "dev-local" % "0.9.225"
+)
 ```
+
+To use dev-local, please download from https://cognitect.com/dev-tools and install 
+locally per included instructions.
 
 
 ## Author / License

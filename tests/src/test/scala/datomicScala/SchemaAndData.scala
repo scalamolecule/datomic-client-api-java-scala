@@ -60,17 +60,17 @@ trait SchemaAndData {
     Util.map(
       read(":movie/title"), "The Goonies",
       read(":movie/genre"), "action/adventure",
-      read(":movie/release-year"), 1985,
+      read(":movie/release-year"), 1985.asInstanceOf[Object],
     ),
     Util.map(
       read(":movie/title"), "Commando",
       read(":movie/genre"), "thriller/action",
-      read(":movie/release-year"), 1985
+      read(":movie/release-year"), 1985.asInstanceOf[Object]
     ),
     Util.map(
       read(":movie/title"), "Repo Man",
       read(":movie/genre"), "punk dystopia",
-      read(":movie/release-year"), 1984
+      read(":movie/release-year"), 1984.asInstanceOf[Object]
     )
   )
 
