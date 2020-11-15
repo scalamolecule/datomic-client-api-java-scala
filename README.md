@@ -163,7 +163,7 @@ individual tests similarly).
 
 ### Temporary limitation
 Due to a bug in the Peer Server async implementation, all asynchronous Peer 
-Server tests don't pass since we can't build a Client with map data. Hopefully
+Server tests won't pass since we can't build a Client with map data. Hopefully
 this will be solved soon, and then all asynchronous Peer Server tests should pass.
 
 
@@ -176,7 +176,7 @@ Add Java dependency in POM file:
 <dependency>
     <groupId>org.scalamolecule</groupId>
     <artifactId>datomic-client-api-java-scala</artifactId>
-    <version>0.3.0</version>
+    <version>0.3.1</version>
 </dependency>
 
 <!-- If using dev-local -->
@@ -190,7 +190,7 @@ Add Java dependency in POM file:
 Add Scala dependency in sbt build file:
 ```
 libraryDependencies ++= Seq(
-  "org.scalamolecule" % "datomic-client-api-java-scala" % "0.3.0",
+  "org.scalamolecule" % "datomic-client-api-java-scala" % "0.3.1",
   
   // If using dev-local
   "com.datomic" % "dev-local" % "0.9.225"
