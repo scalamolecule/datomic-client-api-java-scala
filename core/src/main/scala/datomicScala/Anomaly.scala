@@ -1,21 +1,17 @@
 package datomicScala
 
-sealed trait CognitectAnomaly extends RuntimeException {
-  val msg: String
-}
+abstract class CognitectAnomaly(val msg: String, e: Throwable = null) extends RuntimeException(msg, e)
 
-case class Forbidden(httpRequest: Map[String, Any]) extends CognitectAnomaly {
-  val msg = "forbidden"
-}
+case class Forbidden(httpRequest: Map[String, Any], e: Throwable) extends CognitectAnomaly("forbidden", e)
 
-case class NotFound(msg: String) extends CognitectAnomaly
-case class Unavailable(msg: String) extends CognitectAnomaly
-case class Interrupted(msg: String) extends CognitectAnomaly
-case class Incorrect(msg: String) extends CognitectAnomaly
-case class Unsupported(msg: String) extends CognitectAnomaly
-case class Conflict(msg: String) extends CognitectAnomaly
-case class Fault(msg: String) extends CognitectAnomaly
-case class Busy(msg: String) extends CognitectAnomaly
+case class NotFound(override val msg: String, e: Throwable = null) extends CognitectAnomaly(msg, e)
+case class Unavailable(override val msg: String, e: Throwable = null) extends CognitectAnomaly(msg, e)
+case class Interrupted(override val msg: String, e: Throwable = null) extends CognitectAnomaly(msg, e)
+case class Incorrect(override val msg: String, e: Throwable = null) extends CognitectAnomaly(msg, e)
+case class Unsupported(override val msg: String, e: Throwable = null) extends CognitectAnomaly(msg, e)
+case class Conflict(override val msg: String, e: Throwable = null) extends CognitectAnomaly(msg, e)
+case class Fault(override val msg: String, e: Throwable = null) extends CognitectAnomaly(msg, e)
+case class Busy(override val msg: String, e: Throwable = null) extends CognitectAnomaly(msg, e)
 
 /*
 {

@@ -5,6 +5,7 @@ import clojure.lang.PersistentVector
 import datomic.Peer
 import datomic.Util.list
 import datomicScala.client.api.async._
+import datomicScala.client.api.sync.Datomic
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.specification.core.{Fragments, Text}
@@ -25,12 +26,12 @@ trait SpecAsync extends Specification with SchemaAndData {
   def waitFor[T](body: => Future[T]): T = Await.result(body, Duration.Inf)
 
   // todo: awaiting to find a way to invoke data as maps against Peer Server
-    override def map(fs: => Fragments): Fragments =
-      step(setupDevLocal()) ^
-//        fs.mapDescription(d => Text(s"$system: " + d.show))
-        fs.mapDescription(d => Text(s"$system: " + d.show)) ^
-        step(setupPeerServer()) ^
-        fs.mapDescription(d => Text(s"$system: " + d.show))
+  override def map(fs: => Fragments): Fragments =
+    step(setupDevLocal()) ^
+      fs.mapDescription(d => Text(s"$system: " + d.show))
+  //          fs.mapDescription(d => Text(s"$system: " + d.show)) ^
+  //          step(setupPeerServer()) ^
+  //          fs.mapDescription(d => Text(s"$system: " + d.show))
 
 
   def setupDevLocal(): Unit = {
@@ -47,43 +48,38 @@ trait SpecAsync extends Specification with SchemaAndData {
     conn = waitFor(client.connect("hello")).toOption.get
   }
 
-  def resetDevLocalDb(): Unit = {
-    // Re-create db
-    waitFor(client.deleteDatabase("hello"))
-    waitFor(client.deleteDatabase("world"))
-    waitFor(client.createDatabase("hello"))
-    conn = waitFor(client.connect("hello")).toOption.get
-    waitFor(conn.transact(schema(false))).toOption.get
-    txReport = waitFor(conn.transact(data)).toOption.get
-  }
-
-  def resetPeerServerDb(): Unit = {
-    // Install schema if necessary
-    if (waitFor(AsyncDatomic.q(
-      "[:find ?e :where [?e :db/ident :movie/title]]",
-      conn.db
-    )).head.toOption.get.toString == "[]") {
-      println("Installing Peer Server hello db schema...")
-      waitFor(conn.transact(schema(true))).toOption.get
-    }
-
-    // Retract current data
-    waitFor(AsyncDatomic.q("[:find ?e :where [?e :movie/title _]]", conn.db))
-      .head.toOption.get
-      .asInstanceOf[jList[_]].forEach { l =>
-      val eid: Any = l.asInstanceOf[jList[_]].get(0)
-      waitFor(conn.transact(list(list(":db/retractEntity", eid)))).toOption.get
-    }
-
-    txReport = waitFor(conn.transact(data)).toOption.get
-  }
-
-
   class AsyncSetup extends SchemaAndData with Scope {
 
     val isDevLocal = system == "dev-local"
 
-    if (isDevLocal) resetDevLocalDb() else resetPeerServerDb()
+    if (isDevLocal) {
+      // Re-create db
+      waitFor(client.deleteDatabase("hello"))
+      waitFor(client.deleteDatabase("world"))
+      waitFor(client.createDatabase("hello"))
+      conn = waitFor(client.connect("hello")).toOption.get
+      waitFor(conn.transact(schema(false))).toOption.get
+      txReport = waitFor(conn.transact(data)).toOption.get
+    } else {
+      // Install schema if necessary
+      if (waitFor(AsyncDatomic.q(
+        "[:find ?e :where [?e :db/ident :movie/title]]",
+        conn.db
+      )).head.toOption.get.toString == "[]") {
+        println("Installing Peer Server hello db schema...")
+        waitFor(conn.transact(schema(true))).toOption.get
+      }
+
+      // Retract current data
+      waitFor(AsyncDatomic.q("[:find ?e :where [?e :movie/title _]]", conn.db))
+        .head.toOption.get
+        .asInstanceOf[jList[_]].forEach { l =>
+        val eid: Any = l.asInstanceOf[jList[_]].get(0)
+        waitFor(conn.transact(list(list(":db/retractEntity", eid)))).toOption.get
+      }
+
+      txReport = waitFor(conn.transact(data)).toOption.get
+    }
 
     // Databases before and after last tx (after == current)
     lazy val dbBefore = txReport.dbBefore

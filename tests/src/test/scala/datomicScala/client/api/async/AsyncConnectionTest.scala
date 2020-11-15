@@ -54,8 +54,6 @@ class AsyncConnectionTest extends SpecAsync {
     waitFor(conn.transact(list())) must throwA(
       new IllegalArgumentException(ErrorMsg.transact)
     )
-
-    if (isDevLocal) resetDevLocalDb() else resetPeerServerDb()
   }
 
 

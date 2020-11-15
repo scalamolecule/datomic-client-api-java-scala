@@ -58,15 +58,15 @@ case class Channel[T](
     ).toString
 
     cat match {
-      case "not-found"   => NotFound(msg)
-      case "forbidden"   => Forbidden(httpResult(anomalyMap))
-      case "unavailable" => Unavailable(msg)
-      case "interrupted" => Interrupted(msg)
-      case "incorrect"   => Incorrect(msg)
-      case "unsupported" => Unsupported(msg)
-      case "conflict"    => Conflict(msg)
-      case "fault"       => Fault(msg)
-      case "busy"        => Busy(msg)
+      case "not-found"   => NotFound(msg, null)
+      case "forbidden"   => Forbidden(httpResult(anomalyMap), null)
+      case "unavailable" => Unavailable(msg, null)
+      case "interrupted" => Interrupted(msg, null)
+      case "incorrect"   => Incorrect(msg, null)
+      case "unsupported" => Unsupported(msg, null)
+      case "conflict"    => Conflict(msg, null)
+      case "fault"       => Fault(msg, null)
+      case "busy"        => Busy(msg, null)
       case _             => throw new IllegalArgumentException(
         "Unexpected Anomaly:\n" + anomalyMap
       )

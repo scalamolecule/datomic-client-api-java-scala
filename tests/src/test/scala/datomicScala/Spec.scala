@@ -26,7 +26,6 @@ trait Spec extends Specification with SchemaAndData {
 
   def setupDevLocal(): Unit = {
     system = "dev-local"
-    println(1)
     client = Datomic.clientDevLocal("Hello system name")
   }
 
@@ -44,42 +43,38 @@ trait Spec extends Specification with SchemaAndData {
     }
   }
 
-  def resetDevLocalDb(): Unit = {
-    // Re-create db
-    client.deleteDatabase("hello")
-    client.deleteDatabase("world")
-    client.createDatabase("hello")
-    conn = client.connect("hello")
-    conn.transact(schema(false))
-    txReport = conn.transact(data)
-  }
-
-  def resetPeerServerDb(): Unit = {
-    // Install schema if necessary
-    if (Datomic.q(
-      "[:find ?e :where [?e :db/ident :movie/title]]",
-      conn.db
-    ).toString == "[]") {
-      println("Installing Peer Server hello db schema...")
-      conn.transact(schema(true))
-    }
-
-    // Retract current data
-    Datomic.q("[:find ?e :where [?e :movie/title _]]", conn.db)
-      .asInstanceOf[jList[_]].forEach { l =>
-      val eid: Any = l.asInstanceOf[jList[_]].get(0)
-      conn.transact(list(list(":db/retractEntity", eid)))
-    }
-
-    txReport = conn.transact(data)
-  }
-
 
   class Setup extends SchemaAndData with Scope {
 
     val isDevLocal = system == "dev-local"
 
-    if (isDevLocal) resetDevLocalDb() else resetPeerServerDb()
+    if (isDevLocal) {
+      // Re-create db
+      client.deleteDatabase("hello")
+      client.deleteDatabase("world")
+      client.createDatabase("hello")
+      conn = client.connect("hello")
+      conn.transact(schema(false))
+      txReport = conn.transact(data)
+    } else {
+      // Install schema if necessary
+      if (Datomic.q(
+        "[:find ?e :where [?e :db/ident :movie/title]]",
+        conn.db
+      ).toString == "[]") {
+        println("Installing Peer Server hello db schema...")
+        conn.transact(schema(true))
+      }
+
+      // Retract current data
+      Datomic.q("[:find ?e :where [?e :movie/title _]]", conn.db)
+        .asInstanceOf[jList[_]].forEach { l =>
+        val eid: Any = l.asInstanceOf[jList[_]].get(0)
+        conn.transact(list(list(":db/retractEntity", eid)))
+      }
+
+      txReport = conn.transact(data)
+    }
 
     // Databases before and after last tx (after == current)
     lazy val dbBefore = txReport.dbBefore
@@ -97,11 +92,12 @@ trait Spec extends Specification with SchemaAndData {
     lazy val eid    = txData.last.e
 
     // Entity ids of the three films
+    println(txData)
     lazy val List(e1, e2, e3) = txData.map(_.e).distinct.drop(1).sorted
 
     // Ids of the three attributes
     val List(a1, a2, a3) = if (system == "dev-local")
-      List(73, 74, 75) else List(72, 73, 74)
+      List(73, 74, 75) else List(63, 64, 65)
 
     def films(db: Db): Seq[String] = Datomic.q(filmQuery, db)
       .asInstanceOf[PersistentVector].asScala.toList
