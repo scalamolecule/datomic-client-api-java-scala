@@ -91,7 +91,7 @@ public class AsyncConnectionTest extends SetupAsync {
         }
         assertThat(lastTx.getKey(), is(tAfter()));
         assertThat(lastTx.getValue().iterator().next(), is(
-            new Datom(txIdAfter(), 50, txInst(), txIdAfter(), true)
+            new Datom(txAfter(), 50, txInstAfter(), txAfter(), true)
         ));
 
         // Array
@@ -100,7 +100,7 @@ public class AsyncConnectionTest extends SetupAsync {
         Pair<Object, Datom[]> lastTx2 = it2[it2.length - 1];
         assertThat(lastTx2.getKey(), is(tAfter()));
         assertThat(lastTx2.getValue()[0], is(
-            new Datom(txIdAfter(), 50, txInst(), txIdAfter(), true)
+            new Datom(txAfter(), 50, txInstAfter(), txAfter(), true)
         ));
     }
 }

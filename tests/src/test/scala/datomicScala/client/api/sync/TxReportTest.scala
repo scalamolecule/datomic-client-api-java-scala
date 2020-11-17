@@ -7,17 +7,17 @@ class TxReportTest extends Spec {
   sequential
 
   "4 txReport ops" in new Setup {
-    films(txReport.dbBefore) == Nil
-    films(txReport.dbAfter) == threeFilms
+    films(filmDataTx.dbBefore) == Nil
+    films(filmDataTx.dbAfter) == threeFilms
 
     // Tx datom + 3 entities * 3 attributes transacted
-    txReport.txData.count === 1 + 3 * 3
+    filmDataTx.txData.count === 1 + 3 * 3
 
     if (isDevLocal) {
       // No temp ids created with dev-local setup
-      txReport.tempIds.size === 0
+      filmDataTx.tempIds.size === 0
     } else {
-      txReport.tempIds.size === 3
+      filmDataTx.tempIds.size === 3
     }
   }
 }

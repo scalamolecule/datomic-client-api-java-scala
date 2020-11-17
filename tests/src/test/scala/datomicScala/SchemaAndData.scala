@@ -56,7 +56,7 @@ trait SchemaAndData {
     }
   }
 
-  val data: jList[_] = list(
+  val filmData: jList[_] = list(
     Util.map(
       read(":movie/title"), "The Goonies",
       read(":movie/genre"), "action/adventure",

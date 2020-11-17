@@ -18,17 +18,17 @@ public class AsyncTxReportTest extends SetupAsync {
 
     @Test
     public void txReportOps() throws ExecutionException, InterruptedException {
-        assertThat(films(txReport.dbBefore()), is(empty()));
-        assertThat(films(txReport.dbAfter()), is(threeFilms));
+        assertThat(films(filmDataTx.dbBefore()), is(empty()));
+        assertThat(films(filmDataTx.dbAfter()), is(threeFilms));
 
         // Tx datom + 3 entities * 3 attributes transacted
-        assertThat(txReport.txData().count(), is((long) 1 + 3 * 3));
+        assertThat(filmDataTx.txData().count(), is((long) 1 + 3 * 3));
 
         if (isDevLocal()) {
             // No temp ids created with dev-local setup
-            assertThat(txReport.tempIds().size(), is(0));
+            assertThat(filmDataTx.tempIds().size(), is(0));
         } else {
-            assertThat(txReport.tempIds().size(), is(3));
+            assertThat(filmDataTx.tempIds().size(), is(3));
         }
     }
 }

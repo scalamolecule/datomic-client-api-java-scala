@@ -17,7 +17,7 @@ public class DevLocalTest extends SchemaAndData {
         client.createDatabase("hello");
         Connection conn = client.connect("hello");
         conn.transact(schemaDevLocal);
-        conn.transact(data);
+        conn.transact(filmData);
 
         Collection<?> result = Datomic.q(
             map(

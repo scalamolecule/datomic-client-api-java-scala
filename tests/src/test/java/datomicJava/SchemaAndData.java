@@ -54,7 +54,7 @@ public class SchemaAndData {
         )
     );
 
-    public static List<?> data = list(
+    public static List<?> filmData = list(
         map(
             read(":movie/title"), "The Goonies",
             read(":movie/genre"), "action/adventure",

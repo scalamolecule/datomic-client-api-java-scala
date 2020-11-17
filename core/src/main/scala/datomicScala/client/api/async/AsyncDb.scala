@@ -1,7 +1,7 @@
 package datomicScala.client.api.async
 
 import java.util.stream.{Stream => jStream}
-import java.util.{List => jList, Map => jMap}
+import java.util.{Date, List => jList, Map => jMap}
 import clojure.lang.ASeq
 import datomic.Util._
 import datomicClojure.{ErrorMsg, Invoke, InvokeAsync, Lookup}
@@ -25,15 +25,11 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
 
   // Time filters --------------------------------------
 
-  def asOf(t: Long): AsyncDb =
-    AsyncDb(
-      InvokeAsync.asOf(datomicDb, t)
-    )
+  def asOf(t: Long): AsyncDb = AsyncDb(InvokeAsync.asOf(datomicDb, t))
+  def asOf(d: Date): AsyncDb = AsyncDb(InvokeAsync.asOf(datomicDb, d))
 
-  def since(t: Long): AsyncDb =
-    AsyncDb(
-      InvokeAsync.since(datomicDb, t)
-    )
+  def since(t: Long): AsyncDb = AsyncDb(InvokeAsync.since(datomicDb, t))
+  def since(d: Date): AsyncDb = AsyncDb(InvokeAsync.since(datomicDb, d))
 
   def `with`(withDb: AnyRef, stmts: jList[_])
   : Future[Either[CognitectAnomaly, AsyncDb]] = {

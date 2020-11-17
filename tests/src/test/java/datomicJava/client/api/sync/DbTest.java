@@ -65,6 +65,12 @@ public class DbTest extends Setup {
             assertThat(db.dbStats().datoms(), is(greaterThan(0L)));
             assertThat(db.dbStats().attrs().get(":db.install/partition"), is(3L));
         }
+    }
+
+
+    @Test
+    public void lookupAsOf() {
+        Db db = conn.db();
 
         assertThat(db.asOf(tBefore()).dbName(), is("hello"));
         assertThat(db.asOf(tBefore()).basisT(), is(tAfter()));
@@ -72,11 +78,55 @@ public class DbTest extends Setup {
         assertThat(db.asOf(tBefore()).sinceT(), is(0L));
         assertThat(db.asOf(tBefore()).isHistory(), is(false));
 
-        assertThat(db.asOf(tAfter()).dbName(), is("hello"));
+        assertThat(db.asOf(txBefore).basisT(), is(tAfter()));
+        assertThat(db.asOf(txBefore).sinceT(), is(0L));
+
+        assertThat(db.asOf(txInstBefore).basisT(), is(tAfter()));
+        assertThat(db.asOf(txInstBefore).sinceT(), is(0L));
+
+        if (isDevLocal()) {
+            assertThat(db.asOf(txBefore).asOfT(), is(tBefore()));
+            assertThat(db.asOf(txInstBefore).asOfT(), is(tBefore()));
+            // Can't retrieve txInst when `asOf` initiated with Date
+            // assertThat(db.asOf(txInstBefore).asOfT(), is(txInstBefore));
+        } else {
+            // tx returned instead of t
+            assertThat(db.asOf(txBefore).asOfT(), is(txBefore));
+
+            // Doesn't work for sync, but works for async!
+            // Can't retrieve t when `asOf` initiated with Date
+            // assertThat(db.asOf(txInstBefore).asOfT(), is(tBefore()));
+            // txInst returned instead of t
+            assertThat(db.asOf(txInstBefore).asOfInst(), is(txInstBefore));
+        }
+
         assertThat(db.asOf(tAfter()).basisT(), is(tAfter()));
         assertThat(db.asOf(tAfter()).asOfT(), is(tAfter()));
         assertThat(db.asOf(tAfter()).sinceT(), is(0L));
-        assertThat(db.asOf(tAfter()).isHistory(), is(false));
+
+        assertThat(db.asOf(txAfter()).basisT(), is(tAfter()));
+        assertThat(db.asOf(txAfter()).sinceT(), is(0L));
+
+        assertThat(db.asOf(txInstAfter()).basisT(), is(tAfter()));
+        assertThat(db.asOf(txInstAfter()).sinceT(), is(0L));
+
+        if (isDevLocal()) {
+            assertThat(db.asOf(txAfter()).asOfT(), is(tAfter()));
+            assertThat(db.asOf(txInstAfter()).asOfT(), is(tAfter()));
+            // Can't retrieve txInst when `asOf` initiated with Date
+            //assertThat(db.asOf(txInstAfter()).asOfT(), is(txInstAfter()));
+        } else {
+            assertThat(db.asOf(txAfter()).asOfT(), is(txAfter()));
+            // Doesn't work for sync, but works for async!
+            // assertThat(db.asOf(txInstAfter()).asOfT(), is(tAfter()));
+            assertThat(db.asOf(txInstAfter()).asOfInst(), is(txInstAfter()));
+        }
+    }
+
+
+    @Test
+    public void lookupSince() {
+        Db db = conn.db();
 
         assertThat(db.since(tBefore()).dbName(), is("hello"));
         assertThat(db.since(tBefore()).basisT(), is(tAfter()));
@@ -84,11 +134,58 @@ public class DbTest extends Setup {
         assertThat(db.since(tBefore()).sinceT(), is(tBefore()));
         assertThat(db.since(tBefore()).isHistory(), is(false));
 
-        assertThat(db.since(tAfter()).dbName(), is("hello"));
+
+        assertThat(db.since(txBefore).basisT(), is(tAfter()));
+        assertThat(db.since(txBefore).asOfT(), is(0L));
+
+        assertThat(db.since(txInstBefore).basisT(), is(tAfter()));
+        assertThat(db.since(txInstBefore).asOfT(), is(0L));
+
+        if (isDevLocal()) {
+            assertThat(db.since(txBefore).sinceT(), is(tBefore()));
+            assertThat(db.since(txInstBefore).sinceT(), is(tBefore()));
+            // Can't retrieve txInst when `since` initiated with Date
+            // assertThat(db.since(txInstBefore).sinceInst(), is(txInstBefore));
+        } else {
+            // tx returned instead of t
+            assertThat(db.since(txBefore).sinceT(), is(txBefore));
+
+            // Doesn't work for sync, but works for async!
+            // Can't retrieve t when `since` initiated with Date
+            // assertThat(db.since(txInstBefore).sinceT(), is(tBefore()));
+            // txInst returned instead of t
+            assertThat(db.since(txInstBefore).sinceInst(), is(txInstBefore));
+        }
+
         assertThat(db.since(tAfter()).basisT(), is(tAfter()));
         assertThat(db.since(tAfter()).asOfT(), is(0L));
         assertThat(db.since(tAfter()).sinceT(), is(tAfter()));
-        assertThat(db.since(tAfter()).isHistory(), is(false));
+
+        assertThat(db.since(txAfter()).basisT(), is(tAfter()));
+        assertThat(db.since(txAfter()).asOfT(), is(0L));
+
+        assertThat(db.since(txInstAfter()).basisT(), is(tAfter()));
+        assertThat(db.since(txInstAfter()).asOfT(), is(0L));
+
+        if (isDevLocal()) {
+            assertThat(db.since(txAfter()).sinceT(), is(tAfter()));
+            assertThat(db.since(txInstAfter()).sinceT(), is(tAfter()));
+            // Can't retrieve txInst when `since` initiated with Date
+            // assertThat(db.since(txInstAfter()).sinceInst(), is(txInstAfter()));
+
+        } else {
+            // tx returned instead of t
+            assertThat(db.since(txAfter()).sinceT(), is(txAfter()));
+            // Doesn't work for sync, but works for async!
+            // assertThat(db.since(txInstAfter()).sinceT(), is(tAfter()));
+            assertThat(db.since(txInstAfter()).sinceInst(), is(txInstAfter()));
+        }
+    }
+
+
+    @Test
+    public void lookupHistory() {
+        Db db = conn.db();
 
         assertThat(db.history().dbName(), is("hello"));
         assertThat(db.history().basisT(), is(tAfter()));
@@ -111,7 +208,7 @@ public class DbTest extends Setup {
         assertThat(films(conn.db().asOf(tAfter())), is(threeFilms));
 
         // We can use the transaction id too
-        assertThat(films(conn.db().asOf(txIdBefore())), is(empty()));
+        assertThat(films(conn.db().asOf(txBefore)), is(empty()));
     }
 
 
@@ -226,9 +323,9 @@ public class DbTest extends Setup {
         Iterator<Datom> datoms = conn.db().indexRange(":movie/title").iterator();
 
         List<Datom> datomsCheck = new ArrayList<>();
-        datomsCheck.add(new Datom(e2(), a1(), "Commando", txIdAfter(), true));
-        datomsCheck.add(new Datom(e3(), a1(), "Repo Man", txIdAfter(), true));
-        datomsCheck.add(new Datom(e1(), a1(), "The Goonies", txIdAfter(), true));
+        datomsCheck.add(new Datom(e2(), a1(), "Commando", txAfter(), true));
+        datomsCheck.add(new Datom(e3(), a1(), "Repo Man", txAfter(), true));
+        datomsCheck.add(new Datom(e1(), a1(), "The Goonies", txAfter(), true));
         Iterator<Datom> datomsCheckIt = datomsCheck.iterator();
 
         while (datoms.hasNext()) {
@@ -239,8 +336,8 @@ public class DbTest extends Setup {
     @Test
     public void pull() {
         // Pull last movie
-        Map entity = conn.db().pull("[*]", eid());
-        assertThat(entity.get(read(":db/id")), is(eid()));
+        Map entity = conn.db().pull("[*]", e3());
+        assertThat(entity.get(read(":db/id")), is(e3()));
         assertThat(entity.get(read(":movie/title")), is("Repo Man"));
         assertThat(entity.get(read(":movie/genre")), is("punk dystopia"));
         assertThat(entity.get(read(":movie/release-year")), is(1984L));
@@ -249,7 +346,7 @@ public class DbTest extends Setup {
         if (!isDevLocal()) {
             ExceptionInfo timedOut = assertThrows(
                 ExceptionInfo.class,
-                () -> conn.db().pull("[*]", eid(), 1)
+                () -> conn.db().pull("[*]", e3(), 1)
             );
             assertThat(timedOut.getMessage(), is("Datomic Client Timeout"));
             assertThat(timedOut.getData(), is(

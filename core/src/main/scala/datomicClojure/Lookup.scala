@@ -1,5 +1,6 @@
 package datomicClojure
 
+import java.util.Date
 import datomic.Util.read
 
 class Lookup(datomicDb: AnyRef) extends ClojureBridge {
@@ -12,8 +13,10 @@ class Lookup(datomicDb: AnyRef) extends ClojureBridge {
   def basisT: Long = valAt[Long](":t").getOrElse(0)
 
   def asOfT: Long = valAt[Long](":as-of").getOrElse(0)
+  def asOfInst: Date = valAt[Date](":as-of").getOrElse(new Date())
 
   def sinceT: Long = valAt[Long](":since").getOrElse(0)
+  def sinceInst: Date = valAt[Date](":since").getOrElse(new Date())
 
   def isHistory: Boolean = if (isDevLocal) {
     valAt[Boolean](":history?").getOrElse(false)

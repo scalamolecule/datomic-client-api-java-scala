@@ -1,6 +1,6 @@
 package datomicClojure
 
-import java.util.{List => jList, Map => jMap}
+import java.util.{Date, List => jList, Map => jMap}
 import clojure.lang.IFn
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util.read
@@ -53,12 +53,9 @@ trait Invoke extends ClojureBridge {
   }
 
 
-  def asOf(
-    datomicDb: AnyRef,
-    t: Long
-  ): AnyRef = {
-    fn("as-of").invoke(datomicDb, t)
-  }
+  def asOf(datomicDb: AnyRef, t: Long): AnyRef = fn("as-of").invoke(datomicDb, t)
+
+  def asOf(datomicDb: AnyRef, d: Date): AnyRef = fn("as-of").invoke(datomicDb, d)
 
   def clientCloudAWS(
     region: String,
@@ -312,6 +309,9 @@ trait Invoke extends ClojureBridge {
 
   def since(datomicDb: AnyRef, t: Long): AnyRef = {
     fn("since").invoke(datomicDb, t)
+  }
+  def since(datomicDb: AnyRef, d: Date): AnyRef = {
+    fn("since").invoke(datomicDb, d)
   }
 
 

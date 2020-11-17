@@ -16,7 +16,7 @@ class AsyncDbTest extends SpecAsync {
 
 
   "stats" in new AsyncSetup {
-    val db = conn.db
+    val db: AsyncDb = conn.db
 
     db.dbName === "hello"
     db.basisT === tAfter
@@ -52,6 +52,11 @@ class AsyncDbTest extends SpecAsync {
       dbStats.datoms >= 0
       dbStats.attrs.get(":db.install/partition") === 3
     }
+  }
+
+
+  "as-of lookup" in new AsyncSetup {
+    val db: AsyncDb = conn.db
 
     db.asOf(tBefore).dbName === "hello"
     db.asOf(tBefore).basisT === tAfter
@@ -59,11 +64,64 @@ class AsyncDbTest extends SpecAsync {
     db.asOf(tBefore).sinceT === 0
     db.asOf(tBefore).isHistory === false
 
-    db.asOf(tAfter).dbName === "hello"
+    db.asOf(txBefore).basisT === tAfter
+    db.asOf(txBefore).sinceT === 0
+
+    db.asOf(txInstBefore).basisT === tAfter
+    db.asOf(txInstBefore).sinceT === 0
+
+    if (isDevLocal) {
+      db.asOf(txBefore).asOfT === tBefore
+      db.asOf(txInstBefore).asOfT === tBefore
+      // Can't retrieve txInst when `asOf` initiated with Date
+      // db.asOf(txInstBefore).asOfInst === txInstBefore
+    } else {
+      // tx returned instead of t
+      db.asOf(txBefore).asOfT === txBefore
+
+      // Can't retrieve t when `asOf` initiated with Date
+      // db.asOf(txInstBefore).asOfT === tBefore
+      // txInst returned instead of t
+      db.asOf(txInstBefore).asOfInst === txInstBefore
+    }
+
     db.asOf(tAfter).basisT === tAfter
     db.asOf(tAfter).asOfT === tAfter
     db.asOf(tAfter).sinceT === 0
-    db.asOf(tAfter).isHistory === false
+
+    db.asOf(txAfter).basisT === tAfter
+    db.asOf(txAfter).sinceT === 0
+
+    db.asOf(txInstAfter).basisT === tAfter
+    db.asOf(txInstAfter).sinceT === 0
+
+    if (isDevLocal) {
+      db.asOf(txAfter).asOfT === tAfter
+      db.asOf(txInstAfter).asOfT === tAfter
+      // Can't retrieve txInst when `asOf` initiated with Date
+      // db.asOf(txInstAfter).asOfInst === txInstAfter
+    } else {
+      db.asOf(txAfter).asOfT === txAfter // tx !
+      // db.asOf(txInstAfter).asOfT === tAfter // Date not a t
+      db.asOf(txInstAfter).asOfInst === txInstAfter // txInst !
+    }
+
+//    db.asOf(tBefore).dbName === "hello"
+//    db.asOf(tBefore).basisT === tAfter
+//    db.asOf(tBefore).asOfT === tBefore
+//    db.asOf(tBefore).sinceT === 0
+//    db.asOf(tBefore).isHistory === false
+//
+//    db.asOf(tAfter).dbName === "hello"
+//    db.asOf(tAfter).basisT === tAfter
+//    db.asOf(tAfter).asOfT === tAfter
+//    db.asOf(tAfter).sinceT === 0
+//    db.asOf(tAfter).isHistory === false
+  }
+
+
+  "since lookup" in new AsyncSetup {
+    val db: AsyncDb = conn.db
 
     db.since(tBefore).dbName === "hello"
     db.since(tBefore).basisT === tAfter
@@ -71,11 +129,69 @@ class AsyncDbTest extends SpecAsync {
     db.since(tBefore).sinceT === tBefore
     db.since(tBefore).isHistory === false
 
-    db.since(tAfter).dbName === "hello"
+    db.since(txBefore).basisT === tAfter
+    db.since(txBefore).asOfT === 0
+
+    db.since(txInstBefore).basisT === tAfter
+    db.since(txInstBefore).asOfT === 0
+
+    if (isDevLocal) {
+      db.since(txBefore).sinceT === tBefore
+      db.since(txInstBefore).sinceT === tBefore
+      // Can't retrieve txInst when `since` initiated with Date
+      // db.since(txInstBefore).sinceInst === txInstBefore
+    } else {
+      // tx returned instead of t
+      db.since(txBefore).sinceT === txBefore
+
+      // Can't retrieve t when `since` initiated with Date
+      // db.since(txInstBefore).sinceT === tBefore
+      // txInst returned instead of t
+      db.since(txInstBefore).sinceInst === txInstBefore
+    }
+
     db.since(tAfter).basisT === tAfter
     db.since(tAfter).asOfT === 0
     db.since(tAfter).sinceT === tAfter
-    db.since(tAfter).isHistory === false
+
+    db.since(txAfter).basisT === tAfter
+    db.since(txAfter).asOfT === 0
+
+    db.since(txInstAfter).basisT === tAfter
+    db.since(txInstAfter).asOfT === 0
+
+    if (isDevLocal) {
+      db.since(txAfter).sinceT === tAfter
+      db.since(txInstAfter).sinceT === tAfter
+      // Can't retrieve txInst when `since` initiated with Date
+      // db.since(txInstAfter).sinceInst === txInstAfter
+
+    } else {
+      // tx returned instead of t
+      db.since(txAfter).sinceT === txAfter
+
+      // Can't retrieve t when `since` initiated with Date
+      // db.since(txInstAfter).sinceT === tAfter
+      // txInst returned instead of t
+      db.since(txInstAfter).sinceInst === txInstAfter
+    }
+
+//    db.since(tBefore).dbName === "hello"
+//    db.since(tBefore).basisT === tAfter
+//    db.since(tBefore).asOfT === 0
+//    db.since(tBefore).sinceT === tBefore
+//    db.since(tBefore).isHistory === false
+//
+//    db.since(tAfter).dbName === "hello"
+//    db.since(tAfter).basisT === tAfter
+//    db.since(tAfter).asOfT === 0
+//    db.since(tAfter).sinceT === tAfter
+//    db.since(tAfter).isHistory === false
+  }
+
+
+  "history lookup" in new AsyncSetup {
+    val db: AsyncDb = conn.db
 
     db.history.dbName === "hello"
     db.history.basisT === tAfter
@@ -92,21 +208,29 @@ class AsyncDbTest extends SpecAsync {
 
     // State before last tx
     films(conn.db.asOf(tBefore)) === Nil
+    films(conn.db.asOf(txBefore)) === Nil
+    films(conn.db.asOf(txInstBefore)) === Nil
 
     // State after last tx same as current state
     films(conn.db.asOf(tAfter)) === threeFilms
+    films(conn.db.asOf(txAfter)) === threeFilms
+    films(conn.db.asOf(txInstAfter)) === threeFilms
 
     // We can use the transaction id too
-    films(conn.db.asOf(txIdBefore)) === Nil
+    films(conn.db.asOf(txBefore)) === Nil
   }
 
 
   "since" in new AsyncSetup {
     // State created since previous t
     films(conn.db.since(tBefore)) === threeFilms
+    films(conn.db.since(txBefore)) === threeFilms
+    films(conn.db.since(txInstBefore)) === threeFilms
 
     // Nothing created after
     films(conn.db.since(tAfter)) === Nil
+    films(conn.db.since(txAfter)) === Nil
+    films(conn.db.since(txInstAfter)) === Nil
   }
 
 
@@ -200,23 +324,23 @@ class AsyncDbTest extends SpecAsync {
 
   "indexRange" in new AsyncSetup {
     waitFor(conn.db.indexRange(":movie/title")).toOption.get.toScala(List).sortBy(_.e) === List(
-      Datom(e1, a1, "The Goonies", txIdAfter, true),
-      Datom(e2, a1, "Commando", txIdAfter, true),
-      Datom(e3, a1, "Repo Man", txIdAfter, true),
+      Datom(e1, a1, "The Goonies", txAfter, true),
+      Datom(e2, a1, "Commando", txAfter, true),
+      Datom(e3, a1, "Repo Man", txAfter, true),
     )
   }
 
 
   "pull" in new AsyncSetup {
-    waitFor(conn.db.pull("[*]", eid)).toOption.get.toString ===
-      s"""{:db/id $eid, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
+    waitFor(conn.db.pull("[*]", e3)).toOption.get.toString ===
+      s"""{:db/id $e3, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
 
-    waitFor(conn.db.pull("[*]", eid, 1000)).toOption.get.toString ===
-      s"""{:db/id $eid, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
+    waitFor(conn.db.pull("[*]", e3, 1000)).toOption.get.toString ===
+      s"""{:db/id $e3, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
 
     // dev-local in-memory db will pull within 1 ms
     if (!isDevLocal)
-      waitFor(conn.db.pull("[*]", eid, 1)).toOption.get must throwA(
+      waitFor(conn.db.pull("[*]", e3, 1)).toOption.get must throwA(
         new clojure.lang.ExceptionInfo(
           "Datomic Client Timeout",
           new PersistentArrayMap(

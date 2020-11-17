@@ -12,7 +12,7 @@ public class PeerServerTest2 extends SchemaAndData {
         Client client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998");
         Connection conn = client.connect("hello");
         conn.transact(schemaPeerServer);
-        conn.transact(data);
+        conn.transact(filmData);
 
         Collection<?> result = Datomic.q(
             "[:find ?e :where [?e :db/ident :movie/title]]",

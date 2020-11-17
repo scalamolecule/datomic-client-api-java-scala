@@ -1,7 +1,7 @@
 package datomicJava.client.api.sync
 
 import java.util.stream.{Stream => jStream}
-import java.util.{List => jList, Map => jMap}
+import java.util.{Date, List => jList, Map => jMap}
 import datomic.Util._
 import datomicClojure.{ErrorMsg, Invoke, Lookup}
 import datomicJava.Helper
@@ -23,8 +23,10 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) {
   // Time filters --------------------------------------
 
   def asOf(t: Long): Db = Db(Invoke.asOf(datomicDb, t))
+  def asOf(d: Date): Db = Db(Invoke.asOf(datomicDb, d))
 
   def since(t: Long): Db = Db(Invoke.since(datomicDb, t))
+  def since(d: Date): Db = Db(Invoke.since(datomicDb, d))
 
   def `with`(withDb: AnyRef, stmts: jList[_]): Db = {
     if (withDb.isInstanceOf[Db])

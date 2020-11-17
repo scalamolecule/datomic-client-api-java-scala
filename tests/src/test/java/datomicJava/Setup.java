@@ -1,7 +1,5 @@
 package datomicJava;
 
-import datomic.Peer;
-import datomicJava.client.api.sync.TxReport;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.sync.*;
 import org.junit.Before;
@@ -20,7 +18,7 @@ public class Setup extends SchemaAndData {
     public String system;
     public Client client;
     public Connection conn;
-    public TxReport txReport;
+    public TxReport filmDataTx;
 
 
     @Parameterized.Parameters(name = "{0}")
@@ -47,14 +45,23 @@ public class Setup extends SchemaAndData {
         }
     }
 
+    public Long txBefore = 0L;
+    public Date txInstBefore = null;
+
     public void resetDevLocalDb() {
         // Re-create db
         client.deleteDatabase("hello");
         client.deleteDatabase("world");
         client.createDatabase("hello");
         conn = client.connect("hello");
-        conn.transact(schemaDevLocal);
-        txReport = conn.transact(data);
+
+        // Schema
+        TxReport schemaTx = conn.transact(schemaDevLocal);
+        txBefore = schemaTx.tx();
+        txInstBefore = schemaTx.txInst();
+
+        // Data
+        filmDataTx = conn.transact(filmData);
     }
 
     public void resetPeerServerDb() {
@@ -70,50 +77,38 @@ public class Setup extends SchemaAndData {
         }
 
         // Retract current data
+        final ArrayList<TxReport> lastTxList = new ArrayList<>();
         Datomic.q("[:find ?e :where [?e :movie/title _]]", conn.db())
             .forEach(row ->
-                conn.transact(list(list(":db/retractEntity", row.get(0))))
+                lastTxList.add(conn.transact(list(list(":db/retractEntity", row.get(0)))))
             );
+        int retractionCount = lastTxList.size();
+        if (retractionCount > 0) {
+            TxReport lastTx = lastTxList.get(retractionCount - 1);
+            txBefore = lastTx.tx();
+            txInstBefore = lastTx.txInst();
+        }
 
-        txReport = conn.transact(data);
+        // Data
+        filmDataTx = conn.transact(filmData);
     }
 
 
-    public boolean isDevLocal() {
-        return system.equals("dev-local");
-    }
+    public boolean isDevLocal() {return system.equals("dev-local");}
 
-    // Databases before and after last tx (after == current)
-    public Db dbBefore() {
-        return txReport.dbBefore();
-    }
+    public Db dbAfter() {return filmDataTx.dbAfter();}
 
-    public Db dbAfter() {
-        return txReport.dbAfter();
-    }
+    public long tBefore() {return filmDataTx.basisT();}
 
-    // Get t before and after last tx
-    public long tBefore() {
-        return dbBefore().basisT();
-    }
+    public long tAfter() {return filmDataTx.t();}
 
-    public long tAfter() {
-        return dbAfter().basisT();
-    }
-
-    public long txIdBefore() {
-        return (long) Peer.toTx(tBefore());
-    }
-
-    public long txIdAfter() {
-        return (long) Peer.toTx(tAfter());
-    }
+    public long txAfter() {return filmDataTx.tx();}
 
     private ArrayList<Datom> txDataArray = null;
 
     public ArrayList<Datom> txData() {
         if (txDataArray == null) {
-            Stream<Datom> stream = txReport.txData();
+            Stream<Datom> stream = filmDataTx.txData();
             txDataArray = new ArrayList<Datom>();
             for (java.util.Iterator<Datom> it = stream.iterator(); it.hasNext(); ) {
                 txDataArray.add(it.next());
@@ -122,33 +117,16 @@ public class Setup extends SchemaAndData {
         return txDataArray;
     }
 
-    public Date txInst() {
-        return (Date) txData().get(0).v();
-    }
-
-    public long eid() {
-        return txData().get(txData().size() - 1).e();
-    }
+    public Date txInstAfter() {return filmDataTx.txInst();}
 
     // Entity ids of the three films
-    public long e1() {
-        return txData().get(1).e();
-    }
-    public long e2() {
-        return txData().get(4).e();
-    }
-    public long e3() {
-        return txData().get(7).e();
-    }
+    public long e1() {return txData().get(1).e();}
 
-    // Ids of the three attributes
-    public int a1() {
-        if (isDevLocal()) {
-            return 73;
-        } else {
-            return 72;
-        }
-    }
+    public long e2() {return txData().get(4).e();}
+
+    public long e3() {return txData().get(7).e();}
+
+    public int a1() {return (isDevLocal()) ? 73 : 72;}
 
     // Convenience retriever
     public List<String> films(Db db) {

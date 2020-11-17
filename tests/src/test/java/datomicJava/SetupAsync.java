@@ -1,10 +1,9 @@
 package datomicJava;
 
 import datomic.Peer;
-import datomicJava.client.api.async.Either;
-import datomicJava.client.api.async.Right;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.async.*;
+import datomicJava.client.api.sync.Db;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -22,7 +21,7 @@ public class SetupAsync extends SchemaAndData {
     public String system;
     public AsyncClient client;
     public AsyncConnection conn;
-    public AsyncTxReport txReport;
+    public AsyncTxReport filmDataTx;
 
 
     @Parameterized.Parameters(name = "{0}")
@@ -30,7 +29,7 @@ public class SetupAsync extends SchemaAndData {
         return Arrays.asList(new Object[][]{
             {"dev-local"},
             // todo: when map-bug is fixed, these should pass:
-            {"peer-server"}
+//            {"peer-server"}
         });
     }
 
@@ -50,14 +49,24 @@ public class SetupAsync extends SchemaAndData {
         }
     }
 
+    public Long txBefore = 0L;
+    public Date txInstBefore = null;
+
     public void resetDevLocalDb() throws ExecutionException, InterruptedException {
         // Re-create db
         client.deleteDatabase("hello").get();
         client.deleteDatabase("world").get();
         client.createDatabase("hello").get();
         conn = ((Right<?, AsyncConnection>) client.connect("hello").get()).right_value();
-        conn.transact(schemaDevLocal).get();
-        txReport = ((Right<?, AsyncTxReport>) conn.transact(data).get()).right_value();
+
+        // Schema
+        AsyncTxReport schemaTx =
+            ((Right<?, AsyncTxReport>) conn.transact(schemaDevLocal).get()).right_value();
+        txBefore = schemaTx.tx();
+        txInstBefore = schemaTx.txInst();
+
+        // Data
+        filmDataTx = ((Right<?, AsyncTxReport>) conn.transact(filmData).get()).right_value();
     }
 
     public void resetPeerServerDb() throws ExecutionException, InterruptedException {
@@ -77,12 +86,15 @@ public class SetupAsync extends SchemaAndData {
             "[:find ?e :where [?e :movie/title _]]",
             conn.db()
         ).get().chunk();
+        final ArrayList<AsyncTxReport> lastTxList = new ArrayList<>();
         Stream<?> rows = ((Right<?, Stream<?>>) firstChunk).right_value();
         rows.forEach(row -> {
                 try {
-                    conn.transact(
-                        list(list(":db/retractEntity", ((List<?>) row).get(0)))
-                    ).get();
+                    lastTxList.add(
+                        ((Right<?, AsyncTxReport>) conn.transact(
+                            list(list(":db/retractEntity", ((List<?>) row).get(0)))
+                        ).get()).right_value()
+                    );
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (ExecutionException e) {
@@ -90,83 +102,50 @@ public class SetupAsync extends SchemaAndData {
                 }
             }
         );
+        int retractionCount = lastTxList.size();
+        if (retractionCount > 0) {
+            AsyncTxReport lastTx = lastTxList.get(retractionCount - 1);
+            txBefore = lastTx.tx();
+            txInstBefore = lastTx.txInst();
+        }
 
-        txReport = ((Right<?, AsyncTxReport>) conn.transact(data).get()).right_value();
+        filmDataTx = ((Right<?, AsyncTxReport>) conn.transact(filmData).get()).right_value();
     }
 
 
-    public boolean isDevLocal() {
-        return system.equals("dev-local");
-    }
+    public boolean isDevLocal() {return system.equals("dev-local");}
 
-    // Databases before and after last tx (after == current)
-    public AsyncDb dbBefore() {
-        return txReport.dbBefore();
-    }
+    public AsyncDb dbAfter() {return filmDataTx.dbAfter();}
 
-    public AsyncDb dbAfter() {
-        return txReport.dbAfter();
-    }
+    public long tBefore() {return filmDataTx.basisT();}
 
-    // Get t before and after last tx
-    public long tBefore() {
-        return dbBefore().basisT();
-    }
+    public long tAfter() {return filmDataTx.t();}
 
-    public long tAfter() {
-        return dbAfter().basisT();
-    }
-
-    public long txIdBefore() {
-        return (long) Peer.toTx(tBefore());
-    }
-
-    public long txIdAfter() {
-        return (long) Peer.toTx(tAfter());
-    }
+    public long txAfter() {return filmDataTx.tx();}
 
     private ArrayList<Datom> txDataArray = null;
 
     public ArrayList<Datom> txData() {
         if (txDataArray == null) {
-            Stream<Datom> stream = txReport.txData();
+            Stream<Datom> stream = filmDataTx.txData();
             txDataArray = new ArrayList<Datom>();
-            for (Iterator<Datom> it = stream.iterator(); it.hasNext(); ) {
+            for (java.util.Iterator<Datom> it = stream.iterator(); it.hasNext(); ) {
                 txDataArray.add(it.next());
             }
         }
         return txDataArray;
     }
 
-    public Date txInst() {
-        return (Date) txData().get(0).v();
-    }
-
-    public long eid() {
-        return txData().get(txData().size() - 1).e();
-    }
+    public Date txInstAfter() {return filmDataTx.txInst();}
 
     // Entity ids of the three films
-    public long e1() {
-        return txData().get(1).e();
-    }
+    public long e1() {return txData().get(1).e();}
 
-    public long e2() {
-        return txData().get(4).e();
-    }
+    public long e2() {return txData().get(4).e();}
 
-    public long e3() {
-        return txData().get(7).e();
-    }
+    public long e3() {return txData().get(7).e();}
 
-    // Ids of the three attributes
-    public int a1() {
-        if (isDevLocal()) {
-            return 73;
-        } else {
-            return 72;
-        }
-    }
+    public int a1() {return (isDevLocal()) ? 73 : 72;}
 
     // Convenience retriever
     public List<String> films(AsyncDb db) throws ExecutionException, InterruptedException {

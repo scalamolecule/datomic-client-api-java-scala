@@ -65,31 +65,31 @@ class AsyncConnectionTest extends SpecAsync {
     val iterable: Iterable[(Long, Iterable[Datom])] = waitFor(conn.txRange(limit = -1)).toOption.get
     iterable.last._1 === tAfter
     iterable.last._2.toList === List(
-      Datom(txIdAfter, 50, txInst, txIdAfter, true),
-      Datom(e1, a1, "The Goonies", txIdAfter, true),
-      Datom(e1, a2, "action/adventure", txIdAfter, true),
-      Datom(e1, a3, 1985, txIdAfter, true),
-      Datom(e2, a1, "Commando", txIdAfter, true),
-      Datom(e2, a2, "thriller/action", txIdAfter, true),
-      Datom(e2, a3, 1985, txIdAfter, true),
-      Datom(e3, a1, "Repo Man", txIdAfter, true),
-      Datom(e3, a2, "punk dystopia", txIdAfter, true),
-      Datom(e3, a3, 1984, txIdAfter, true)
+      Datom(txAfter, 50, txInstAfter, txAfter, true),
+      Datom(e1, a1, "The Goonies", txAfter, true),
+      Datom(e1, a2, "action/adventure", txAfter, true),
+      Datom(e1, a3, 1985, txAfter, true),
+      Datom(e2, a1, "Commando", txAfter, true),
+      Datom(e2, a2, "thriller/action", txAfter, true),
+      Datom(e2, a3, 1985, txAfter, true),
+      Datom(e3, a1, "Repo Man", txAfter, true),
+      Datom(e3, a2, "punk dystopia", txAfter, true),
+      Datom(e3, a3, 1984, txAfter, true)
     )
 
     val array: Array[(Long, Array[Datom])] = waitFor(conn.txRangeArray(limit = -1)).toOption.get
     array.last._1 === tAfter
     array.last._2 === Array(
-      Datom(txIdAfter, 50, txInst, txIdAfter, true),
-      Datom(e1, a1, "The Goonies", txIdAfter, true),
-      Datom(e1, a2, "action/adventure", txIdAfter, true),
-      Datom(e1, a3, 1985, txIdAfter, true),
-      Datom(e2, a1, "Commando", txIdAfter, true),
-      Datom(e2, a2, "thriller/action", txIdAfter, true),
-      Datom(e2, a3, 1985, txIdAfter, true),
-      Datom(e3, a1, "Repo Man", txIdAfter, true),
-      Datom(e3, a2, "punk dystopia", txIdAfter, true),
-      Datom(e3, a3, 1984, txIdAfter, true)
+      Datom(txAfter, 50, txInstAfter, txAfter, true),
+      Datom(e1, a1, "The Goonies", txAfter, true),
+      Datom(e1, a2, "action/adventure", txAfter, true),
+      Datom(e1, a3, 1985, txAfter, true),
+      Datom(e2, a1, "Commando", txAfter, true),
+      Datom(e2, a2, "thriller/action", txAfter, true),
+      Datom(e2, a3, 1985, txAfter, true),
+      Datom(e3, a1, "Repo Man", txAfter, true),
+      Datom(e3, a2, "punk dystopia", txAfter, true),
+      Datom(e3, a3, 1984, txAfter, true)
     )
   }
 

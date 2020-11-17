@@ -2,10 +2,8 @@ package datomicScala
 
 import java.util.{Date, List => jList}
 import clojure.lang.PersistentVector
-import datomic.Peer
 import datomic.Util.list
 import datomicScala.client.api.async._
-import datomicScala.client.api.sync.Datomic
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.specification.core.{Fragments, Text}
@@ -17,10 +15,10 @@ import scala.jdk.StreamConverters._
 
 trait SpecAsync extends Specification with SchemaAndData {
 
-  var system  : String          = "Not set yet. Can be: dev-local / peer-server / cloud"
-  var client  : AsyncClient     = null // set in setup
-  var conn    : AsyncConnection = null // set in setup
-  var txReport: AsyncTxReport   = null // set in setup
+  var system    : String          = "Not set yet. Can be: dev-local / peer-server / cloud"
+  var client    : AsyncClient     = null // set in setup
+  var conn      : AsyncConnection = null // set in setup
+  var filmDataTx: AsyncTxReport   = null // set in setup
 
   // Convenience await (name 'await' is already used by specs2)
   def waitFor[T](body: => Future[T]): T = Await.result(body, Duration.Inf)
@@ -49,6 +47,8 @@ trait SpecAsync extends Specification with SchemaAndData {
   }
 
   class AsyncSetup extends SchemaAndData with Scope {
+    var txBefore    : Long = 0L
+    var txInstBefore: Date = null
 
     val isDevLocal = system == "dev-local"
 
@@ -58,9 +58,15 @@ trait SpecAsync extends Specification with SchemaAndData {
       waitFor(client.deleteDatabase("world"))
       waitFor(client.createDatabase("hello"))
       conn = waitFor(client.connect("hello")).toOption.get
-      waitFor(conn.transact(schema(false))).toOption.get
-      txReport = waitFor(conn.transact(data)).toOption.get
+      // Schema
+      val schemaTx = waitFor(conn.transact(schema(false))).toOption.get
+      txBefore = schemaTx.tx
+      txInstBefore = schemaTx.txInst
+      // Data
+      filmDataTx = waitFor(conn.transact(filmData)).toOption.get
+
     } else {
+
       // Install schema if necessary
       if (waitFor(AsyncDatomic.q(
         "[:find ?e :where [?e :db/ident :movie/title]]",
@@ -71,33 +77,43 @@ trait SpecAsync extends Specification with SchemaAndData {
       }
 
       // Retract current data
+      var lastTx: AsyncTxReport = null
       waitFor(AsyncDatomic.q("[:find ?e :where [?e :movie/title _]]", conn.db))
         .head.toOption.get
         .asInstanceOf[jList[_]].forEach { l =>
         val eid: Any = l.asInstanceOf[jList[_]].get(0)
-        waitFor(conn.transact(list(list(":db/retractEntity", eid)))).toOption.get
+        lastTx = waitFor(conn.transact(list(list(":db/retractEntity", eid)))).toOption.get
       }
+      txBefore = lastTx.tx
+      txInstBefore = lastTx.txInst
 
-      txReport = waitFor(conn.transact(data)).toOption.get
+      filmDataTx = waitFor(conn.transact(filmData)).toOption.get
     }
 
-    // Databases before and after last tx (after == current)
-    lazy val dbBefore = txReport.dbBefore
-    lazy val dbAfter  = txReport.dbAfter
+//    // Databases before and after last tx (after == current)
+//    lazy val dbBefore = filmDataTx.dbBefore
+//    lazy val dbAfter  = filmDataTx.dbAfter
+//
+//    // Get t before and after last tx
+//    lazy val tBefore = dbBefore.basisT
+//    lazy val tAfter  = dbAfter.basisT
+//
+//    lazy val txBefore = Peer.toTx(tBefore).asInstanceOf[Long]
+//    lazy val txAfter  = Peer.toTx(tAfter).asInstanceOf[Long]
+//
+//    lazy val txData      = filmDataTx.txData.toScala(List)
+//    lazy val txInstAfter = txData.head.v.asInstanceOf[Date]
+//
+//    // Entity ids of the three films
+//    lazy val List(e1, e2, e3) = txData.map(_.e).distinct.drop(1).sorted
 
-    // Get t before and after last tx
-    lazy val tBefore = dbBefore.basisT
-    lazy val tAfter  = dbAfter.basisT
+    lazy val dbAfter          = filmDataTx.dbAfter
+    lazy val tBefore          = filmDataTx.basisT
+    lazy val tAfter           = filmDataTx.t
+    lazy val txAfter          = filmDataTx.tx
+    lazy val txInstAfter      = filmDataTx.txInst
+    lazy val List(e1, e2, e3) = filmDataTx.txData.toScala(List).map(_.e).distinct.drop(1).sorted
 
-    lazy val txIdBefore = Peer.toTx(tBefore).asInstanceOf[Long]
-    lazy val txIdAfter  = Peer.toTx(tAfter).asInstanceOf[Long]
-
-    lazy val txData = txReport.txData.toScala(List)
-    lazy val txInst = txData.head.v.asInstanceOf[Date]
-    lazy val eid    = txData.last.e
-
-    // Entity ids of the three films
-    lazy val List(e1, e2, e3) = txData.map(_.e).distinct.drop(1).sorted
 
     // Ids of the three attributes
     val List(a1, a2, a3) = if (system == "dev-local")
