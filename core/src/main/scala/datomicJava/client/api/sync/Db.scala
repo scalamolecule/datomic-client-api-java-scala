@@ -2,7 +2,6 @@ package datomicJava.client.api.sync
 
 import java.util.stream.{Stream => jStream}
 import java.util.{Date, List => jList, Map => jMap}
-import datomic.Util._
 import datomicClojure.{ErrorMsg, Invoke, Lookup}
 import datomicJava.Helper
 import datomicJava.Helper.streamOfDatoms
@@ -28,14 +27,19 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) {
   def since(t: Long): Db = Db(Invoke.since(datomicDb, t))
   def since(d: Date): Db = Db(Invoke.since(datomicDb, d))
 
-  def `with`(withDb: AnyRef, stmts: jList[_]): Db = {
-    if (withDb.isInstanceOf[Db])
-      throw new IllegalArgumentException(ErrorMsg.`with`)
-    Db(
-      Invoke.`with`(withDb, stmts).asInstanceOf[jMap[_, _]]
-        .get(read(":db-after")).asInstanceOf[AnyRef]
-    )
-  }
+
+  // Presuming a `withDb` is passed.
+  def `with`(withDb: AnyRef, stmts: jList[_]): TxReport =
+    TxReport(Invoke.`with`(withDb, stmts).asInstanceOf[jMap[_, _]])
+
+  // Convenience method to pass with-modified Db
+  def `with`(db: Db, stmts: jList[_]): TxReport =
+    `with`(db.datomicDb, stmts)
+
+  // Convenience method to pass with-modified Db from TxReport
+  def `with`(txReport: TxReport, stmts: jList[_]): TxReport =
+    `with`(txReport.dbAfter.datomicDb, stmts)
+
 
   def history: Db = Db(Invoke.history(datomicDb))
 

@@ -224,20 +224,28 @@ public class DbTest extends Setup {
 
     @Test
     public void with() {
-        Object wDb = conn.withDb();
-        Db db = conn.db();
+        Db originalDb = conn.db();
 
-        // Updated `with` db value
-        Db wDb2 = db.with(wDb, film4);
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        TxReport txReport4films = originalDb.with(conn.withDb(), film4);
+        Db db4Films = txReport4films.dbAfter();
+        assertThat(films(db4Films), is(fourFilms));
 
-        assertThat(films(wDb2), is(fourFilms));
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        TxReport txReport5films = originalDb.with(db4Films, film5);
+        Db db5Films = txReport5films.dbAfter();
+        assertThat(films(db5Films), is(fiveFilms));
 
-        // Add more data to `wDb2`
-        Db wDb3 = db.with(wDb2.datomicDb(), film5);
-        assertThat(films(wDb3), is(fiveFilms));
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        TxReport txReport6films = originalDb.with(txReport5films, film6);
+        Db db6Films = txReport6films.dbAfter();
+        assertThat(films(db6Films), is(sixFilms));
 
-        // Current state is unaffected
-        assertThat(films(conn.db()), is(threeFilms));
+        // Original state is unaffected
+        assertThat(films(originalDb), is(threeFilms));
     }
 
 

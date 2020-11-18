@@ -79,9 +79,11 @@ public class SchemaAndData {
     public static List<?> threeFilms = list("Commando", "Repo Man", "The Goonies");
     public static List<?> fourFilms  = list("Commando", "Film 4", "Repo Man", "The Goonies");
     public static List<?> fiveFilms  = list("Commando", "Film 4", "Film 5", "Repo Man", "The Goonies");
+    public static List<?> sixFilms  = list("Commando", "Film 4", "Film 5", "Film 6", "Repo Man", "The Goonies");
 
     public static List<?> film4 = list(map(read(":movie/title"), "Film 4"));
     public static List<?> film5 = list(map(read(":movie/title"), "Film 5"));
+    public static List<?> film6 = list(map(read(":movie/title"), "Film 6"));
     public static List<?> film4and5 = list(
         map(read(":movie/title"), "Film 4"),
         map(read(":movie/title"), "Film 5")

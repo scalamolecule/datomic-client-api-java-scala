@@ -232,20 +232,34 @@ public class AsyncDbTest extends SetupAsync {
 
     @Test
     public void with() throws ExecutionException, InterruptedException {
-        Object wDb = ((Right<?, Object>) conn.withDb().get()).right_value();
-        AsyncDb db = conn.db();
+        AsyncDb originalDb = conn.db();
 
-        // Updated `with` db value
-        AsyncDb wDb2 = ((Right<?, AsyncDb>) db.with(wDb, film4).get()).right_value();
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        AsyncTxReport txReport4films = (
+            (Right<?, AsyncTxReport>) originalDb.with(conn.withDb(), film4).get()
+        ).right_value();
+        AsyncDb db4Films = txReport4films.dbAfter();
+        assertThat(films(db4Films), is(fourFilms));
 
-        assertThat(films(wDb2), is(fourFilms));
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        AsyncTxReport txReport5films = (
+            (Right<?, AsyncTxReport>) originalDb.with(db4Films, film5).get()
+        ).right_value();
+        AsyncDb db5Films = txReport5films.dbAfter();
+        assertThat(films(db5Films), is(fiveFilms));
 
-        // Add more data to `wDb2`
-        AsyncDb wDb3 = ((Right<?, AsyncDb>) db.with(wDb2.datomicDb(), film5).get()).right_value();
-        assertThat(films(wDb3), is(fiveFilms));
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        AsyncTxReport txReport6films = (
+            (Right<?, AsyncTxReport>) originalDb.with(txReport5films, film6).get()
+        ).right_value();
+        AsyncDb db6Films = txReport6films.dbAfter();
+        assertThat(films(db6Films), is(sixFilms));
 
-        // Current state is unaffected
-        assertThat(films(conn.db()), is(threeFilms));
+        // Original state is unaffected
+        assertThat(films(originalDb), is(threeFilms));
     }
 
 

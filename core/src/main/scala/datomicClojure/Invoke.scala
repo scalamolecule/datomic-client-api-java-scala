@@ -4,7 +4,6 @@ import java.util.{Date, List => jList, Map => jMap}
 import clojure.lang.IFn
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util.read
-import datomic.client.api.protocols
 
 
 object Invoke extends Invoke {

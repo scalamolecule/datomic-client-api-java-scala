@@ -2,9 +2,9 @@ package datomicScala.client.api.async
 
 import java.util.stream.{Stream => jStream}
 import java.util.{Date, List => jList, Map => jMap}
-import clojure.lang.ASeq
+import clojure.lang.{ASeq, LazySeq}
 import datomic.Util._
-import datomicClojure.{ErrorMsg, Invoke, InvokeAsync, Lookup}
+import datomicClojure.{ErrorMsg, InvokeAsync, Lookup}
 import datomicScala.client.api.{Datom, DbStats}
 import datomicScala.{CognitectAnomaly, Helper}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -17,7 +17,8 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     Channel[jMap[_, _]](
       InvokeAsync.dbStats(datomicDb)
     ).lazyList.head match {
-      case Right(dbStats) => Channel[DbStats](Helper.dbStats(isDevLocal, dbStats)).lazyList.head
+      case Right(dbStats) =>
+        Channel[DbStats](Helper.dbStats(isDevLocal, dbStats)).lazyList.head
       case Left(anomaly)  => Left(anomaly)
     }
   }
@@ -31,25 +32,44 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
   def since(t: Long): AsyncDb = AsyncDb(InvokeAsync.since(datomicDb, t))
   def since(d: Date): AsyncDb = AsyncDb(InvokeAsync.since(datomicDb, d))
 
+
+  // Presuming a `withDb` is passed.
   def `with`(withDb: AnyRef, stmts: jList[_])
-  : Future[Either[CognitectAnomaly, AsyncDb]] = {
-    if (withDb.isInstanceOf[AsyncDb])
-      throw new IllegalArgumentException(ErrorMsg.`with`)
+  : Future[Either[CognitectAnomaly, AsyncTxReport]] = {
     Future(
       Channel[AnyRef](
         InvokeAsync.`with`(withDb, stmts)
       ).lazyList.head match {
         case Right(withDb) =>
-          Channel[AsyncDb](
-            AsyncDb(
+          Channel[AsyncTxReport](
+            AsyncTxReport(
               withDb.asInstanceOf[jMap[_, _]]
-                .get(read(":db-after")).asInstanceOf[AnyRef]
             )
           ).lazyList.head
         case Left(anomaly) => Left(anomaly)
       }
     )
   }
+
+  // Convenience method to pass with-modified Db from `conn.withDb`
+  def `with`(withDbFut: Future[Either[CognitectAnomaly, AnyRef]], stmts: jList[_])
+  : Future[Either[CognitectAnomaly, AsyncTxReport]] = {
+    withDbFut.flatMap {
+      case Right(withDb) => `with`(withDb, stmts)
+      case Left(anomaly) => Future(Left(anomaly))
+    }
+  }
+
+  // Convenience method to pass with-modified Db
+  def `with`(db: AsyncDb, stmts: jList[_])
+  : Future[Either[CognitectAnomaly, AsyncTxReport]] =
+    `with`(db.datomicDb, stmts)
+
+  // Convenience method to pass with-modified Db from TxReport
+  def `with`(txReport: AsyncTxReport, stmts: jList[_])
+  : Future[Either[CognitectAnomaly, AsyncTxReport]] =
+    `with`(txReport.dbAfter.datomicDb, stmts)
+
 
   def history: AsyncDb = AsyncDb(
     InvokeAsync.history(datomicDb)
@@ -71,7 +91,8 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     Channel[Any](
       InvokeAsync.datoms(datomicDb, index, components)
     ).lazyList.head match {
-      case Right(datoms) => Channel[jStream[Datom]](Helper.streamOfDatoms(datoms)).lazyList.head
+      case Right(datoms) =>
+        Channel[jStream[Datom]](Helper.streamOfDatoms(datoms)).lazyList.head
       case Left(anomaly) => Left(anomaly)
     }
   }
@@ -90,7 +111,8 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
         datomicDb, attrId, start, end, timeout, offset, limit
       )
     ).lazyList.head match {
-      case Right(datoms) => Channel[jStream[Datom]](Helper.streamOfDatoms(datoms)).lazyList.head
+      case Right(datoms) =>
+        Channel[jStream[Datom]](Helper.streamOfDatoms(datoms)).lazyList.head
       case Left(anomaly) => Left(anomaly)
     }
   }
@@ -126,12 +148,16 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
       throw new IllegalArgumentException(ErrorMsg.indexPull)
     Future(
       Channel[Any](
-        Invoke.indexPull(
+        InvokeAsync.indexPull(
           datomicDb, index, selector, start, reverse, timeout, offset, limit
         )
       ).lazyList.head match {
-        case Right(indexPull) => Channel[jStream[_]](indexPull.asInstanceOf[ASeq].stream()).lazyList.head
-        case Left(anomaly)    => Left(anomaly)
+        case Right(indexPull) =>
+          Channel[jStream[_]](
+            indexPull.asInstanceOf[LazySeq].stream()
+          ).lazyList.head
+
+        case Left(anomaly) => Left(anomaly)
       }
     )
   }

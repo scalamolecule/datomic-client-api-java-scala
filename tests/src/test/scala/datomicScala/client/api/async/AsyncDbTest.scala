@@ -5,8 +5,9 @@ import java.util.{Map => jMap}
 import clojure.lang.{PersistentArrayMap, PersistentVector}
 import datomic.Util
 import datomic.Util._
-import datomicScala.SpecAsync
+import datomicScala.{CognitectAnomaly, SpecAsync}
 import datomicScala.client.api.{Datom, DbStats}
+import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
@@ -105,18 +106,6 @@ class AsyncDbTest extends SpecAsync {
       // db.asOf(txInstAfter).asOfT === tAfter // Date not a t
       db.asOf(txInstAfter).asOfInst === txInstAfter // txInst !
     }
-
-//    db.asOf(tBefore).dbName === "hello"
-//    db.asOf(tBefore).basisT === tAfter
-//    db.asOf(tBefore).asOfT === tBefore
-//    db.asOf(tBefore).sinceT === 0
-//    db.asOf(tBefore).isHistory === false
-//
-//    db.asOf(tAfter).dbName === "hello"
-//    db.asOf(tAfter).basisT === tAfter
-//    db.asOf(tAfter).asOfT === tAfter
-//    db.asOf(tAfter).sinceT === 0
-//    db.asOf(tAfter).isHistory === false
   }
 
 
@@ -175,18 +164,6 @@ class AsyncDbTest extends SpecAsync {
       // txInst returned instead of t
       db.since(txInstAfter).sinceInst === txInstAfter
     }
-
-//    db.since(tBefore).dbName === "hello"
-//    db.since(tBefore).basisT === tAfter
-//    db.since(tBefore).asOfT === 0
-//    db.since(tBefore).sinceT === tBefore
-//    db.since(tBefore).isHistory === false
-//
-//    db.since(tAfter).dbName === "hello"
-//    db.since(tAfter).basisT === tAfter
-//    db.since(tAfter).asOfT === 0
-//    db.since(tAfter).sinceT === tAfter
-//    db.since(tAfter).isHistory === false
   }
 
 
@@ -235,20 +212,26 @@ class AsyncDbTest extends SpecAsync {
 
 
   "with" in new AsyncSetup {
-    val wDb = waitFor(conn.withDb).toOption.get
-    val db = conn.db
+    val originalDb = conn.db
 
-    // Updated `with` db value
-    val wDb2 = waitFor(db.`with`(wDb, film4)).toOption.get
+    // Test adding a 4th film
+    // OBS: Note that a `conn.withDb` has to be passed initially!
+    val txReport4films = waitFor(originalDb.`with`(conn.withDb, film4)).toOption.get
+    val db4Films       = txReport4films.dbAfter
+    films(db4Films) === fourFilms
 
-    films(wDb2) === fourFilms
+    // Add 5th film by passing with-modified Db
+    val txReport5films = waitFor(originalDb.`with`(db4Films, film5)).toOption.get
+    val db5Films       = txReport5films.dbAfter
+    films(db5Films) === fiveFilms
 
-    // Add more data to `wDb2`
-    val wDb3 = waitFor(db.`with`(wDb2.datomicDb, film5)).toOption.get
-    films(wDb3) === (fourFilms :+ "Film 5").sorted
+    // Add 6th film by passing with-modified Db from TxReport
+    val txReport6films = waitFor(originalDb.`with`(txReport5films, film6)).toOption.get
+    val db6Films       = txReport6films.dbAfter
+    films(db6Films) === sixFilms
 
-    // Current state is unaffected
-    films(conn.db) === threeFilms
+    // Original state is unaffected
+    films(originalDb) === threeFilms
   }
 
 

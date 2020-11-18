@@ -83,7 +83,9 @@ trait SchemaAndData {
 
   val film4 = list(Util.map(read(":movie/title"), "Film 4"))
   val film5 = list(Util.map(read(":movie/title"), "Film 5"))
+  val film6 = list(Util.map(read(":movie/title"), "Film 6"))
 
   val fourFilms = (threeFilms :+ "Film 4").sorted
   val fiveFilms = (fourFilms :+ "Film 5").sorted
+  val sixFilms  = (fiveFilms :+ "Film 6").sorted
 }
