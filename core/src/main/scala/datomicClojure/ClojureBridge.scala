@@ -1,5 +1,6 @@
 package datomicClojure
 
+import java.net.URI
 import java.util.{List => jList, Map => jMap}
 import clojure.java.api.Clojure
 import clojure.lang.{IFn, Keyword => clKeyword, Symbol => clSymbol}
@@ -28,6 +29,7 @@ trait ClojureBridge {
   def coreAsyncFn(name: String): IFn = fn("clojure.core.async", name)
 
   def printLn(s: AnyRef): Unit = fn("clojure.core", "println").invoke(s)
+  def readString(s: String) = fn("clojure.tools.reader", "read-string").invoke(s)
 
 
   // EDN -----------------------------------------------------------------
@@ -36,26 +38,30 @@ trait ClojureBridge {
   // Adding recognition of clojure Keyword and Datomic DbId
 
   lazy val clKw : Fn[_] = new Printer.Fn[clKeyword]() {
-    override def eval(kw: clKeyword, writer: Printer): Unit = {
-      writer.softspace.append(kw.toString).softspace
+    override def eval(self: clKeyword, writer: Printer): Unit = {
+      writer.softspace.append(self.toString).softspace
     }
   }
   lazy val clSym: Fn[_] = new Printer.Fn[clSymbol]() {
-    override def eval(sym: clSymbol, writer: Printer): Unit = {
-      writer.softspace.append(sym.toString).softspace
+    override def eval(self: clSymbol, writer: Printer): Unit = {
+      writer.softspace.append(self.toString).softspace
     }
   }
+  lazy val uri: Fn[_]  = new Printer.Fn[URI]() {
+    override def eval(self: URI, writer: Printer): Unit = {
+      writer.append(s""" #=(new java.net.URI "${self.toString}")""")}
+  }
   lazy val dbId : Fn[_] = new Printer.Fn[DbId]() {
-    override def eval(dbid: DbId, writer: Printer): Unit = {
-      if (dbid.idx.asInstanceOf[Long] > 0) {
+    override def eval(self: DbId, writer: Printer): Unit = {
+      if (self.idx.asInstanceOf[Long] > 0) {
         // Entity id
         // :club/member 1557968513546 :next/attr ...
-        writer.printValue(dbid.idx)
+        writer.printValue(self.idx)
       } else {
         // Temp id treated as text to be resolved in tx
         // :club/member"-1000001":next/attr ...
         // Skipping partition information since the client.api disregards it anyway.
-        writer.printValue(dbid.idx.toString)
+        writer.printValue(self.idx.toString)
       }
     }
   }
@@ -63,12 +69,14 @@ trait ClojureBridge {
   lazy val compact = Printers.defaultProtocolBuilder
     .put(classOf[clKeyword], clKw)
     .put(classOf[clSymbol], clSym)
+    .put(classOf[URI], uri)
     .put(classOf[DbId], dbId)
     .build
 
   lazy val pretty = Printers.prettyProtocolBuilder
     .put(classOf[clKeyword], clKw)
     .put(classOf[clSymbol], clSym)
+    .put(classOf[URI], uri)
     .put(classOf[DbId], dbId)
     .build
 

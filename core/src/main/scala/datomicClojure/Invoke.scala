@@ -325,7 +325,12 @@ trait Invoke extends ClojureBridge {
   ): AnyRef = {
     fn("transact").invoke(
       datomicConn,
-      read(s"{:tx-data ${edn(stmts)}}")
+      //      datomic.Util.map(read(":tx-data"), stmts)
+      //      read(s"{:tx-data ${edn(stmts)}}")
+
+      // clojure.tools.reader/read-string needed to interpret uri representation
+      // When maps of data are accepted (bug fixed), we can likely use `read` again
+      readString(s"{:tx-data ${edn(stmts)}}")
     )
   }
 
