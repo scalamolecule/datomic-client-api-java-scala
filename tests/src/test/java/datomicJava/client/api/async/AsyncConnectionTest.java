@@ -1,6 +1,5 @@
 package datomicJava.client.api.async;
 
-import datomicClojure.ErrorMsg;
 import datomicJava.SetupAsync;
 import datomicJava.client.api.Datom;
 import javafx.util.Pair;
@@ -15,7 +14,6 @@ import static datomic.Util.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThrows;
 
 @FixMethodOrder(MethodSorters.JVM)
 public class AsyncConnectionTest extends SetupAsync {
@@ -64,14 +62,11 @@ public class AsyncConnectionTest extends SetupAsync {
         )).get(); // Await future completion
         assertThat(films(conn.db()), is(fourFilms));
 
-        IllegalArgumentException emptyTx = assertThrows(
-            IllegalArgumentException.class,
-            () -> conn.transact(list())
-        );
-        assertThat(
-            emptyTx.getMessage(),
-            is(ErrorMsg.transact())
-        );
+
+        // Applying empty list of stmts returns empty TxReport without touching the db
+        Either emptyResult = conn.transact(list()).get();
+        AsyncTxReport txReport = ((Right<?, AsyncTxReport>) emptyResult).right_value();
+        assertThat(txReport.rawTxReport().isEmpty(), is(true));
     }
 
 

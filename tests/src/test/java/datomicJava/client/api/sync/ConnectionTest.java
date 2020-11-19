@@ -1,6 +1,6 @@
 package datomicJava.client.api.sync;
 
-import datomicClojure.ErrorMsg;
+import datomic.Util;
 import datomicJava.Setup;
 import datomicJava.client.api.Datom;
 import javafx.util.Pair;
@@ -14,7 +14,6 @@ import static datomic.Util.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThrows;
 
 @FixMethodOrder(MethodSorters.JVM)
 public class ConnectionTest extends Setup {
@@ -63,20 +62,8 @@ public class ConnectionTest extends Setup {
         ));
         assertThat(films(conn.db()), is(fourFilms));
 
-        IllegalArgumentException emptyTx = assertThrows(
-            IllegalArgumentException.class,
-            () -> conn.transact(list())
-        );
-        assertThat(
-            emptyTx.getMessage(),
-            is(ErrorMsg.transact())
-        );
-
-
-        if (isDevLocal())
-            resetDevLocalDb();
-        else
-            resetPeerServerDb();
+        // Applying empty list of stmts returns empty TxReport without touching the db
+        assertThat(conn.transact(list()), is(new TxReport(Util.map())));
     }
 
 

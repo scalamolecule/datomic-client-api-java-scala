@@ -8,7 +8,6 @@ import scala.jdk.CollectionConverters._
 
 
 class AsyncClientTest extends SpecAsync {
-  sequential
 
   // (same as sync version)
   "administer system" in new AsyncSetup {

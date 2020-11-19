@@ -8,8 +8,6 @@ import scala.jdk.CollectionConverters._
 
 
 class ClientTest extends Spec {
-  sequential
-
 
   "administer system" in new Setup {
     if (system == "peer-server") {

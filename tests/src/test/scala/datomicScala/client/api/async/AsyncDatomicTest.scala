@@ -12,8 +12,6 @@ import scala.jdk.StreamConverters._
 
 
 class AsyncDatomicTest extends SpecAsync {
-  sequential
-
 
   "create client" >> {
     system match {

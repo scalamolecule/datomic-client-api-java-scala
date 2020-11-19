@@ -8,8 +8,6 @@ import datomicScala.client.api.Datom
 
 
 class ConnectionTest extends Spec {
-  sequential
-
 
   "db" in new Setup {
     // Test if repeated calls do conn.db returns the same db value (/object)
@@ -48,9 +46,8 @@ class ConnectionTest extends Spec {
     ))
     films(conn.db) === fourFilms
 
-    conn.transact(list()) must throwA(
-      new IllegalArgumentException(ErrorMsg.transact)
-    )
+    // Applying empty list of stmts returns empty TxReport without touching the db
+    conn.transact(list()) === TxReport(Util.map())
   }
 
 

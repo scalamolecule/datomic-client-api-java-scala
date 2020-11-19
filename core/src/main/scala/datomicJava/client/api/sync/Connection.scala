@@ -2,10 +2,11 @@ package datomicJava.client.api.sync
 
 import java.lang.{Iterable => jIterable}
 import java.util.{List => jList, Map => jMap}
+import datomic.Util
 import datomic.Util._
-import datomicClojure.{ErrorMsg, Invoke}
-import datomicJava.{AnomalyWrapper, Helper}
+import datomicClojure.Invoke
 import datomicJava.client.api.Datom
+import datomicJava.{AnomalyWrapper, Helper}
 import javafx.util.Pair
 
 
@@ -25,8 +26,9 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
   def transact(stmts: jList[_]): TxReport = catchAnomaly {
     if (stmts.isEmpty)
-      throw new IllegalArgumentException(ErrorMsg.transact)
-    TxReport(Invoke.transact(datomicConn, stmts).asInstanceOf[jMap[_, _]])
+      TxReport(Util.map())
+    else
+      TxReport(Invoke.transact(datomicConn, stmts).asInstanceOf[jMap[_, _]])
   }
 
 

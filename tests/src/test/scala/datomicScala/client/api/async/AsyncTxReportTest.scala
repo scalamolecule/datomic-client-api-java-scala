@@ -4,8 +4,6 @@ import datomicScala.SpecAsync
 
 
 class AsyncTxReportTest extends SpecAsync {
-  sequential
-
 
   "4 txReport ops" in new AsyncSetup {
 

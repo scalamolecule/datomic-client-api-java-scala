@@ -1,6 +1,7 @@
 package datomicScala.client.api.sync
 
 import java.util.{List => jList, Map => jMap}
+import datomic.Util
 import datomic.Util._
 import datomicClojure.{ErrorMsg, Invoke}
 import datomicScala.client.api.Datom
@@ -23,10 +24,11 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
   def transact(stmts: jList[_]): TxReport = catchAnomaly {
     if (stmts.isEmpty)
-      throw new IllegalArgumentException(ErrorMsg.transact)
-    TxReport(
-      Invoke.transact(datomicConn, stmts).asInstanceOf[jMap[_, _]]
-    )
+      TxReport(Util.map())
+    else
+      TxReport(
+        Invoke.transact(datomicConn, stmts).asInstanceOf[jMap[_, _]]
+      )
   }
 
 

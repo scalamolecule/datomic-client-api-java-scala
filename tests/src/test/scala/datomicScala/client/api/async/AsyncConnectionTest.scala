@@ -2,14 +2,11 @@ package datomicScala.client.api.async
 
 import datomic.Util
 import datomic.Util.{list, read}
-import datomicClojure.ErrorMsg
 import datomicScala.SpecAsync
 import datomicScala.client.api.Datom
 
 
 class AsyncConnectionTest extends SpecAsync {
-  sequential
-
 
   // (same as sync version)
   "db" in new AsyncSetup {
@@ -51,9 +48,8 @@ class AsyncConnectionTest extends SpecAsync {
     ))).toOption.get
     films(conn.db) === fourFilms
 
-    waitFor(conn.transact(list())) must throwA(
-      new IllegalArgumentException(ErrorMsg.transact)
-    )
+    // Applying empty list of stmts returns empty TxReport without touching the db
+    waitFor(conn.transact(list())).toOption.get === AsyncTxReport(Util.map())
   }
 
 

@@ -12,7 +12,6 @@ import scala.jdk.StreamConverters._
 
 
 class DbTest extends Spec {
-  sequential
 
   "stats" in new Setup {
     val db: Db = conn.db

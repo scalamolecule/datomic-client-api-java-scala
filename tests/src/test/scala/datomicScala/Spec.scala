@@ -12,6 +12,7 @@ import scala.jdk.StreamConverters._
 
 
 trait Spec extends Specification with SchemaAndData {
+  sequential
 
   var system    : String     = "Not set yet. Can be: dev-local / peer-server / cloud"
   var client    : Client     = null // set in setup

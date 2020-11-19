@@ -14,6 +14,7 @@ import scala.jdk.StreamConverters._
 
 
 trait SpecAsync extends Specification with SchemaAndData {
+  sequential
 
   var system    : String          = "Not set yet. Can be: dev-local / peer-server / cloud"
   var client    : AsyncClient     = null // set in setup

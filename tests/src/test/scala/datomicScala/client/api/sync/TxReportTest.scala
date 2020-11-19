@@ -4,7 +4,6 @@ import datomicScala.Spec
 
 
 class TxReportTest extends Spec {
-  sequential
 
   "4 txReport ops" in new Setup {
     films(filmDataTx.dbBefore) == Nil

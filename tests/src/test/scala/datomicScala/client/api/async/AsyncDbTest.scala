@@ -13,8 +13,6 @@ import scala.jdk.StreamConverters._
 
 
 class AsyncDbTest extends SpecAsync {
-  sequential
-
 
   "stats" in new AsyncSetup {
     val db: AsyncDb = conn.db

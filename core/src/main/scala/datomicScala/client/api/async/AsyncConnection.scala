@@ -1,9 +1,11 @@
 package datomicScala.client.api.async
 
 import java.util.{List => jList, Map => jMap}
+import datomic.Util
 import datomic.Util._
 import datomicClojure.{ErrorMsg, Invoke, InvokeAsync}
 import datomicScala.client.api.Datom
+import datomicScala.client.api.sync.TxReport
 import datomicScala.{CognitectAnomaly, Helper}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -25,15 +27,17 @@ case class AsyncConnection(datomicConn: AnyRef) {
 
   def transact(stmts: jList[_]): Future[Either[CognitectAnomaly, AsyncTxReport]] = {
     if (stmts.isEmpty)
-      throw new IllegalArgumentException(ErrorMsg.transact)
-    Future {
-      Channel[jMap[_, _]](
-        InvokeAsync.transact(datomicConn, stmts)
-      ).lazyList.head match {
-        case Right(txReport) => Channel[AsyncTxReport](AsyncTxReport(txReport)).lazyList.head
-        case Left(anomaly)   => Left(anomaly)
+      Future(Right(AsyncTxReport(Util.map())))
+    else
+      Future {
+        Channel[jMap[_, _]](
+          InvokeAsync.transact(datomicConn, stmts)
+        ).lazyList.head match {
+          case Right(txReport) =>
+            Channel[AsyncTxReport](AsyncTxReport(txReport)).lazyList.head
+          case Left(anomaly)   => Left(anomaly)
+        }
       }
-    }
   }
 
   def txRange(

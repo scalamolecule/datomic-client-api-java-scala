@@ -7,8 +7,6 @@ import datomicScala.{Forbidden, NotFound, Spec}
 
 
 class DatomicTest extends Spec {
-  sequential
-
 
   "create client" >> {
     system match {

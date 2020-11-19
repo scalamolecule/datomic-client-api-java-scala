@@ -3,8 +3,9 @@ package datomicJava.client.api.async
 import java.lang.{Iterable => jIterable}
 import java.util.concurrent.CompletableFuture
 import java.util.{List => jList, Map => jMap}
+import datomic.Util
 import datomic.Util._
-import datomicClojure.{ErrorMsg, Invoke, InvokeAsync}
+import datomicClojure.{Invoke, InvokeAsync}
 import datomicJava.client.api.{Datom, async}
 import datomicJava.{CognitectAnomaly, Helper}
 import javafx.util.Pair
@@ -28,15 +29,18 @@ case class AsyncConnection(datomicConn: AnyRef) {
 
   def transact(stmts: jList[_]): CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] = {
     if (stmts.isEmpty)
-      throw new IllegalArgumentException(ErrorMsg.transact)
-    CompletableFuture.supplyAsync { () =>
-      Channel[jMap[_, _]](
-        InvokeAsync.transact(datomicConn, stmts)
-      ).chunk match {
-        case Right(txReport) => Channel[AsyncTxReport](AsyncTxReport(txReport)).chunk
-        case Left(anomaly)   => async.Left(anomaly)
+      CompletableFuture.supplyAsync(() =>
+        Channel[AsyncTxReport](AsyncTxReport(Util.map())).chunk
+      )
+    else
+      CompletableFuture.supplyAsync { () =>
+        Channel[jMap[_, _]](
+          InvokeAsync.transact(datomicConn, stmts)
+        ).chunk match {
+          case Right(txReport) => Channel[AsyncTxReport](AsyncTxReport(txReport)).chunk
+          case Left(anomaly)   => async.Left(anomaly)
+        }
       }
-    }
   }
 
   def txRange(
@@ -48,7 +52,7 @@ case class AsyncConnection(datomicConn: AnyRef) {
   ): CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
     CompletableFuture.supplyAsync { () =>
       val startOpt = if (start == 0) None else Some(start)
-      val endOpt = if (end == 0) None else Some(end)
+      val endOpt   = if (end == 0) None else Some(end)
       Channel[AnyRef](
         Invoke.txRange(datomicConn, startOpt, endOpt, timeout, offset, limit)
       ).chunk match {
@@ -76,7 +80,7 @@ case class AsyncConnection(datomicConn: AnyRef) {
   ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] = {
     CompletableFuture.supplyAsync { () =>
       val startOpt = if (start == 0) None else Some(start)
-      val endOpt = if (end == 0) None else Some(end)
+      val endOpt   = if (end == 0) None else Some(end)
       Channel[AnyRef](
         Invoke.txRange(datomicConn, startOpt, endOpt, timeout, offset, limit)
       ).chunk match {
