@@ -352,7 +352,7 @@ class DbTest extends Spec {
     val firstFilm = scalaLazyList.head
 
     // The underlying type of pulled indexes are clojure.lang.PersistentArrayMaps
-    // that need to be cast to java Maps before we can be access values of the map.
+    // that need to be cast to java Maps before we can access values of the map.
     firstFilm.getClass === classOf[clojure.lang.PersistentArrayMap]
     val firstFilmMap = firstFilm.asInstanceOf[jMap[_, _]]
 
