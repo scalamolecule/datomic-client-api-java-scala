@@ -165,7 +165,7 @@ public class ConnectionTest extends Setup {
         // tx 4-5
         checkRange(conn, tx4, tx6, list(txReport4, txReport5));
 
-        // To get until the last tx, set no timePointEnd to 0
+        // To get until the last tx, set timePointEnd to 0
         checkRange(conn, tx4, 0, list(txReport4, txReport5, txReport6));
         checkRange(conn, tx5, 0, list(txReport5, txReport6));
         checkRange(conn, tx6, 0, list(txReport6));
