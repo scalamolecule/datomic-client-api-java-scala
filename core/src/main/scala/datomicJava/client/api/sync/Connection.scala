@@ -33,39 +33,67 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
 
   def txRange(
-    start: Long,
-    end: Long,
+    timePointStart: Any, // Int | Long | java.util.Date
+    timePointEnd: Any,
     timeout: Int,
     offset: Int,
     limit: Int
   ): jIterable[Pair[Long, jIterable[Datom]]] = {
     val rawTxs0 = catchAnomaly {
-      val startOpt: Option[Long] = if (start == 0) None else Some(start)
-      val endOpt  : Option[Long] = if (end == 0) None else Some(end)
+      val startOpt: Option[Any] = if (timePointStart == 0) None else Some(timePointStart)
+      val endOpt  : Option[Any] = if (timePointEnd == 0) None else Some(timePointEnd)
       Invoke.txRange(datomicConn, startOpt, endOpt, timeout, offset, limit)
     }
     Helper.nestedTxsIterable(isDevLocal, rawTxs0)
   }
-  def txRange(): jIterable[Pair[Long, jIterable[Datom]]] = txRange(0, 0, 0, 0, 1000)
-  def txRange(limit: Int): jIterable[Pair[Long, jIterable[Datom]]] = txRange(0, 0, 0, 0, limit)
+
+  def txRange()
+  : jIterable[Pair[Long, jIterable[Datom]]] =
+    txRange(0, 0, 0, 0, -1)
+
+  def txRange(limit: Int)
+  : jIterable[Pair[Long, jIterable[Datom]]] =
+    txRange(0, 0, 0, 0, limit)
+
+  def txRange(timePointStart: Any, timePointEnd: Any)
+  : jIterable[Pair[Long, jIterable[Datom]]] =
+    txRange(timePointStart, timePointEnd, 0, 0, -1)
+
+  def txRange(timePointStart: Any, timePointEnd: Any, limit: Int)
+  : jIterable[Pair[Long, jIterable[Datom]]] =
+    txRange(timePointStart, timePointEnd, 0, 0, limit)
 
 
   def txRangeArray(
-    start: Long,
-    end: Long,
+    timePointStart: Any, // Int | Long | java.util.Date
+    timePointEnd: Any,
     timeout: Int,
     offset: Int,
     limit: Int
   ): Array[Pair[Long, Array[Datom]]] = {
     val rawTxs0 = catchAnomaly {
-      val startOpt: Option[Long] = if (start == 0) None else Some(start)
-      val endOpt  : Option[Long] = if (end == 0) None else Some(end)
+      val startOpt: Option[Any] = if (timePointStart == 0) None else Some(timePointStart)
+      val endOpt  : Option[Any] = if (timePointEnd == 0) None else Some(timePointEnd)
       Invoke.txRange(datomicConn, startOpt, endOpt, timeout, offset, limit)
     }
     Helper.nestedTxsArray(isDevLocal, rawTxs0)
   }
-  def txRangeArray(): Array[Pair[Long, Array[Datom]]] = txRangeArray(0, 0, 0, 0, 1000)
-  def txRangeArray(limit: Int): Array[Pair[Long, Array[Datom]]] = txRangeArray(0, 0, 0, 0, limit)
+
+  def txRangeArray()
+  : Array[Pair[Long, Array[Datom]]] =
+    txRangeArray(0, 0, 0, 0, -1)
+
+  def txRangeArray(limit: Int)
+  : Array[Pair[Long, Array[Datom]]] =
+    txRangeArray(0, 0, 0, 0, limit)
+
+  def txRangeArray(timePointStart: Any, timePointEnd: Any)
+  : Array[Pair[Long, Array[Datom]]] =
+    txRangeArray(timePointStart, timePointEnd, 0, 0, -1)
+
+  def txRangeArray(timePointStart: Any, timePointEnd: Any, limit: Int)
+  : Array[Pair[Long, Array[Datom]]] =
+    txRangeArray(timePointStart, timePointEnd, 0, 0, limit)
 
 
   // Convenience method for single invocation from connection

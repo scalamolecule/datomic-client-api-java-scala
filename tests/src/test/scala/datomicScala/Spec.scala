@@ -15,9 +15,9 @@ trait Spec extends Specification with SchemaAndData {
   sequential
 
   var system    : String     = "Not set yet. Can be: dev-local / peer-server / cloud"
-  var client    : Client     = null // set in setup
-  var conn      : Connection = null // set in setup
-  var filmDataTx: TxReport   = null // set in setup
+  var client    : Client     = null // set in Setup class
+  var conn      : Connection = null // set in Setup class
+  var filmDataTx: TxReport   = null // set in Setup class
 
   override def map(fs: => Fragments): Fragments =
     step(setupDevLocal()) ^
@@ -97,7 +97,8 @@ trait Spec extends Specification with SchemaAndData {
 
     // Ids of the three attributes
     val List(a1, a2, a3) = if (system == "dev-local")
-      List(73, 74, 75) else List(63, 64, 65)
+      List(73, 74, 75) else List(72, 73, 74)
+    //      List(73, 74, 75) else List(63, 64, 65) // sometimes this is needed instead...
 
     def films(db: Db): Seq[String] = Datomic.q(filmQuery, db)
       .asInstanceOf[PersistentVector].asScala.toList

@@ -33,29 +33,28 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
 
   def txRange(
-    start: Option[Long] = None,
-    end: Option[Long] = None,
+    timePointStart: Option[Any] = None, // Int | Long | java.util.Date
+    timePointEnd: Option[Any] = None,
     timeout: Int = 0,
     offset: Int = 0,
-    limit: Int = 1000
+    limit: Int = -1 // default to all
   ): Iterable[(Long, Iterable[Datom])] = {
     val rawTxs0 = catchAnomaly {
-      Invoke.txRange(datomicConn, start, end, timeout, offset, limit)
+      Invoke.txRange(datomicConn, timePointStart, timePointEnd, timeout, offset, limit)
     }
     Helper.nestedTxsIterable(isDevLocal, rawTxs0)
   }
 
-
-  // Populated nested Arrays of txs and datoms
+  // Convenience method to get populated nested Arrays of txs and datoms
   def txRangeArray(
-    start: Option[Long] = None,
-    end: Option[Long] = None,
+    timePointStart: Option[Any] = None, // Int | Long | java.util.Date
+    timePointEnd: Option[Any] = None,
     timeout: Int = 0,
     offset: Int = 0,
-    limit: Int = 1000
+    limit: Int = -1 // default to all
   ): Array[(Long, Array[Datom])] = {
     val rawTxs0 = catchAnomaly {
-      Invoke.txRange(datomicConn, start, end, timeout, offset, limit)
+      Invoke.txRange(datomicConn, timePointStart, timePointEnd, timeout, offset, limit)
     }
     Helper.nestedTxsArray(isDevLocal, rawTxs0)
   }
@@ -63,8 +62,8 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
   // Convenience method for single invocation from connection
   def widh(stmts: jList[_]): Db = catchAnomaly {
-    val txReport = Invoke.`with`(withDb, stmts).asInstanceOf[jMap[_, _]]
-    val dbAfter  = txReport.get(read(":db-after"))
+    val rawTxReport = Invoke.`with`(withDb, stmts).asInstanceOf[jMap[_, _]]
+    val dbAfter  = rawTxReport.get(read(":db-after"))
     Db(dbAfter.asInstanceOf[AnyRef])
   }
 

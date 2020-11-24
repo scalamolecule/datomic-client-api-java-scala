@@ -3,7 +3,7 @@ package datomicJava
 import java.lang.{Iterable => jIterable}
 import java.util
 import java.util.stream.{StreamSupport, Stream => jStream}
-import java.util.{Spliterator, Spliterators, Iterator => jIterator, Map => jMap}
+import java.util.{Collections, Spliterator, Spliterators, Iterator => jIterator, Map => jMap, List => jList}
 import clojure.lang._
 import datomic.Util.read
 import datomicJava.client.api.{Datom, DbStats}
@@ -55,6 +55,9 @@ object Helper {
     rawTxs0: AnyRef
   ): jIterable[Pair[Long, jIterable[Datom]]] = {
     if (isDevLocal) {
+      if (rawTxs0.asInstanceOf[jList[_]].isEmpty) {
+        return () => Collections.emptyIterator()
+      }
       val rawTxs = rawTxs0.asInstanceOf[clojure.lang.LazySeq]
       // Iterable with txs
       new jIterable[Pair[Long, jIterable[Datom]]] {
@@ -86,6 +89,9 @@ object Helper {
       }
     } else {
       val rawTxs = rawTxs0.asInstanceOf[java.lang.Iterable[_]]
+      if (!rawTxs.iterator().hasNext) {
+        return () => Collections.emptyIterator()
+      }
       // Iterable with txs
       new jIterable[Pair[Long, jIterable[Datom]]] {
         override def iterator: jIterator[Pair[Long, jIterable[Datom]]] = {

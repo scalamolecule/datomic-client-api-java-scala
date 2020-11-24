@@ -44,15 +44,15 @@ case class AsyncConnection(datomicConn: AnyRef) {
   }
 
   def txRange(
-    start: Long,
-    end: Long,
+    timePointStart: Any, // Int | Long | java.util.Date
+    timePointEnd: Any,
     timeout: Int,
     offset: Int,
     limit: Int
   ): CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
     CompletableFuture.supplyAsync { () =>
-      val startOpt = if (start == 0) None else Some(start)
-      val endOpt   = if (end == 0) None else Some(end)
+      val startOpt = if (timePointStart == 0) None else Some(timePointStart)
+      val endOpt   = if (timePointEnd == 0) None else Some(timePointEnd)
       Channel[AnyRef](
         Invoke.txRange(datomicConn, startOpt, endOpt, timeout, offset, limit)
       ).chunk match {
@@ -64,23 +64,33 @@ case class AsyncConnection(datomicConn: AnyRef) {
       }
     }
 
-  def txRange(): CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
-    txRange(0, 0, 0, 0, 1000)
+  def txRange()
+  : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
+    txRange(0, 0, 0, 0, -1)
 
-  def txRange(limit: Int): CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
+  def txRange(limit: Int)
+  : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
     txRange(0, 0, 0, 0, limit)
+
+  def txRange(timePointStart: Any, timePointEnd: Any)
+  : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
+    txRange(timePointStart, timePointEnd, 0, 0, -1)
+
+  def txRange(timePointStart: Any, timePointEnd: Any, limit: Int)
+  : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
+    txRange(timePointStart, timePointEnd, 0, 0, limit)
 
 
   def txRangeArray(
-    start: Long,
-    end: Long,
+    timePointStart: Any, // Int | Long | java.util.Date
+    timePointEnd: Any,
     timeout: Int,
     offset: Int,
     limit: Int
   ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] = {
     CompletableFuture.supplyAsync { () =>
-      val startOpt = if (start == 0) None else Some(start)
-      val endOpt   = if (end == 0) None else Some(end)
+      val startOpt = if (timePointStart == 0) None else Some(timePointStart)
+      val endOpt   = if (timePointEnd == 0) None else Some(timePointEnd)
       Channel[AnyRef](
         Invoke.txRange(datomicConn, startOpt, endOpt, timeout, offset, limit)
       ).chunk match {
@@ -93,11 +103,21 @@ case class AsyncConnection(datomicConn: AnyRef) {
     }
   }
 
-  def txRangeArray(): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
-    txRangeArray(0, 0, 0, 0, 1000)
+  def txRangeArray()
+  : CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
+    txRangeArray(0, 0, 0, 0, -1)
 
-  def txRangeArray(limit: Int): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
+  def txRangeArray(limit: Int)
+  : CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
     txRangeArray(0, 0, 0, 0, limit)
+
+  def txRangeArray(timePointStart: Any, timePointEnd: Any
+  ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
+    txRangeArray(timePointStart, timePointEnd, 0, 0, -1)
+
+  def txRangeArray(timePointStart: Any, timePointEnd: Any, limit: Int
+  ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
+    txRangeArray(timePointStart, timePointEnd, 0, 0, limit)
 
 
   // Convenience method for single invocation from connection

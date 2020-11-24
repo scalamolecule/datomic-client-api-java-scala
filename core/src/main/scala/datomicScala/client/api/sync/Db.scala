@@ -63,15 +63,15 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) with AnomalyWrapper {
 
   def indexRange(
     attrId: String,
-    start: Option[Any] = None,
-    end: Option[Any] = None,
+    startValue: Option[Any] = None,
+    endValue: Option[Any] = None,
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
   ): jStream[Datom] = {
     Helper.streamOfDatoms(
       Invoke.indexRange(
-        datomicDb, attrId, start, end, timeout, offset, limit
+        datomicDb, attrId, startValue, endValue, timeout, offset, limit
       )
     )
   }

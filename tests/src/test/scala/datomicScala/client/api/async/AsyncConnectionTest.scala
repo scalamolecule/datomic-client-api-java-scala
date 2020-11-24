@@ -55,10 +55,9 @@ class AsyncConnectionTest extends SpecAsync {
 
   "txRange" in new AsyncSetup {
 
-    // Limit -1 sets no-limit
-    // (necessary for Peer Server datom accumulation exceeding default 1000)
+    // Getting all transactions (!) -----------------------------------
 
-    val iterable: Iterable[(Long, Iterable[Datom])] = waitFor(conn.txRange(limit = -1)).toOption.get
+    val iterable: Iterable[(Long, Iterable[Datom])] = waitFor(conn.txRange()).toOption.get
     iterable.last._1 === tAfter
     iterable.last._2.toList === List(
       Datom(txAfter, 50, txInstAfter, txAfter, true),
@@ -73,7 +72,7 @@ class AsyncConnectionTest extends SpecAsync {
       Datom(e3, a3, 1984, txAfter, true)
     )
 
-    val array: Array[(Long, Array[Datom])] = waitFor(conn.txRangeArray(limit = -1)).toOption.get
+    val array: Array[(Long, Array[Datom])] = waitFor(conn.txRangeArray()).toOption.get
     array.last._1 === tAfter
     array.last._2 === Array(
       Datom(txAfter, 50, txInstAfter, txAfter, true),
@@ -87,6 +86,80 @@ class AsyncConnectionTest extends SpecAsync {
       Datom(e3, a2, "punk dystopia", txAfter, true),
       Datom(e3, a3, 1984, txAfter, true)
     )
+
+    // Get range from timePointStart to timePointEnd ------------------
+
+    val txReport4 = waitFor(conn.transact(film4)).toOption.get
+    val txReport5 = waitFor(conn.transact(film5)).toOption.get
+    val txReport6 = waitFor(conn.transact(film6)).toOption.get
+
+    val tx4 = txReport4.tx
+    val tx5 = txReport5.tx
+    val tx6 = txReport6.tx
+
+    val t4 = txReport4.t
+    val t5 = txReport5.t
+    val t6 = txReport6.t
+
+    val txInstant4 = txReport4.txInst
+    val txInstant6 = txReport6.txInst
+
+
+    def checkRange(
+      timePointStart: Option[Any],
+      timePointEnd: Option[Any],
+      result: List[AsyncTxReport]
+    ): Unit = {
+      waitFor(conn.txRange(timePointStart, timePointEnd)).toOption.get.toList.map {
+        case (t, datoms) => (t, datoms.toList)
+      } === result.map { txReport =>
+        (txReport.t, txReport.txData.toArray.toList.asInstanceOf[List[Datom]])
+      }
+    }
+
+    def checkUntil(
+      timePointEnd: Any,
+      expectedLastT: Long
+    ): Unit = {
+      waitFor(conn.txRange(None, Some(timePointEnd))).toOption.get
+        .map(_._1).last === expectedLastT
+    }
+
+    // timePointStart is after timePointEnd - returns Nil
+    checkRange(Some(tx5), Some(tx4), Nil)
+
+    // timePointEnd is exclusive, so tx4 is not considered
+    checkRange(Some(tx4), Some(tx4), Nil)
+
+    // tx 4
+    checkRange(Some(tx4), Some(tx5), List(txReport4))
+
+    // tx 4-5
+    checkRange(Some(tx4), Some(tx6), List(txReport4, txReport5))
+
+    // To get until the last tx, set timePointEnd to None
+    checkRange(Some(tx4), None, List(txReport4, txReport5, txReport6))
+    checkRange(Some(tx5), None, List(txReport5, txReport6))
+    checkRange(Some(tx6), None, List(txReport6))
+
+
+    // To get from first tx, set timePointStart to None
+    checkUntil(txAfter, tBefore)
+    checkUntil(tx4, tAfter)
+    checkUntil(tx5, t4)
+    checkUntil(tx6, t5)
+
+
+    // Getting txRange with t/tx/txInst
+
+    // Using time t
+    checkRange(Some(t4), Some(t6), List(txReport4, txReport5))
+
+    // Using transaction id
+    checkRange(Some(t4), Some(t6), List(txReport4, txReport5))
+
+    // Using Date
+    checkRange(Some(txInstant4), Some(txInstant6), List(txReport4, txReport5))
   }
 
   // (`withDb` and `widh` are tested in AsyncDbTest...)

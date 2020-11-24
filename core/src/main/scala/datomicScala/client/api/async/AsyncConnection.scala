@@ -41,14 +41,14 @@ case class AsyncConnection(datomicConn: AnyRef) {
   }
 
   def txRange(
-    start: Option[Long] = None,
-    end: Option[Long] = None,
+    timePointStart: Option[Any] = None, // Int | Long | java.util.Date
+    timePointEnd: Option[Any] = None,
     timeout: Int = 0,
     offset: Int = 0,
-    limit: Int = 1000
+    limit: Int = -1 // default to all
   ): Future[Either[CognitectAnomaly, Iterable[(Long, Iterable[Datom])]]] = Future {
     Channel[AnyRef](
-      Invoke.txRange(datomicConn, start, end, timeout, offset, limit)
+      Invoke.txRange(datomicConn, timePointStart, timePointEnd, timeout, offset, limit)
     ).lazyList.head match {
       case Right(rawTxs0) =>
         Channel[Iterable[(Long, Iterable[Datom])]](
@@ -59,14 +59,14 @@ case class AsyncConnection(datomicConn: AnyRef) {
   }
 
   def txRangeArray(
-    start: Option[Long] = None,
-    end: Option[Long] = None,
+    timePointStart: Option[Any] = None, // Int | Long | java.util.Date
+    timePointEnd: Option[Any] = None,
     timeout: Int = 0,
     offset: Int = 0,
-    limit: Int = 1000
+    limit: Int = -1 // default to all
   ): Future[Either[CognitectAnomaly, Array[(Long, Array[Datom])]]] = Future {
     Channel[AnyRef](
-      Invoke.txRange(datomicConn, start, end, timeout, offset, limit)
+      Invoke.txRange(datomicConn, timePointStart, timePointEnd, timeout, offset, limit)
     ).lazyList.head match {
       case Right(rawTxs0) =>
         Channel[Array[(Long, Array[Datom])]](

@@ -1,6 +1,8 @@
 package datomicClojure
 
-import java.util.{Date, List => jList, Map => jMap}
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, LocalDateTime, OffsetDateTime, ZoneId, ZoneOffset, ZonedDateTime}
+import java.util.{Date, TimeZone, List => jList, Map => jMap}
 import clojure.lang.IFn
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util.read
@@ -15,8 +17,11 @@ object InvokeAsync extends Invoke {
 }
 
 trait Invoke extends ClojureBridge {
-  // sync/async fn call
+
+  // sync/async fn to be invoked
   val fn: String => IFn
+
+  // Helper methods ............................................................
 
   private def positive(key: String, n: Int, default: Int = 0): String = n match {
     case `default`  => ""
@@ -38,9 +43,32 @@ trait Invoke extends ClojureBridge {
     case Some(v)         => s":$key $v"
   }
 
-  private def longOpt(key: String, opt: Option[Long]): String =
-    opt.fold("")(n => s":$key $n")
+  private def date2datomicStr(date: Date): String = {
+    val zoneOffset = OffsetDateTime.now().getOffset
+    val pattern    = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+    val ldt        = LocalDateTime.ofInstant(Instant.ofEpochMilli(date.getTime), zoneOffset)
+    val zdt        = ZonedDateTime.of(ldt, zoneOffset)
+    zdt.format(DateTimeFormatter.ofPattern(pattern))
+  }
 
+  private def timePointOpt(key: String, opt: Option[Any]): String = {
+    def validNumber(n: Long): Long = {
+      if (n < 1)
+        throw new RuntimeException(s"Time point has to be > 0 (was $n)")
+      n
+    }
+    opt.fold("") {
+      case n: Int  => s":$key ${validNumber(n)}"
+      case n: Long => s":$key ${validNumber(n)}"
+      case d: Date => s""":$key #inst "${date2datomicStr(d)}""""
+      case x       => throw new RuntimeException(
+        s"Unexpected time point `$x` of type ${x.getClass}."
+      )
+    }
+  }
+
+
+  // API .......................................................................
 
   def administerSystem(
     datomicClient: AnyRef,
@@ -338,8 +366,8 @@ trait Invoke extends ClojureBridge {
 
   def txRange(
     datomicConn: AnyRef,
-    start: Option[Long] = None,
-    end: Option[Long] = None,
+    start: Option[Any] = None,
+    end: Option[Any] = None,
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
@@ -348,8 +376,8 @@ trait Invoke extends ClojureBridge {
       datomicConn,
       read(
         s"""{
-           |${longOpt("start", start)}
-           |${longOpt("end", end)}
+           |${timePointOpt("start", start)}
+           |${timePointOpt("end", end)}
            |${timeoutOpt(timeout)}
            |${offsetOpt(offset)}
            |${limitOpt(limit)}
