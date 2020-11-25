@@ -2,6 +2,7 @@ package datomicClojure
 
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, LocalDateTime, OffsetDateTime, ZoneId, ZoneOffset, ZonedDateTime}
+import java.util
 import java.util.{Date, TimeZone, List => jList, Map => jMap}
 import clojure.lang.IFn
 import com.amazonaws.auth.AWSCredentialsProviderChain
@@ -65,6 +66,12 @@ trait Invoke extends ClojureBridge {
         s"Unexpected time point `$x` of type ${x.getClass}."
       )
     }
+  }
+
+  def keywordAware(components: jList[_]): jList[_] = {
+    val aware: jList[Any] = new util.ArrayList[Any]()
+    components.forEach(v => aware.add(read(v.toString)))
+    aware
   }
 
 
@@ -198,7 +205,7 @@ trait Invoke extends ClojureBridge {
       read(
         s"""{
            |:index $index
-           |:components ${edn(components)}
+           |:components ${edn(keywordAware(components))}
            |}""".stripMargin
       )
     )

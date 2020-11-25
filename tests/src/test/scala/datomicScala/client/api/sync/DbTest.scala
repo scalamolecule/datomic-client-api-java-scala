@@ -295,6 +295,12 @@ class DbTest extends Spec {
       ":avet",
       list(read(":movie/title"))
     ).toScala(List).map(_.v.toString).sorted === threeFilms
+
+    // We can even supply keywords as Strings
+    conn.db.datoms(
+      ":avet",
+      list(":movie/title")
+    ).toScala(List).map(_.v.toString).sorted === threeFilms
   }
 
 
