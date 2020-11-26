@@ -7,8 +7,8 @@ import clojure.lang.LazySeq
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util._
-import datomicClojure.{ClojureBridge, InvokeAsync}
-import datomicScala.CognitectAnomaly
+import datomicClient._
+import datomicClient.anomaly.CognitectAnomaly
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

@@ -2,9 +2,10 @@ package datomicScala.client.api.sync
 
 import java.util.stream.{Stream => jStream}
 import java.util.{Map => jMap}
-import clojure.lang.{PersistentArrayMap, PersistentVector}
+import clojure.lang.PersistentVector
 import datomic.Util
 import datomic.Util._
+import datomicClient.anomaly.Interrupted
 import datomicScala.Spec
 import datomicScala.client.api.{Datom, DbStats}
 import scala.jdk.CollectionConverters._
@@ -323,15 +324,7 @@ class DbTest extends Spec {
     // dev-local in-memory db will pull within 1 ms
     if (!isDevLocal) {
       conn.db.pull("[*]", e3, 1) must throwA(
-        new clojure.lang.ExceptionInfo(
-          "Datomic Client Timeout",
-          new PersistentArrayMap(
-            Array(
-              read(":cognitect.anomalies/category"), read(":cognitect.anomalies/interrupted"),
-              read(":cognitect.anomalies/message"), "Datomic Client Timeout"
-            )
-          )
-        )
+        Interrupted("Datomic Client Timeout")
       )
     }
   }

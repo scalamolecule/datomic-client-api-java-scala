@@ -154,7 +154,13 @@ public class AsyncConnectionTest extends SetupAsync {
         // Get range from timePointStart to timePointEnd ------------------
 
         AsyncTxReport txReport4 = ((Right<?, AsyncTxReport>) conn.transact(film4).get()).right_value();
+
+        Thread.sleep(5); // Make sure that date's don't share same ms
+
         AsyncTxReport txReport5 = ((Right<?, AsyncTxReport>) conn.transact(film5).get()).right_value();
+
+        Thread.sleep(5); // Make sure that date's don't share same ms
+
         AsyncTxReport txReport6 = ((Right<?, AsyncTxReport>) conn.transact(film6).get()).right_value();
 
         Long tx4 = txReport4.tx();

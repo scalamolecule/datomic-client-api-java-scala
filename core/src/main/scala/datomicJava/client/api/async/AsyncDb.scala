@@ -4,9 +4,9 @@ import java.util.concurrent.CompletableFuture
 import java.util.stream.{Stream => jStream}
 import java.util.{Date, List => jList, Map => jMap}
 import clojure.lang.LazySeq
-import datomicClojure.{ErrorMsg, InvokeAsync, Lookup}
-import datomicJava.client.api.{Datom, DbStats, async}
-import datomicJava.{CognitectAnomaly, Helper}
+import datomicClient._
+import datomicClient.anomaly.CognitectAnomaly
+import datomicJava.client.api.{Datom, DbStats, Helper, async}
 
 
 case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {

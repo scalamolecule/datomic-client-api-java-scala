@@ -5,8 +5,8 @@ import java.util.{Collection => jCollection, List => jList, Map => jMap}
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util.{list, read}
-import datomicClojure.{ClojureBridge, Invoke}
-import datomicJava.AnomalyWrapper
+import datomicClient._
+import datomicClient.anomaly.AnomalyWrapper
 import scala.annotation.varargs
 
 object Datomic extends ClojureBridge with AnomalyWrapper {
@@ -74,7 +74,7 @@ object Datomic extends ClojureBridge with AnomalyWrapper {
 
   // Query as data structure or String + optional :offset, :limit, :timeout params
   // (see tests)
-  def q(argMap: jMap[_, _]): jCollection[jList[AnyRef]] = catchAnomaly {
+  def q(argMap: jMap[_, _]): jCollection[jList[AnyRef]] = {
     Invoke.q(argMap).asInstanceOf[jCollection[jList[AnyRef]]]
   }
 
@@ -98,7 +98,7 @@ object Datomic extends ClojureBridge with AnomalyWrapper {
 
   // Query as data structure or String + optional :offset, :limit, :timeout params
   // (see tests)
-  def qseq(map: jMap[_, _]): jStream[_] = catchAnomaly {
+  def qseq(map: jMap[_, _]): jStream[_] = {
     Invoke.qseq(map).asInstanceOf[clojure.lang.ASeq].stream()
   }
 

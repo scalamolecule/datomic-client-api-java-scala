@@ -1,6 +1,6 @@
 package datomicJava.client.api.sync;
 
-import clojure.lang.ExceptionInfo;
+import datomicClient.anomaly.Interrupted;
 import datomicJava.Setup;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.DbStats;
@@ -352,17 +352,11 @@ public class DbTest extends Setup {
 
         // dev-local in-memory db will pull within 1 ms
         if (!isDevLocal()) {
-            ExceptionInfo timedOut = assertThrows(
-                ExceptionInfo.class,
+            Interrupted timedOut = assertThrows(
+                Interrupted.class,
                 () -> conn.db().pull("[*]", e3(), 1)
             );
             assertThat(timedOut.getMessage(), is("Datomic Client Timeout"));
-            assertThat(timedOut.getData(), is(
-                map(
-                    read(":cognitect.anomalies/category"), read(":cognitect.anomalies/interrupted"),
-                    read(":cognitect.anomalies/message"), "Datomic Client Timeout"
-                )
-            ));
         }
     }
 

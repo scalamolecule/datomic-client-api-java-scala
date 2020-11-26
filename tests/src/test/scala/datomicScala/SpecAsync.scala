@@ -21,6 +21,8 @@ trait SpecAsync extends Specification with SchemaAndData {
   var conn      : AsyncConnection = null // set in setup
   var filmDataTx: AsyncTxReport   = null // set in setup
 
+  var setupException = Option.empty[Throwable]
+
   // Convenience await (name 'await' is already used by specs2)
   def waitFor[T](body: => Future[T]): T = Await.result(body, Duration.Inf)
 
@@ -41,13 +43,21 @@ trait SpecAsync extends Specification with SchemaAndData {
 
   def setupPeerServer(): Unit = {
     system = "peer-server"
-    client = AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
-
-    // Using the db associated with the Peer Server connection
-    conn = waitFor(client.connect("hello")).toOption.get
+    try {
+      client = AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
+    } catch {
+      case t: Throwable =>
+        // Catch error from setup (suppressed during setup)
+        setupException = Some(t)
+    }
   }
 
+
   class AsyncSetup extends SchemaAndData with Scope {
+
+    // Throw potential setup error
+    setupException.fold()(throw _)
+
     var txBefore    : Long = 0L
     var txInstBefore: Date = null
 
@@ -67,6 +77,9 @@ trait SpecAsync extends Specification with SchemaAndData {
       filmDataTx = waitFor(conn.transact(filmData)).toOption.get
 
     } else {
+
+      // Using the db associated with the Peer Server connection
+      conn = waitFor(client.connect("hello")).toOption.get
 
       // Install schema if necessary
       if (waitFor(AsyncDatomic.q(
@@ -90,23 +103,6 @@ trait SpecAsync extends Specification with SchemaAndData {
 
       filmDataTx = waitFor(conn.transact(filmData)).toOption.get
     }
-
-//    // Databases before and after last tx (after == current)
-//    lazy val dbBefore = filmDataTx.dbBefore
-//    lazy val dbAfter  = filmDataTx.dbAfter
-//
-//    // Get t before and after last tx
-//    lazy val tBefore = dbBefore.basisT
-//    lazy val tAfter  = dbAfter.basisT
-//
-//    lazy val txBefore = Peer.toTx(tBefore).asInstanceOf[Long]
-//    lazy val txAfter  = Peer.toTx(tAfter).asInstanceOf[Long]
-//
-//    lazy val txData      = filmDataTx.txData.toScala(List)
-//    lazy val txInstAfter = txData.head.v.asInstanceOf[Date]
-//
-//    // Entity ids of the three films
-//    lazy val List(e1, e2, e3) = txData.map(_.e).distinct.drop(1).sorted
 
     lazy val dbAfter          = filmDataTx.dbAfter
     lazy val tBefore          = filmDataTx.basisT

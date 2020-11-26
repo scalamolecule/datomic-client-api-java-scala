@@ -5,14 +5,14 @@ import java.util.{Map => jMap}
 import clojure.lang.{PersistentArrayMap, PersistentVector}
 import datomic.Util
 import datomic.Util._
-import datomicScala.{CognitectAnomaly, SpecAsync}
+import datomicClient.anomaly.AnomalyWrapper
+import datomicScala.SpecAsync
 import datomicScala.client.api.{Datom, DbStats}
-import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
 
-class AsyncDbTest extends SpecAsync {
+class AsyncDbTest extends SpecAsync with AnomalyWrapper{
 
   "stats" in new AsyncSetup {
     val db: AsyncDb = conn.db

@@ -1,4 +1,4 @@
-package datomicClojure
+package datomicClient
 
 import java.net.URI
 import java.util.{List => jList, Map => jMap}

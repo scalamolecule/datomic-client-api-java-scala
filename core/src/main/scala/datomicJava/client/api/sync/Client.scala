@@ -3,9 +3,8 @@ package datomicJava.client.api.sync
 import java.util.{List => jList, Map => jMap}
 import datomic.Util
 import datomic.Util.read
-import datomic.client.api.protocols.{Client => DatomicClient}
-import datomicClojure.{ClojureBridge, ErrorMsg, Invoke}
-import datomicJava.AnomalyWrapper
+import datomicClient._
+import datomicClient.anomaly.AnomalyWrapper
 
 case class Client(
   forPeerServer: Boolean,
@@ -32,7 +31,7 @@ case class Client(
    *                )
    * @return Diagnostive value or throwing a failure exception
    */
-  def administerSystem(options: jMap[_, _]): jMap[_, _] = catchAnomaly {
+  def administerSystem(options: jMap[_, _]): jMap[_, _] = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.administerSystem)
     Invoke.administerSystem(datomicClient, options)
@@ -46,7 +45,7 @@ case class Client(
   )
 
 
-  def connect(dbName: String): Connection = catchAnomaly {
+  def connect(dbName: String): Connection = {
     Connection(Invoke.connect(datomicClient, dbName))
   }
 
@@ -54,22 +53,24 @@ case class Client(
   def createDatabase(
     dbName: String,
     timeout: Int
-  ): Boolean = catchAnomaly {
+  ): Boolean = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.createDatabase(dbName))
     Invoke.createDatabase(datomicClient, dbName, timeout).asInstanceOf[Boolean]
   }
+
   def createDatabase(dbName: String): Boolean = createDatabase(dbName, 0)
 
 
   def deleteDatabase(
     dbName: String,
     timeout: Int
-  ): Boolean = catchAnomaly {
+  ): Boolean = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.deleteDatabase(dbName))
     Invoke.deleteDatabase(datomicClient, dbName, timeout).asInstanceOf[Boolean]
   }
+
   def deleteDatabase(dbName: String): Boolean = deleteDatabase(dbName, 0)
 
 
@@ -78,9 +79,11 @@ case class Client(
     timeout: Int,
     offset: Int,
     limit: Int
-  ): jList[String] = catchAnomaly {
+  ): jList[String] = {
     Invoke.listDatabase(datomicClient, timeout, offset, limit).asInstanceOf[jList[String]]
   }
+
   def listDatabases(): jList[String] = listDatabases(0, 0, 1000)
+
   def listDatabases(limit: Int): jList[String] = listDatabases(0, 0, limit)
 }

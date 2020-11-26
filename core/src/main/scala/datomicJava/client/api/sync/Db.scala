@@ -2,10 +2,9 @@ package datomicJava.client.api.sync
 
 import java.util.stream.{Stream => jStream}
 import java.util.{Date, List => jList, Map => jMap}
-import datomicClojure.{ErrorMsg, Invoke, Lookup}
-import datomicJava.Helper
-import datomicJava.Helper.streamOfDatoms
-import datomicJava.client.api.{Datom, DbStats}
+import datomicClient.{ErrorMsg, Invoke, Lookup}
+import datomicJava.client.api.Helper.streamOfDatoms
+import datomicJava.client.api.{Datom, DbStats, Helper}
 
 
 case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) {

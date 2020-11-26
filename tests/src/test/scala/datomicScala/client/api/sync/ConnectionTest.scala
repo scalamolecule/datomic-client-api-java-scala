@@ -87,7 +87,13 @@ class ConnectionTest extends Spec {
     // Get range from timePointStart to timePointEnd ------------------
 
     val txReport4 = conn.transact(film4)
+
+    Thread.sleep(5) // Make sure that date's don't share same ms
+
     val txReport5 = conn.transact(film5)
+
+    Thread.sleep(5) // Make sure that date's don't share same ms
+
     val txReport6 = conn.transact(film6)
 
     val tx4 = txReport4.tx
@@ -152,6 +158,8 @@ class ConnectionTest extends Spec {
     // Using transaction id
     checkRange(Some(t4), Some(t6), List(txReport4, txReport5))
 
+
+//    Thread
     // Using Date
     checkRange(Some(txInstant4), Some(txInstant6), List(txReport4, txReport5))
   }

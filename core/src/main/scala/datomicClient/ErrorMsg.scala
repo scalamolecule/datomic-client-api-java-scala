@@ -1,4 +1,4 @@
-package datomicClojure
+package datomicClient
 
 object ErrorMsg {
 
@@ -16,11 +16,6 @@ object ErrorMsg {
        |Please delete a database with the Peer class instead:
        |Peer.deleteDatabase("datomic:<free/dev/pro>://<host>:<port>/$dbName")""".stripMargin
 
-  def transact: String = "No transaction statements passed."
-
-  def `with`: String =
-    """Please pass a "with-db", initially created from `conn.withDb` and """ +
-      "subsequently with `<Db-object>.datomicDb`."
 
   def indexPull: String = "Index can only be :avet or :aevt"
 

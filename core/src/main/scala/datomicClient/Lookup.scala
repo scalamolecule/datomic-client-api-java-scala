@@ -1,4 +1,4 @@
-package datomicClojure
+package datomicClient
 
 import java.util.Date
 import datomic.Util.read

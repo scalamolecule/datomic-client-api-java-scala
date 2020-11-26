@@ -4,7 +4,7 @@ import sbt.url
 
 lazy val commonSettings = Seq(
   name := "datomic-client-api-java-scala",
-  version := "0.4.3",
+  version := "0.4.4",
   scalaVersion := "2.13.3",
   organization := "org.scalamolecule",
   organizationName := "ScalaMolecule",

@@ -4,8 +4,8 @@ import java.util.{Collection => jCollection, List => jList, Map => jMap}
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util.{list, read}
-import datomicClojure.{ClojureBridge, Invoke}
-import datomicScala.AnomalyWrapper
+import datomicClient.anomaly.AnomalyWrapper
+import datomicClient.{ClojureBridge, Invoke}
 import scala.jdk.StreamConverters._
 
 
@@ -56,15 +56,21 @@ object Datomic extends ClojureBridge with AnomalyWrapper {
     secret: String,
     endpoint: String,
     validateHostnames: Boolean = false
-  ): Client = Client(
-    true,
-    Invoke.clientPeerServer(accessKey, secret, endpoint, validateHostnames)
-  )
+  ): Client = {
+
+    val rawClient = Invoke.clientPeerServer(accessKey, secret, endpoint, validateHostnames)
+    val client = Client(
+      true,
+//      Invoke.clientPeerServer(accessKey, secret, endpoint, validateHostnames)
+      rawClient
+    )
+    client
+  }
 
 
   // Query as data structure or String + optional :offset, :limit, :timeout params
   // (see tests)
-  def q(argMap: jMap[_, _]): jCollection[jList[AnyRef]] = catchAnomaly {
+  def q(argMap: jMap[_, _]): jCollection[jList[AnyRef]] = {
     Invoke.q(argMap).asInstanceOf[jCollection[jList[AnyRef]]]
   }
 
@@ -87,7 +93,7 @@ object Datomic extends ClojureBridge with AnomalyWrapper {
 
   // Query as data structure or String + optional :offset, :limit, :timeout params
   // (see tests)
-  def qseq(argMap: jMap[_, _]): LazyList[Any] = catchAnomaly {
+  def qseq(argMap: jMap[_, _]): LazyList[Any] = {
     Invoke.qseq(argMap).asInstanceOf[clojure.lang.ASeq].stream().toScala(LazyList)
   }
 

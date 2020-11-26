@@ -2,10 +2,9 @@ package datomicScala.client.api.sync
 
 import java.util.stream.{Stream => jStream}
 import java.util.{Date, List => jList, Map => jMap}
-import datomic.Util._
-import datomicClojure.{ErrorMsg, Invoke, Lookup}
-import datomicScala.client.api.{Datom, DbStats}
-import datomicScala.{AnomalyWrapper, Helper}
+import datomicClient.anomaly.AnomalyWrapper
+import datomicClient.{ErrorMsg, Invoke, Lookup}
+import datomicScala.client.api.{Datom, DbStats, Helper}
 
 
 case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) with AnomalyWrapper {

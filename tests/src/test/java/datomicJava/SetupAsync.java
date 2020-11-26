@@ -1,9 +1,8 @@
 package datomicJava;
 
-import datomic.Peer;
+import datomicClient.anomaly.CognitectAnomaly;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.async.*;
-import datomicJava.client.api.sync.Db;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

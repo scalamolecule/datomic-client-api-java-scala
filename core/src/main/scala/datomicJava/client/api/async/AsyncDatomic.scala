@@ -7,7 +7,7 @@ import clojure.lang.LazySeq
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util._
-import datomicClojure.{ClojureBridge, InvokeAsync}
+import datomicClient._
 import scala.annotation.varargs
 
 

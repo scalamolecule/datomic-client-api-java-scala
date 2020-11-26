@@ -113,7 +113,7 @@ public class ConnectionTest extends Setup {
     }
 
     @Test
-    public void txRange() {
+    public void txRange() throws InterruptedException {
 
         // Getting all transactions (!) -----------------------------------
 
@@ -139,7 +139,13 @@ public class ConnectionTest extends Setup {
         // Get range from timePointStart to timePointEnd ------------------
 
         TxReport txReport4 = conn.transact(film4);
+
+        Thread.sleep(5); // Make sure that date's don't share same ms
+
         TxReport txReport5 = conn.transact(film5);
+
+        Thread.sleep(5); // Make sure that date's don't share same ms
+
         TxReport txReport6 = conn.transact(film6);
 
         Long tx4 = txReport4.tx();

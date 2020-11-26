@@ -1,6 +1,6 @@
 package datomicJava.client.api.sync;
 
-import datomicClojure.ErrorMsg;
+import datomicClient.ErrorMsg;
 import datomicJava.Setup;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

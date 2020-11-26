@@ -1,12 +1,11 @@
-package datomicScala
+package datomicScala.client.api
 
 import java.lang.{Iterable => jIterable}
 import java.util
 import java.util.stream.{StreamSupport, Stream => jStream}
-import java.util.{Spliterator, Spliterators, Iterator => jIterator, Map => jMap, List => jList}
+import java.util.{Spliterator, Spliterators, Iterator => jIterator, List => jList, Map => jMap}
 import clojure.lang._
 import datomic.Util.read
-import datomicScala.client.api.{Datom, DbStats}
 import scala.jdk.CollectionConverters._
 
 

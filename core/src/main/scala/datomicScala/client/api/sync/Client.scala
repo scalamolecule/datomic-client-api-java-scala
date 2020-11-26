@@ -3,15 +3,13 @@ package datomicScala.client.api.sync
 import java.util.{List => jList, Map => jMap}
 import datomic.Util
 import datomic.Util.read
-import datomic.client.api.protocols.{Client => DatomicClient}
-import datomicClojure.{ErrorMsg, Invoke}
-import datomicScala.AnomalyWrapper
+import datomicClient._
+import datomicClient.anomaly.AnomalyWrapper
 
 case class Client(
   forPeerServer: Boolean,
   datomicClient: AnyRef
 ) extends AnomalyWrapper {
-
 
   /**
    * Upgrading Datomic Schema
@@ -33,7 +31,7 @@ case class Client(
    *                )
    * @return Diagnostive value or throwing a failure exception
    */
-  def administerSystem(options: jMap[_, _]): jMap[_, _] = catchAnomaly {
+  def administerSystem(options: jMap[_, _]): jMap[_, _] = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.administerSystem)
     Invoke.administerSystem(datomicClient, options)
@@ -47,7 +45,7 @@ case class Client(
   )
 
 
-  def connect(dbName: String): Connection = catchAnomaly {
+  def connect(dbName: String): Connection =  {
     Connection(Invoke.connect(datomicClient, dbName))
   }
 
@@ -55,7 +53,7 @@ case class Client(
   def createDatabase(
     dbName: String,
     timeout: Int = 0
-  ): Boolean = catchAnomaly {
+  ): Boolean = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.createDatabase(dbName))
 
@@ -68,7 +66,7 @@ case class Client(
   def deleteDatabase(
     dbName: String,
     timeout: Int = 0
-  ): Boolean = catchAnomaly {
+  ): Boolean = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.deleteDatabase(dbName))
     Invoke.deleteDatabase(datomicClient, dbName, timeout).asInstanceOf[Boolean]
@@ -80,7 +78,7 @@ case class Client(
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): jList[String] = catchAnomaly {
+  ): jList[String] = {
     Invoke.listDatabase(datomicClient, timeout, offset, limit).asInstanceOf[jList[String]]
   }
 }

@@ -1,12 +1,13 @@
-package datomicClojure
+package datomicClient
 
 import java.time.format.DateTimeFormatter
-import java.time.{Instant, LocalDateTime, OffsetDateTime, ZoneId, ZoneOffset, ZonedDateTime}
+import java.time.{Instant, LocalDateTime, OffsetDateTime, ZonedDateTime}
 import java.util
-import java.util.{Date, TimeZone, List => jList, Map => jMap}
+import java.util.{Date, List => jList, Map => jMap}
 import clojure.lang.IFn
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util.read
+import datomicClient.anomaly.AnomalyWrapper
 
 
 object Invoke extends Invoke {
@@ -17,7 +18,7 @@ object InvokeAsync extends Invoke {
   val fn: String => IFn = (method: String) => datomicAsyncFn(method)
 }
 
-trait Invoke extends ClojureBridge {
+trait Invoke extends ClojureBridge with AnomalyWrapper {
 
   // sync/async fn to be invoked
   val fn: String => IFn
@@ -80,16 +81,20 @@ trait Invoke extends ClojureBridge {
   def administerSystem(
     datomicClient: AnyRef,
     options: jMap[_, _]
-  ): jMap[_, _] = {
+  ): jMap[_, _] = catchAnomaly {
     fn("administer-system")
       .invoke(datomicClient, edn(options))
       .asInstanceOf[jMap[_, _]]
   }
 
 
-  def asOf(datomicDb: AnyRef, t: Long): AnyRef = fn("as-of").invoke(datomicDb, t)
+  def asOf(datomicDb: AnyRef, t: Long): AnyRef = catchAnomaly {
+    fn("as-of").invoke(datomicDb, t)
+  }
 
-  def asOf(datomicDb: AnyRef, d: Date): AnyRef = fn("as-of").invoke(datomicDb, d)
+  def asOf(datomicDb: AnyRef, d: Date): AnyRef = catchAnomaly {
+    fn("as-of").invoke(datomicDb, d)
+  }
 
   def clientCloudAWS(
     region: String,
@@ -97,7 +102,7 @@ trait Invoke extends ClojureBridge {
     endpoint: String,
     credsProvider: AWSCredentialsProviderChain,
     proxyPort: Int
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     fn("client").invoke(
       read(
         s"""{
@@ -117,7 +122,7 @@ trait Invoke extends ClojureBridge {
     endpoint: String,
     credsProfile: String,
     proxyPort: Int
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     fn("client").invoke(
       read(
         s"""{
@@ -134,7 +139,7 @@ trait Invoke extends ClojureBridge {
   def clientDevLocal(
     system: String,
     storageDir: String // overrides :storage-dir in ~/.datomic/dev-local.edn
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     val storage = if (storageDir.nonEmpty)
       s""":storage-dir "$storageDir"""".stripMargin else ""
     fn("client").invoke(
@@ -152,7 +157,7 @@ trait Invoke extends ClojureBridge {
     secret: String,
     endpoint: String,
     validateHostnames: Boolean
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     fn("client").invoke(
       read(
         s"""{
@@ -169,8 +174,8 @@ trait Invoke extends ClojureBridge {
     datomicClient: AnyRef,
     dbName: String,
     timeout: Int = 0
-  ): AnyRef = {
-    // Returns a connection
+  ): AnyRef = catchAnomaly {
+    // Returns a connection or throws
     fn("connect").invoke(
       datomicClient,
       read(
@@ -186,7 +191,7 @@ trait Invoke extends ClojureBridge {
     datomicClient: AnyRef,
     dbName: String,
     timeout: Int = 0
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     // Returns true or anomaly
     fn("create-database").invoke(
       datomicClient,
@@ -199,7 +204,7 @@ trait Invoke extends ClojureBridge {
     datomicDb: AnyRef,
     index: String,
     components: jList[_]
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     fn("datoms").invoke(
       datomicDb,
       read(
@@ -212,12 +217,12 @@ trait Invoke extends ClojureBridge {
   }
 
 
-  def db(datomicConn: AnyRef): AnyRef = {
+  def db(datomicConn: AnyRef): AnyRef = catchAnomaly {
     fn("db").invoke(datomicConn)
   }
 
 
-  def dbStats(datomicDb: AnyRef): AnyRef = {
+  def dbStats(datomicDb: AnyRef): AnyRef = catchAnomaly {
     fn("db-stats").invoke(datomicDb)
   }
 
@@ -226,7 +231,7 @@ trait Invoke extends ClojureBridge {
     datomicClient: AnyRef,
     dbName: String,
     timeout: Int = 0
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     // Returns true or anomaly
     fn("delete-database").invoke(
       datomicClient,
@@ -235,7 +240,7 @@ trait Invoke extends ClojureBridge {
   }
 
 
-  def history(datomicDb: AnyRef): AnyRef = {
+  def history(datomicDb: AnyRef): AnyRef = catchAnomaly {
     fn("history").invoke(datomicDb)
   }
 
@@ -249,7 +254,7 @@ trait Invoke extends ClojureBridge {
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     val reverse_ = if (reverse) ":reverse true" else ""
     fn("index-pull").invoke(
       datomicDb,
@@ -276,7 +281,7 @@ trait Invoke extends ClojureBridge {
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     fn("index-range").invoke(
       datomicDb,
       read(
@@ -298,7 +303,7 @@ trait Invoke extends ClojureBridge {
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     fn("list-databases").invoke(
       datomicClient,
       read(
@@ -319,7 +324,7 @@ trait Invoke extends ClojureBridge {
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     fn("pull").invoke(
       datomicDb,
       read(
@@ -335,21 +340,25 @@ trait Invoke extends ClojureBridge {
   }
 
 
-  def q(map: jMap[_, _]): AnyRef = fn("q").invoke(map)
+  def q(map: jMap[_, _]): AnyRef = catchAnomaly {
+    fn("q").invoke(map)
+  }
 
 
-  def qseq(map: jMap[_, _]): AnyRef = fn("qseq").invoke(map)
+  def qseq(map: jMap[_, _]): AnyRef = catchAnomaly {
+    fn("qseq").invoke(map)
+  }
 
 
-  def since(datomicDb: AnyRef, t: Long): AnyRef = {
+  def since(datomicDb: AnyRef, t: Long): AnyRef = catchAnomaly {
     fn("since").invoke(datomicDb, t)
   }
-  def since(datomicDb: AnyRef, d: Date): AnyRef = {
+  def since(datomicDb: AnyRef, d: Date): AnyRef = catchAnomaly {
     fn("since").invoke(datomicDb, d)
   }
 
 
-  def sync(datomicConn: AnyRef, t: Long): AnyRef = {
+  def sync(datomicConn: AnyRef, t: Long): AnyRef = catchAnomaly {
     fn("sync").invoke(datomicConn, t)
   }
 
@@ -357,7 +366,7 @@ trait Invoke extends ClojureBridge {
   def transact(
     datomicConn: AnyRef,
     stmts: jList[_]
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     val txData = edn(stmts)
     fn("transact").invoke(
       datomicConn,
@@ -378,7 +387,7 @@ trait Invoke extends ClojureBridge {
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     fn("tx-range").invoke(
       datomicConn,
       read(
@@ -397,7 +406,7 @@ trait Invoke extends ClojureBridge {
   def `with`(
     withDb: AnyRef,
     stmts: jList[_]
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     fn("with").invoke(
       withDb,
       read(s"{:tx-data ${edn(stmts)}}")
@@ -406,7 +415,7 @@ trait Invoke extends ClojureBridge {
 
   def withDb(
     datomicConn: AnyRef
-  ): AnyRef = {
+  ): AnyRef = catchAnomaly {
     fn("with-db").invoke(datomicConn)
   }
 }

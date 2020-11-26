@@ -1,8 +1,8 @@
 package datomicJava.client.api.async;
 
-import datomicJava.CognitectAnomaly;
-import datomicJava.Forbidden;
-import datomicJava.NotFound;
+import datomicClient.anomaly.CognitectAnomaly;
+import datomicClient.anomaly.Forbidden;
+import datomicClient.anomaly.NotFound;
 import datomicJava.SetupAsync;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -56,7 +56,7 @@ public class AsyncDatomicTest extends SetupAsync {
             assertThat(
                 ((Left<CognitectAnomaly, ?>) AsyncDatomic
                     .clientDevLocal("x").connect("hello").get()
-                ).left_value().msg(),
+                ).left_value().getMessage(),
                 is("Db not found: hello")
             );
 
@@ -64,7 +64,7 @@ public class AsyncDatomicTest extends SetupAsync {
             assertThat(
                 ((Left<CognitectAnomaly, ?>) AsyncDatomic
                     .clientDevLocal("Hello system name").connect("y").get()
-                ).left_value().msg(),
+                ).left_value().getMessage(),
                 is("Db not found: y")
             );
 
@@ -97,7 +97,7 @@ public class AsyncDatomicTest extends SetupAsync {
                 Forbidden.class,
                 () -> client2.connect("hello")
             );
-            assertThat(forbidden.msg(), is("forbidden"));
+            assertThat(forbidden.getMessage(), is("forbidden"));
             assertThat(forbidden.httpRequest().get("status"), is(403));
             assertNull(forbidden.httpRequest().get("body"));
 

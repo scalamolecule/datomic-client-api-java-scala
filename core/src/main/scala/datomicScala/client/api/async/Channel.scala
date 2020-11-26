@@ -1,20 +1,18 @@
 package datomicScala.client.api.async
 
-import java.util.{Map => jMap}
 import cats.effect.{ContextShift, IO}
-import clojure.lang.{IPersistentMap, Keyword, PersistentArrayMap}
+import clojure.lang.PersistentArrayMap
 import datomic.Util._
-import datomicClojure.ClojureBridge
-import datomicScala._
+import datomicClient._
+import datomicClient.anomaly.{AnomalyWrapper, CognitectAnomaly}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.jdk.CollectionConverters._
 
 
 case class Channel[T](
   channelOrInternal: AnyRef,
   transform: Option[AnyRef => T] = None
-) extends ClojureBridge {
+) extends ClojureBridge with AnomalyWrapper {
 
   // Recursively and lazily extract data (except first chunk) from Clojure Channel
   def lazyList: LazyList[Either[CognitectAnomaly, T]] = {
@@ -31,7 +29,7 @@ case class Channel[T](
           // Anomaly
           case anomalyMap: PersistentArrayMap
             if anomalyMap.containsKey(read(":cognitect.anomalies/category")) =>
-            Left(getAnomaly(anomalyMap)) #:: LazyList.empty
+            Left(anomaly(anomalyMap)) #:: LazyList.empty
 
           // Chunks with type transformation
           case chunk if transform.nonEmpty =>
@@ -45,41 +43,6 @@ case class Channel[T](
       // Internal types like TxReport etc.
       case internal =>
         Right(internal.asInstanceOf[T]) #:: LazyList.empty
-    }
-  }
-
-  private def getAnomaly(anomalyMap: PersistentArrayMap): CognitectAnomaly = {
-    val cat = anomalyMap.get(
-      read(":cognitect.anomalies/category")
-    ).asInstanceOf[Keyword].getName
-
-    val msg = anomalyMap.get(
-      read(":cognitect.anomalies/message")
-    ).toString
-
-    cat match {
-      case "not-found"   => NotFound(msg, null)
-      case "forbidden"   => Forbidden(httpResult(anomalyMap), null)
-      case "unavailable" => Unavailable(msg, null)
-      case "interrupted" => Interrupted(msg, null)
-      case "incorrect"   => Incorrect(msg, null)
-      case "unsupported" => Unsupported(msg, null)
-      case "conflict"    => Conflict(msg, null)
-      case "fault"       => Fault(msg, null)
-      case "busy"        => Busy(msg, null)
-      case _             => throw new IllegalArgumentException(
-        "Unexpected Anomaly:\n" + anomalyMap
-      )
-    }
-  }
-
-
-  def httpResult(data: IPersistentMap): Map[String, Any] = {
-    data.entryAt(read(":http-result")).getValue.asInstanceOf[jMap[_, _]]
-      .asScala.toMap.map {
-      case (k: Keyword, v: jMap[_, _]) => (k.getName, v.asScala.toMap)
-      case (k: Keyword, v)             => (k.getName, v)
-      case (k, v)                      => (k.toString, v)
     }
   }
 
@@ -102,7 +65,7 @@ case class Channel[T](
             // Anomaly
             case anomalyMap: PersistentArrayMap
               if anomalyMap.containsKey(read(":cognitect.anomalies/category")) =>
-              Some(Left(getAnomaly(anomalyMap)))
+              Some(Left(anomaly(anomalyMap)))
 
             // Chunks with type transformation
             case chunk if transform.nonEmpty =>

@@ -3,7 +3,7 @@ package datomicScala.client.api.async
 import java.util.stream.{Stream => jStream}
 import java.util.{Date, Map => jMap}
 import datomic.Util._
-import datomicScala.Helper._
+import datomicScala.client.api.Helper._
 import datomicScala.client.api.Datom
 
 /** Facade to Datomic transaction report */

@@ -2,7 +2,7 @@ package datomicScala.client.api.sync
 
 import datomic.Util
 import datomic.Util._
-import datomicClojure.ErrorMsg
+import datomicClient.ErrorMsg
 import datomicScala.Spec
 import scala.jdk.CollectionConverters._
 

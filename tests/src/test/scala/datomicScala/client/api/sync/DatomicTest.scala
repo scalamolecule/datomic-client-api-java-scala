@@ -3,10 +3,11 @@ package datomicScala.client.api.sync
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util._
-import datomicScala.{Forbidden, NotFound, Spec}
+import datomicClient.anomaly.{AnomalyWrapper, Forbidden, NotFound}
+import datomicScala.Spec
 
 
-class DatomicTest extends Spec {
+class DatomicTest extends Spec with AnomalyWrapper {
 
   "create client" >> {
     system match {
@@ -76,9 +77,9 @@ class DatomicTest extends Spec {
           client2.connect("hello")
         } catch {
           case forbidden: Forbidden =>
-            forbidden.msg === "forbidden"
-            forbidden.httpRequest("status") === 403
-            forbidden.httpRequest("body") === null
+            forbidden.getMessage === "forbidden"
+            forbidden.httpRequest.get("status") === 403
+            forbidden.httpRequest.get("body") === null
 
           /*
           Example of forbidden.httpRequest data:

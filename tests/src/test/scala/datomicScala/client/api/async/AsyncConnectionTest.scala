@@ -90,7 +90,13 @@ class AsyncConnectionTest extends SpecAsync {
     // Get range from timePointStart to timePointEnd ------------------
 
     val txReport4 = waitFor(conn.transact(film4)).toOption.get
+
+    Thread.sleep(5) // Make sure that date's don't share same ms
+
     val txReport5 = waitFor(conn.transact(film5)).toOption.get
+
+    Thread.sleep(5) // Make sure that date's don't share same ms
+
     val txReport6 = waitFor(conn.transact(film6)).toOption.get
 
     val tx4 = txReport4.tx

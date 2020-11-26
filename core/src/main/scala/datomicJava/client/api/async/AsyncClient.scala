@@ -4,9 +4,9 @@ import java.util.concurrent.CompletableFuture
 import java.util.{List => jList, Map => jMap}
 import datomic.Util
 import datomic.Util._
-import datomicClojure.{ClojureBridge, ErrorMsg, InvokeAsync}
+import datomicClient._
+import datomicClient.anomaly.{AnomalyWrapper, CognitectAnomaly}
 import datomicJava.client.api.async
-import datomicJava.{AnomalyWrapper, CognitectAnomaly}
 
 
 case class AsyncClient(
@@ -34,7 +34,7 @@ case class AsyncClient(
    *                )
    * @return Diagnostive value or throwing a failure exception
    */
-  def administerSystem(options: jMap[_, _]): jMap[_, _] = catchAnomaly {
+  def administerSystem(options: jMap[_, _]): jMap[_, _] = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.administerSystem)
     InvokeAsync.administerSystem(asyncDatomicClient, options)

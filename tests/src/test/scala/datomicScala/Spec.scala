@@ -3,6 +3,7 @@ package datomicScala
 import java.util.{Date, List => jList}
 import clojure.lang.PersistentVector
 import datomic.Util.list
+import datomicClient.anomaly.AnomalyWrapper
 import datomicScala.client.api.sync._
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
@@ -11,13 +12,15 @@ import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
 
-trait Spec extends Specification with SchemaAndData {
+trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
   sequential
 
   var system    : String     = "Not set yet. Can be: dev-local / peer-server / cloud"
   var client    : Client     = null // set in Setup class
   var conn      : Connection = null // set in Setup class
   var filmDataTx: TxReport   = null // set in Setup class
+
+  var setupException = Option.empty[Throwable]
 
   override def map(fs: => Fragments): Fragments =
     step(setupDevLocal()) ^
@@ -32,20 +35,20 @@ trait Spec extends Specification with SchemaAndData {
 
   def setupPeerServer(): Unit = {
     system = "peer-server"
-    client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
-    conn = try {
-      client.connect("hello")
+    try {
+      client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
     } catch {
-      case e: CognitectAnomaly =>
-        println(e)
-        println(e.msg)
-        throw e
-      case t: Throwable        => throw t
+      case t: Throwable =>
+        // Catch error from setup (suppressed during setup)
+        setupException = Some(t)
     }
   }
 
 
   class Setup extends SchemaAndData with Scope {
+    // Throw potential setup error
+    setupException.fold()(throw _)
+
     var txBefore    : Long = 0L
     var txInstBefore: Date = null
 
@@ -66,6 +69,7 @@ trait Spec extends Specification with SchemaAndData {
 
     } else {
 
+      conn = client.connect("hello")
       // Install schema if necessary
       if (Datomic.q(
         "[:find ?e :where [?e :db/ident :movie/title]]",

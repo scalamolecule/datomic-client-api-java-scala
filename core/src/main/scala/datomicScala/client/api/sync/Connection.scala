@@ -3,26 +3,26 @@ package datomicScala.client.api.sync
 import java.util.{List => jList, Map => jMap}
 import datomic.Util
 import datomic.Util._
-import datomicClojure.{ErrorMsg, Invoke}
-import datomicScala.client.api.Datom
-import datomicScala.{AnomalyWrapper, Helper}
+import datomicClient._
+import datomicClient.anomaly.AnomalyWrapper
+import datomicScala.client.api.{Datom, Helper}
 
 
 case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
   lazy private val isDevLocal = db.datomicDb.isInstanceOf[clojure.lang.IPersistentMap]
 
-  def db: Db = catchAnomaly {
+  def db: Db = {
     Db(Invoke.db(datomicConn))
   }
 
 
-  def sync(t: Long): Db = catchAnomaly {
+  def sync(t: Long): Db = {
     Db(Invoke.sync(datomicConn, t))
   }
 
 
-  def transact(stmts: jList[_]): TxReport = catchAnomaly {
+  def transact(stmts: jList[_]): TxReport = {
     if (stmts.isEmpty)
       TxReport(Util.map())
     else
@@ -39,7 +39,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     offset: Int = 0,
     limit: Int = -1 // default to all
   ): Iterable[(Long, Iterable[Datom])] = {
-    val rawTxs0 = catchAnomaly {
+    val rawTxs0 = {
       Invoke.txRange(datomicConn, timePointStart, timePointEnd, timeout, offset, limit)
     }
     Helper.nestedTxsIterable(isDevLocal, rawTxs0)
@@ -53,7 +53,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     offset: Int = 0,
     limit: Int = -1 // default to all
   ): Array[(Long, Array[Datom])] = {
-    val rawTxs0 = catchAnomaly {
+    val rawTxs0 = {
       Invoke.txRange(datomicConn, timePointStart, timePointEnd, timeout, offset, limit)
     }
     Helper.nestedTxsArray(isDevLocal, rawTxs0)
@@ -61,13 +61,13 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
 
   // Convenience method for single invocation from connection
-  def widh(stmts: jList[_]): Db = catchAnomaly {
+  def widh(stmts: jList[_]): Db = {
     val rawTxReport = Invoke.`with`(withDb, stmts).asInstanceOf[jMap[_, _]]
     val dbAfter  = rawTxReport.get(read(":db-after"))
     Db(dbAfter.asInstanceOf[AnyRef])
   }
 
-  def withDb: AnyRef = catchAnomaly {
+  def withDb: AnyRef = {
     // Special db value for `with` (or `widh`)
     Invoke.withDb(datomicConn)
   }

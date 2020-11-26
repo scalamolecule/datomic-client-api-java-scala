@@ -3,8 +3,8 @@ package datomicScala.client.api.async
 import java.util.{List => jList, Map => jMap}
 import datomic.Util
 import datomic.Util._
-import datomicClojure._
-import datomicScala.{AnomalyWrapper, CognitectAnomaly}
+import datomicClient._
+import datomicClient.anomaly.{AnomalyWrapper, CognitectAnomaly}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -34,7 +34,7 @@ case class AsyncClient(
    *                )
    * @return Diagnostive value or throwing a failure exception
    */
-  def administerSystem(options: jMap[_, _]): jMap[_, _] = catchAnomaly {
+  def administerSystem(options: jMap[_, _]): jMap[_, _] = {
     if (forPeerServer)
       throw new RuntimeException(ErrorMsg.administerSystem)
     InvokeAsync.administerSystem(asyncDatomicClient, options)

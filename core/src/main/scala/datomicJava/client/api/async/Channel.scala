@@ -1,10 +1,9 @@
 package datomicJava.client.api.async
 
-import java.util.{Map => jMap}
-import clojure.lang.{Keyword, PersistentArrayMap}
+import clojure.lang.PersistentArrayMap
 import datomic.Util._
-import datomicClojure.ClojureBridge
-import datomicJava._
+import datomicClient._
+import datomicClient.anomaly.{AnomalyWrapper, CognitectAnomaly}
 import datomicJava.client.api.async
 
 // Mock wrapper around clojure.core.async.ManyToManyChannel
@@ -12,7 +11,7 @@ import datomicJava.client.api.async
 case class Channel[T](
   channelOrInternal: AnyRef,
   transform: Option[AnyRef => T] = None
-) extends ClojureBridge {
+) extends ClojureBridge with AnomalyWrapper {
 
 
   def chunk: Either[CognitectAnomaly, T] = {
@@ -27,7 +26,7 @@ case class Channel[T](
           // Anomaly
           case anomalyMap: PersistentArrayMap
             if anomalyMap.containsKey(read(":cognitect.anomalies/category")) =>
-            Left(getAnomaly(anomalyMap))
+            Left(anomaly(anomalyMap))
 
           // Chunks with type transformation
           case chunk if transform.nonEmpty =>
@@ -42,42 +41,5 @@ case class Channel[T](
       case internal =>
         async.Right(internal.asInstanceOf[T])
     }
-  }
-
-  private def getAnomaly(anomalyMap: PersistentArrayMap): CognitectAnomaly = {
-    val cat = anomalyMap.get(
-      read(":cognitect.anomalies/category")
-    ).asInstanceOf[Keyword].getName
-
-    val msg = anomalyMap.get(
-      read(":cognitect.anomalies/message")
-    ).toString
-
-    cat match {
-      case "not-found"   => NotFound(msg)
-      case "forbidden"   => Forbidden(httpResult(anomalyMap))
-      case "unavailable" => Unavailable(msg)
-      case "interrupted" => Interrupted(msg)
-      case "incorrect"   => Incorrect(msg)
-      case "unsupported" => Unsupported(msg)
-      case "conflict"    => Conflict(msg)
-      case "fault"       => Fault(msg)
-      case "busy"        => Busy(msg)
-      case _             => throw new IllegalArgumentException(
-        "Unexpected Anomaly:\n" + anomalyMap
-      )
-    }
-  }
-
-
-  def httpResult(data: PersistentArrayMap): jMap[String, Any] = {
-    val javaMap = map().asInstanceOf[jMap[String, Any]]
-    val res = data.entryAt(read(":http-result")).getValue.asInstanceOf[jMap[_, _]]
-    res.forEach {
-      case (k: Keyword, v: jMap[_, _]) => javaMap.put(k.getName, v)
-      case (k: Keyword, v)             => javaMap.put(k.getName, v)
-      case (k, v)                      => javaMap.put(k.toString, v)
-    }
-    javaMap
   }
 }

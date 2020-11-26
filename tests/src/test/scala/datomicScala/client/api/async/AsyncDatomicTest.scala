@@ -6,12 +6,14 @@ import cats.effect.IO
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util.{list, _}
-import datomicScala.{CognitectAnomaly, Forbidden, NotFound, SpecAsync}
+import datomicClient._
+import datomicClient.anomaly.{AnomalyWrapper, CognitectAnomaly, Forbidden, NotFound}
+import datomicScala.SpecAsync
 import scala.concurrent.Future
 import scala.jdk.StreamConverters._
 
 
-class AsyncDatomicTest extends SpecAsync {
+class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
 
   "create client" >> {
     system match {
@@ -82,9 +84,9 @@ class AsyncDatomicTest extends SpecAsync {
           client2.connect("hello")
         } catch {
           case forbidden: Forbidden =>
-            forbidden.msg === "forbidden"
-            forbidden.httpRequest("status") === 403
-            forbidden.httpRequest("body") === null
+            forbidden.getMessage === "forbidden"
+            forbidden.httpRequest.get("status") === 403
+            forbidden.httpRequest.get("body") === null
 
           /*
           Example of forbidden.httpRequest data:

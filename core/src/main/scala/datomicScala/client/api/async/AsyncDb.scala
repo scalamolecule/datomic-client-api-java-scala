@@ -2,11 +2,10 @@ package datomicScala.client.api.async
 
 import java.util.stream.{Stream => jStream}
 import java.util.{Date, List => jList, Map => jMap}
-import clojure.lang.{ASeq, LazySeq}
-import datomic.Util._
-import datomicClojure.{ErrorMsg, InvokeAsync, Lookup}
-import datomicScala.client.api.{Datom, DbStats}
-import datomicScala.{CognitectAnomaly, Helper}
+import clojure.lang.LazySeq
+import datomicClient._
+import datomicClient.anomaly.CognitectAnomaly
+import datomicScala.client.api.{Datom, DbStats, Helper}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

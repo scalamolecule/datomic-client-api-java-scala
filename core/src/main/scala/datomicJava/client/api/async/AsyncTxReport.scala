@@ -4,7 +4,7 @@ import java.util.stream.{Stream => jStream}
 import java.util.{Date, Map => jMap}
 import datomic.Util._
 import datomicJava.client.api.Datom
-import datomicJava.Helper._
+import datomicJava.client.api.Helper._
 
 /** Facade to Datomic transaction report */
 case class AsyncTxReport(rawTxReport: jMap[_, _]) {

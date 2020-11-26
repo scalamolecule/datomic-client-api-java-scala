@@ -5,9 +5,9 @@ import java.util.concurrent.CompletableFuture
 import java.util.{List => jList, Map => jMap}
 import datomic.Util
 import datomic.Util._
-import datomicClojure.{Invoke, InvokeAsync}
-import datomicJava.client.api.{Datom, async}
-import datomicJava.{CognitectAnomaly, Helper}
+import datomicClient._
+import datomicClient.anomaly.CognitectAnomaly
+import datomicJava.client.api.{Datom, Helper, async}
 import javafx.util.Pair
 
 

@@ -3,10 +3,9 @@ package datomicScala.client.api.async
 import java.util.{List => jList, Map => jMap}
 import datomic.Util
 import datomic.Util._
-import datomicClojure.{ErrorMsg, Invoke, InvokeAsync}
-import datomicScala.client.api.Datom
-import datomicScala.client.api.sync.TxReport
-import datomicScala.{CognitectAnomaly, Helper}
+import datomicClient._
+import datomicClient.anomaly.CognitectAnomaly
+import datomicScala.client.api.{Datom, Helper}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 

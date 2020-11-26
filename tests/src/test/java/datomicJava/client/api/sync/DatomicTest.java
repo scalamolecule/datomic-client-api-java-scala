@@ -1,8 +1,8 @@
 package datomicJava.client.api.sync;
 
 import datomicJava.Setup;
-import datomicJava.Forbidden;
-import datomicJava.NotFound;
+import datomicClient.anomaly.Forbidden;
+import datomicClient.anomaly.NotFound;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -93,7 +93,7 @@ public class DatomicTest extends Setup {
                 Forbidden.class,
                 () -> client2.connect("hello")
             );
-            assertThat(forbidden.msg(), is("forbidden"));
+            assertThat(forbidden.getMessage(), is("forbidden"));
             assertThat(forbidden.httpRequest().get("status"), is(403));
             assertNull(forbidden.httpRequest().get("body"));
 

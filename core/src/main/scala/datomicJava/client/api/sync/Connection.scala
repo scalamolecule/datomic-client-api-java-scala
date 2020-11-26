@@ -4,9 +4,9 @@ import java.lang.{Iterable => jIterable}
 import java.util.{List => jList, Map => jMap}
 import datomic.Util
 import datomic.Util._
-import datomicClojure.Invoke
-import datomicJava.client.api.Datom
-import datomicJava.{AnomalyWrapper, Helper}
+import datomicClient._
+import datomicClient.anomaly.AnomalyWrapper
+import datomicJava.client.api.{Datom, Helper}
 import javafx.util.Pair
 
 
@@ -14,17 +14,17 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
   lazy private val isDevLocal = db.datomicDb.isInstanceOf[clojure.lang.IPersistentMap]
 
-  def db: Db = catchAnomaly {
+  def db: Db = {
     Db(Invoke.db(datomicConn))
   }
 
 
-  def sync(t: Long): Db = catchAnomaly {
+  def sync(t: Long): Db = {
     Db(Invoke.sync(datomicConn, t))
   }
 
 
-  def transact(stmts: jList[_]): TxReport = catchAnomaly {
+  def transact(stmts: jList[_]): TxReport = {
     if (stmts.isEmpty)
       TxReport(Util.map())
     else
@@ -39,7 +39,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     offset: Int,
     limit: Int
   ): jIterable[Pair[Long, jIterable[Datom]]] = {
-    val rawTxs0 = catchAnomaly {
+    val rawTxs0 = {
       val startOpt: Option[Any] = if (timePointStart == 0) None else Some(timePointStart)
       val endOpt  : Option[Any] = if (timePointEnd == 0) None else Some(timePointEnd)
       Invoke.txRange(datomicConn, startOpt, endOpt, timeout, offset, limit)
@@ -71,7 +71,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     offset: Int,
     limit: Int
   ): Array[Pair[Long, Array[Datom]]] = {
-    val rawTxs0 = catchAnomaly {
+    val rawTxs0 = {
       val startOpt: Option[Any] = if (timePointStart == 0) None else Some(timePointStart)
       val endOpt  : Option[Any] = if (timePointEnd == 0) None else Some(timePointEnd)
       Invoke.txRange(datomicConn, startOpt, endOpt, timeout, offset, limit)
@@ -97,13 +97,13 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
 
   // Convenience method for single invocation from connection
-  def widh(stmts: jList[_]): Db = catchAnomaly {
+  def widh(stmts: jList[_]): Db = {
     val txReport = Invoke.`with`(withDb, stmts).asInstanceOf[jMap[_, _]]
     val dbAfter  = txReport.get(read(":db-after"))
     Db(dbAfter.asInstanceOf[AnyRef])
   }
 
-  def withDb: AnyRef = catchAnomaly {
+  def withDb: AnyRef = {
     // Special db value for `with` (or `widh`)
     Invoke.withDb(datomicConn)
   }
