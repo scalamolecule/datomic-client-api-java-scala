@@ -36,6 +36,15 @@ trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
   def setupPeerServer(): Unit = {
     system = "peer-server"
     try {
+      // With transactor, run two processes in separate tabs:
+      // process 1:
+      // bin/transactor config/samples/dev-transactor-template.properties
+      // process 2:
+      // bin/run -m datomic.peer-serverh localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:dev://localhost:4334/hello
+
+      // In-mem, run Peer Server:
+      // bin/run -m datomic.peer-server -h localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:mem://hello
+
       client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
     } catch {
       case t: Throwable =>
@@ -68,6 +77,7 @@ trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
       filmDataTx = conn.transact(filmData)
 
     } else {
+      var lastTxOpt = Option.empty[TxReport]
 
       conn = client.connect("hello")
       // Install schema if necessary
@@ -76,18 +86,24 @@ trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
         conn.db
       ).toString == "[]") {
         println("Installing Peer Server hello db schema...")
-        conn.transact(schema(true))
+        lastTxOpt = Some(conn.transact(schema(true)))
       }
 
       // Retract current data
-      var lastTx: TxReport = null
       Datomic.q("[:find ?e :where [?e :movie/title _]]", conn.db)
         .asInstanceOf[jList[_]].forEach { l =>
         val eid: Any = l.asInstanceOf[jList[_]].get(0)
-        lastTx = conn.transact(list(list(":db/retractEntity", eid)))
+        lastTxOpt = Some(conn.transact(list(list(":db/retractEntity", eid))))
       }
-      txBefore = lastTx.tx
-      txInstBefore = lastTx.txInst
+
+      lastTxOpt.fold {
+        val txDatom = conn.txRange(None, None).last._2.head
+        txBefore = txDatom.tx
+        txInstBefore = txDatom.v.asInstanceOf[Date]
+      } { lastTx =>
+        txBefore = lastTx.tx
+        txInstBefore = lastTx.txInst
+      }
 
       filmDataTx = conn.transact(filmData)
     }

@@ -203,14 +203,15 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
   def datoms(
     datomicDb: AnyRef,
     index: String,
-    components: jList[_]
+    componentsList: jList[_]
   ): AnyRef = catchAnomaly {
+    val components = edn(keywordAware(componentsList))
     fn("datoms").invoke(
       datomicDb,
       read(
         s"""{
            |:index $index
-           |:components ${edn(keywordAware(components))}
+           |:components $components
            |}""".stripMargin
       )
     )
@@ -407,9 +408,10 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     withDb: AnyRef,
     stmts: jList[_]
   ): AnyRef = catchAnomaly {
+    val txData = edn(stmts)
     fn("with").invoke(
       withDb,
-      read(s"{:tx-data ${edn(stmts)}}")
+      read(s"{:tx-data $txData}")
     )
   }
 

@@ -6,17 +6,18 @@ import datomicJava.client.api.sync.Datomic;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import static datomic.Util.*;
 
 public class BoolsTest extends SchemaAndData {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
         peerTest();
         clientTest();
     }
 
-    public static void peerTest() {
+    public static void peerTest() throws ExecutionException, InterruptedException {
         Peer.createDatabase("datomic:mem://test1");
         Connection conn = Peer.connect("datomic:mem://test1");
         conn.transact(
@@ -32,7 +33,8 @@ public class BoolsTest extends SchemaAndData {
                     read(":db/cardinality"), read(":db.cardinality/many")
                 )
             )
-        );
+        ).get();
+
         conn.transact(
             list(
                 map(
@@ -40,7 +42,7 @@ public class BoolsTest extends SchemaAndData {
                     read(":ns/bools"), list(true, false)
                 )
             )
-        );
+        ).get();
 
         Collection<List<Object>> res = Peer.q(
             "[:find ?e ?int (distinct ?bools) " +

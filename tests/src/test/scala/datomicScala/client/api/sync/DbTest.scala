@@ -224,6 +224,9 @@ class DbTest extends Spec {
     val db6Films       = txReport6films.dbAfter
     films(db6Films) === sixFilms
 
+    // Combining `with` and `asOf`
+    films(db6Films.asOf(txReport5films.tx)) === fiveFilms
+
     // Original state is unaffected
     films(originalDb) === threeFilms
   }

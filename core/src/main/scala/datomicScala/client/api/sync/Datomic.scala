@@ -56,16 +56,10 @@ object Datomic extends ClojureBridge with AnomalyWrapper {
     secret: String,
     endpoint: String,
     validateHostnames: Boolean = false
-  ): Client = {
-
-    val rawClient = Invoke.clientPeerServer(accessKey, secret, endpoint, validateHostnames)
-    val client = Client(
-      true,
-//      Invoke.clientPeerServer(accessKey, secret, endpoint, validateHostnames)
-      rawClient
-    )
-    client
-  }
+  ): Client = Client(
+    true,
+    Invoke.clientPeerServer(accessKey, secret, endpoint, validateHostnames)
+  )
 
 
   // Query as data structure or String + optional :offset, :limit, :timeout params
