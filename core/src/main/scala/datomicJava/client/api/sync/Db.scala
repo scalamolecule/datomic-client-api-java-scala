@@ -2,12 +2,15 @@ package datomicJava.client.api.sync
 
 import java.util.stream.{Stream => jStream}
 import java.util.{Date, List => jList, Map => jMap}
-import datomicClient.{ErrorMsg, Invoke, Lookup}
+import datomicClient.{DbLookup, Invoke}
 import datomicJava.client.api.Helper.streamOfDatoms
 import datomicJava.client.api.{Datom, DbStats, Helper}
 
 
-case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) {
+case class Db(
+  datomicDb: AnyRef,
+  sinceTimePoint: Option[(Long, Long, Date)] = None
+) extends DbLookup(datomicDb, sinceTimePoint) {
 
 
   def dbStats: DbStats = {
@@ -23,8 +26,11 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) {
   def asOf(t: Long): Db = Db(Invoke.asOf(datomicDb, t))
   def asOf(d: Date): Db = Db(Invoke.asOf(datomicDb, d))
 
-  def since(t: Long): Db = Db(Invoke.since(datomicDb, t))
-  def since(d: Date): Db = Db(Invoke.since(datomicDb, d))
+  def since(tOrTx: Long): Db =
+    Db(Invoke.since(datomicDb, tOrTx), extractSinceTimePoint(tOrTx))
+
+  def since(d: Date): Db =
+    Db(Invoke.since(datomicDb, d), extractSinceTimePoint(d))
 
 
   // Presuming a `withDb` is passed.
@@ -53,39 +59,53 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) {
    *                   result.
    * @return List[datomicFacade.client.api.Datom] Wrapped Datoms with a unified api
    */
-  def datoms(index: String, components: jList[_]): jStream[Datom] = {
-    streamOfDatoms(
-      Invoke.datoms(datomicDb, index, components)
-    )
-  }
-
-
-  def indexRange(
-    attrId: String,
-    start: Any,
-    end: Any,
+  def datoms(
+    index: String,
+    components: jList[_],
     timeout: Int,
     offset: Int,
     limit: Int
   ): jStream[Datom] = {
     streamOfDatoms(
-      Invoke.indexRange(
-        datomicDb, attrId, Option(start), Option(end), timeout, offset, limit
-      )
+      Invoke.datoms(datomicDb, index, components, timeout, offset, limit)
     )
   }
 
-  def indexRange[T](attrId: String): jStream[Datom] =
-    indexRange(attrId, None, None, 0, 0, 1000)
+  def datoms(index: String, components: jList[_], timeout: Int): jStream[Datom] =
+    datoms(index, components, timeout, 0, 1000)
 
-  def indexRange[T](attrId: String, start: Option[Any]): jStream[Datom] =
-    indexRange(attrId, start, None, 0, 0, 1000)
+  def datoms(index: String, components: jList[_]): jStream[Datom] =
+    datoms(index, components, 0, 0, 1000)
+
+
+  def indexRange(
+    attrId: String,
+    start0: Any,
+    end0: Any,
+    timeout: Int,
+    offset: Int,
+    limit: Int
+  ): jStream[Datom] = {
+    val start = Option(start0)
+    val end = Option(end0)
+    streamOfDatoms(
+      Invoke.indexRange(
+        datomicDb, attrId, start, end, timeout, offset, limit
+      )
+    )
+  }
 
   def indexRange[T](
     attrId: String,
     start: Any,
     end: Any
   ): jStream[Datom] = indexRange(attrId, start, end, 0, 0, 1000)
+
+  def indexRange[T](attrId: String, start: Any): jStream[Datom] =
+    indexRange(attrId, start, None, 0, 0, 1000)
+
+  def indexRange[T](attrId: String): jStream[Datom] =
+    indexRange(attrId, None, None, 0, 0, 1000)
 
 
   // Pull --------------------------------------
@@ -102,11 +122,11 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) {
     ).asInstanceOf[jMap[_, _]]
   }
 
-  def pull(selector: String, eid: Any): jMap[_, _] =
-    pull(selector, eid, 0, 0, 1000)
-
   def pull(selector: String, eid: Any, timeout: Int): jMap[_, _] =
     pull(selector, eid, timeout, 0, 1000)
+
+  def pull(selector: String, eid: Any): jMap[_, _] =
+    pull(selector, eid, 0, 0, 1000)
 
 
   def indexPull(
@@ -118,8 +138,6 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) {
     offset: Int,
     limit: Int,
   ): jStream[_] = {
-    if (!Seq(":avet", ":aevt").contains(index))
-      throw new IllegalArgumentException(ErrorMsg.indexPull)
     Invoke.indexPull(
       datomicDb, index, selector, start, reverse, timeout, offset, limit
     ).asInstanceOf[clojure.lang.ASeq].stream()
@@ -128,9 +146,11 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) {
   def indexPull(
     index: String,
     selector: String,
-    start: String
+    start: String,
+    reverse: Boolean,
+    limit: Int,
   ): jStream[_] = {
-    indexPull(index, selector, start, false, 0, 0, 1000)
+    indexPull(index, selector, start, reverse, 0, 0, limit)
   }
 
   def indexPull(
@@ -145,10 +165,8 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) {
   def indexPull(
     index: String,
     selector: String,
-    start: String,
-    reverse: Boolean,
-    limit: Int,
+    start: String
   ): jStream[_] = {
-    indexPull(index, selector, start, reverse, 0, 0, limit)
+    indexPull(index, selector, start, false, 0, 0, 1000)
   }
 }

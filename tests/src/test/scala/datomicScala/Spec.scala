@@ -24,6 +24,7 @@ trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
 
   override def map(fs: => Fragments): Fragments =
     step(setupDevLocal()) ^
+//      fs.mapDescription(d => Text(s"$system: " + d.show))
       fs.mapDescription(d => Text(s"$system: " + d.show)) ^
       step(setupPeerServer()) ^
       fs.mapDescription(d => Text(s"$system: " + d.show))

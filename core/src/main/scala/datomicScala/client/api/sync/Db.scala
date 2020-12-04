@@ -2,12 +2,13 @@ package datomicScala.client.api.sync
 
 import java.util.stream.{Stream => jStream}
 import java.util.{Date, List => jList, Map => jMap}
-import datomicClient.anomaly.AnomalyWrapper
-import datomicClient.{ErrorMsg, Invoke, Lookup}
+import datomicClient.{DbLookup, Invoke}
 import datomicScala.client.api.{Datom, DbStats, Helper}
 
-
-case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) with AnomalyWrapper {
+case class Db(
+  datomicDb: AnyRef,
+  sinceTimePoint: Option[(Long, Long, Date)] = None
+) extends DbLookup(datomicDb, sinceTimePoint) {
 
 
   def dbStats: DbStats = {
@@ -21,10 +22,15 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) with AnomalyWrapper {
   // Time filters --------------------------------------
 
   def asOf(t: Long): Db = Db(Invoke.asOf(datomicDb, t))
+
   def asOf(d: Date): Db = Db(Invoke.asOf(datomicDb, d))
 
-  def since(t: Long): Db = Db(Invoke.since(datomicDb, t))
-  def since(d: Date): Db = Db(Invoke.since(datomicDb, d))
+
+  def since(tOrTx: Long): Db =
+    Db(Invoke.since(datomicDb, tOrTx), extractSinceTimePoint(tOrTx))
+
+  def since(d: Date): Db =
+    Db(Invoke.since(datomicDb, d), extractSinceTimePoint(d))
 
 
   // Presuming a `withDb` is passed.
@@ -53,9 +59,15 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) with AnomalyWrapper {
    *                   result.
    * @return List[datomicFacade.client.api.Datom] Wrapped Datoms with a unified api
    */
-  def datoms(index: String, components: jList[_]): jStream[Datom] = {
+  def datoms(
+    index: String,
+    components: jList[_],
+    timeout: Int = 0,
+    offset: Int = 0,
+    limit: Int = 1000
+  ): jStream[Datom] = {
     Helper.streamOfDatoms(
-      Invoke.datoms(datomicDb, index, components)
+      Invoke.datoms(datomicDb, index, components, timeout, offset, limit)
     )
   }
 
@@ -100,8 +112,6 @@ case class Db(datomicDb: AnyRef) extends Lookup(datomicDb) with AnomalyWrapper {
     offset: Int = 0,
     limit: Int = 1000
   ): jStream[_] = {
-    if (!Seq(":avet", ":aevt").contains(index))
-      throw new IllegalArgumentException(ErrorMsg.indexPull)
     Invoke.indexPull(
       datomicDb, index, selector, start, reverse, timeout, offset, limit
     ).asInstanceOf[clojure.lang.ASeq].stream()

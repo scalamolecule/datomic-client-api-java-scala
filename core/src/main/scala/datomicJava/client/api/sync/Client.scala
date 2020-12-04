@@ -83,7 +83,7 @@ case class Client(
     Invoke.listDatabase(datomicClient, timeout, offset, limit).asInstanceOf[jList[String]]
   }
 
-  def listDatabases(): jList[String] = listDatabases(0, 0, 1000)
-
   def listDatabases(limit: Int): jList[String] = listDatabases(0, 0, limit)
+
+  def listDatabases(): jList[String] = listDatabases(0, 0, 1000)
 }

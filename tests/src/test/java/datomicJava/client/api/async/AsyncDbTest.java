@@ -1,6 +1,7 @@
 package datomicJava.client.api.async;
 
 import clojure.lang.ExceptionInfo;
+import datomicClient.ErrorMsg;
 import datomicJava.SetupAsync;
 import datomicJava.client.api.Datom;
 import datomicJava.client.api.DbStats;
@@ -28,7 +29,7 @@ public class AsyncDbTest extends SetupAsync {
     public void stats() throws ExecutionException, InterruptedException {
         AsyncDb db = conn.db();
         assertThat(db.dbName(), is("hello"));
-        assertThat(db.basisT(), is(tAfter()));
+        assertThat(db.t(), is(tAfter()));
         assertThat(db.asOfT(), is(0L));
         assertThat(db.sinceT(), is(0L));
         assertThat(db.isHistory(), is(false));
@@ -80,115 +81,167 @@ public class AsyncDbTest extends SetupAsync {
                 is(3L)
             );
         }
-
-    }
-
-    @Test
-    public void lookupAsOf() {
-        AsyncDb db = conn.db();
-
-        assertThat(db.asOf(tBefore()).dbName(), is("hello"));
-        assertThat(db.asOf(tBefore()).basisT(), is(tAfter()));
-        assertThat(db.asOf(tBefore()).asOfT(), is(tBefore()));
-        assertThat(db.asOf(tBefore()).sinceT(), is(0L));
-        assertThat(db.asOf(tBefore()).isHistory(), is(false));
-
-        assertThat(db.asOf(txBefore).basisT(), is(tAfter()));
-        assertThat(db.asOf(txBefore).sinceT(), is(0L));
-
-        assertThat(db.asOf(txInstBefore).basisT(), is(tAfter()));
-        assertThat(db.asOf(txInstBefore).sinceT(), is(0L));
-
-        if (isDevLocal()) {
-            assertThat(db.asOf(txBefore).asOfT(), is(tBefore()));
-            assertThat(db.asOf(txInstBefore).asOfT(), is(tBefore()));
-            // Can't retrieve txInst when `asOf` initiated with Date
-            // assertThat(db.asOf(txInstBefore).asOfT(), is(txInstBefore));
-        } else {
-            // tx returned instead of t
-            assertThat(db.asOf(txBefore).asOfT(), is(txBefore));
-            // Works for async but not sync!
-            assertThat(db.asOf(txInstBefore).asOfT(), is(tBefore()));
-            assertThat(db.asOf(txInstBefore).asOfInst(), is(txInstBefore));
-        }
-
-        assertThat(db.asOf(tAfter()).basisT(), is(tAfter()));
-        assertThat(db.asOf(tAfter()).asOfT(), is(tAfter()));
-        assertThat(db.asOf(tAfter()).sinceT(), is(0L));
-
-        assertThat(db.asOf(txAfter()).basisT(), is(tAfter()));
-        assertThat(db.asOf(txAfter()).sinceT(), is(0L));
-
-        assertThat(db.asOf(txInstAfter()).basisT(), is(tAfter()));
-        assertThat(db.asOf(txInstAfter()).sinceT(), is(0L));
-
-        if (isDevLocal()) {
-            assertThat(db.asOf(txAfter()).asOfT(), is(tAfter()));
-            assertThat(db.asOf(txInstAfter()).asOfT(), is(tAfter()));
-            // Can't retrieve txInst when `asOf` initiated with Date
-            // assertThat(db.asOf(txInstAfter()).asOfT(), is(txInstAfter()));
-        } else {
-            assertThat(db.asOf(txAfter()).asOfT(), is(txAfter()));
-            // Works for async but not sync!
-            assertThat(db.asOf(txInstAfter()).asOfT(), is(tAfter()));
-            assertThat(db.asOf(txInstAfter()).asOfInst(), is(txInstAfter()));
-        }
     }
 
 
     @Test
-    public void lookupSince() {
+    public void lookupAsOf() throws ExecutionException, InterruptedException {
+        AsyncTxReport txReport4 = ((Right<?, AsyncTxReport>) conn.transact(film4).get()).right_value();
+        AsyncTxReport txReport5 = ((Right<?, AsyncTxReport>) conn.transact(film5).get()).right_value();
         AsyncDb db = conn.db();
 
-        assertThat(db.since(tBefore()).dbName(), is("hello"));
-        assertThat(db.since(tBefore()).basisT(), is(tAfter()));
-        assertThat(db.since(tBefore()).asOfT(), is(0L));
-        assertThat(db.since(tBefore()).sinceT(), is(tBefore()));
-        assertThat(db.since(tBefore()).isHistory(), is(false));
+        Long t4basis = txReport4.basisT();
+        Long t4 = txReport4.t();
+        Long tx4 = txReport4.tx();
+        Date txInst4 = txReport4.txInst();
+
+        Long t5basis = txReport5.basisT();
+        Long t5 = txReport5.t();
+        Long tx5 = txReport5.tx();
+        Date txInst5 = txReport5.txInst();
+
+        // db name and history unaffected by as-of filter
+        assertThat(db.dbName(), is("hello"));
+        assertThat(db.asOf(t4).dbName(), is("hello"));
+
+        assertThat(db.isHistory(), is(false));
+        assertThat(db.asOf(t4).isHistory(), is(false));
+
+        // basis-t is the t of the most recent transaction
+        assertThat(t4basis, is(tAfter()));
+        assertThat(t5basis, is(t4));
+
+        // Current t is that of transaction 5
+        assertThat(db.t(), is(t5));
+
+        // t of as-of db is still the same as the un-filtered db
+        assertThat(db.asOf(t4).t(), is(db.t()));
+        assertThat(db.asOf(tx4).t(), is(db.t()));
+        assertThat(db.asOf(txInst4).t(), is(db.t()));
+
+        assertThat(db.asOf(t5).t(), is(db.t()));
+        assertThat(db.asOf(tx5).t(), is(db.t()));
+        assertThat(db.asOf(txInst5).t(), is(db.t()));
+
+        // Use asOfT to retrieve as-of t of filtered db
+        assertThat(db.asOf(t4).asOfT(), is(t4));
+        assertThat(db.asOf(tx4).asOfT(), is(t4));
+        assertThat(db.asOf(txInst4).asOfT(), is(t4));
+
+        assertThat(db.asOf(t5).asOfT(), is(t5));
+        assertThat(db.asOf(tx5).asOfT(), is(t5));
+        assertThat(db.asOf(txInst5).asOfT(), is(t5));
+
+        // Un-filtered db has no as-of t
+        assertThat(db.asOfT(), is(0L));
+
+        // Use asOfTxInst to retrieve as-of tx instant of filtered db
+        assertThat(db.asOf(t4).asOfTxInst(), is(txInst4));
+        assertThat(db.asOf(tx4).asOfTxInst(), is(txInst4));
+        assertThat(db.asOf(txInst4).asOfTxInst(), is(txInst4));
+
+        assertThat(db.asOf(t5).asOfTxInst(), is(txInst5));
+        assertThat(db.asOf(tx5).asOfTxInst(), is(txInst5));
+        assertThat(db.asOf(txInst5).asOfTxInst(), is(txInst5));
 
 
-        assertThat(db.since(txBefore).basisT(), is(tAfter()));
-        assertThat(db.since(txBefore).asOfT(), is(0L));
+        // as-of-filtered db has no sinceT
+        assertThat(db.asOf(t4).sinceT(), is(0L));
+        assertThat(db.asOf(tx4).sinceT(), is(0L));
+        assertThat(db.asOf(txInst4).sinceT(), is(0L));
+        assertThat(db.asOf(t5).sinceT(), is(0L));
+        assertThat(db.asOf(tx5).sinceT(), is(0L));
+        assertThat(db.asOf(txInst5).sinceT(), is(0L));
 
-        assertThat(db.since(txInstBefore).basisT(), is(tAfter()));
-        assertThat(db.since(txInstBefore).asOfT(), is(0L));
+        // as-of-filtered db has no sinceTxInst
+        assertThat(db.asOf(t4).sinceTxInst(), is(nullValue()));
+        assertThat(db.asOf(tx4).sinceTxInst(), is(nullValue()));
+        assertThat(db.asOf(txInst4).sinceTxInst(), is(nullValue()));
+        assertThat(db.asOf(t5).sinceTxInst(), is(nullValue()));
+        assertThat(db.asOf(tx5).sinceTxInst(), is(nullValue()));
+        assertThat(db.asOf(txInst5).sinceTxInst(), is(nullValue()));
+    }
 
-        if (isDevLocal()) {
-            assertThat(db.since(txBefore).sinceT(), is(tBefore()));
-            assertThat(db.since(txInstBefore).sinceT(), is(tBefore()));
-            // Can't retrieve txInst when `since` initiated with Date
-            // db.since(txInstBefore).sinceInst(), is(txInstBefore));
-        } else {
-            // tx returned instead of t
-            assertThat(db.since(txBefore).sinceT(), is(txBefore));
-            // Works for async but not sync!
-            assertThat(db.since(txInstBefore).sinceT(), is(tBefore()));
-            assertThat(db.since(txInstBefore).sinceInst(), is(txInstBefore));
-        }
 
-        assertThat(db.since(tAfter()).basisT(), is(tAfter()));
-        assertThat(db.since(tAfter()).asOfT(), is(0L));
-        assertThat(db.since(tAfter()).sinceT(), is(tAfter()));
+    @Test
+    public void lookupSince() throws ExecutionException, InterruptedException {
+        AsyncTxReport txReport4 = ((Right<?, AsyncTxReport>) conn.transact(film4).get()).right_value();
+        AsyncTxReport txReport5 = ((Right<?, AsyncTxReport>) conn.transact(film5).get()).right_value();
+        AsyncDb db = conn.db();
 
-        assertThat(db.since(txAfter()).basisT(), is(tAfter()));
-        assertThat(db.since(txAfter()).asOfT(), is(0L));
+        Long t4basis = txReport4.basisT();
+        Long t4 = txReport4.t();
+        Long tx4 = txReport4.tx();
+        Date txInst4 = txReport4.txInst();
 
-        assertThat(db.since(txInstAfter()).basisT(), is(tAfter()));
-        assertThat(db.since(txInstAfter()).asOfT(), is(0L));
+        Long t5basis = txReport5.basisT();
+        Long t5 = txReport5.t();
+        Long tx5 = txReport5.tx();
+        Date txInst5 = txReport5.txInst();
 
-        if (isDevLocal()) {
-            assertThat(db.since(txAfter()).sinceT(), is(tAfter()));
-            assertThat(db.since(txInstAfter()).sinceT(), is(tAfter()));
-            // Can't retrieve txInst when `since` initiated with Date
-            // assertThat( db.since(txInstAfter()).sinceInst(), is(txInstAfter()));
+        // db name and history unaffected by as-of filter
+        assertThat(db.dbName(), is("hello"));
+        assertThat(db.since(t4).dbName(), is("hello"));
 
-        } else {
-            // tx returned instead of t
-            assertThat(db.since(txAfter()).sinceT(), is(txAfter()));
-            // Works for async but not sync!
-            assertThat(db.since(txInstAfter()).sinceT(), is(tAfter()));
-            assertThat(db.since(txInstAfter()).sinceInst(), is(txInstAfter()));
-        }
+        assertThat(db.isHistory(), is(false));
+        assertThat(db.since(t4).isHistory(), is(false));
+
+        // basis-t is the t of the most recent transaction
+        assertThat(t4basis, is(tAfter()));
+        assertThat(t5basis, is(t4));
+
+        // Current t is that of transaction 5
+        assertThat(db.t(), is(t5));
+
+        // t of since db is still the same as the un-filtered db
+        assertThat(db.since(t4).t(), is(db.t()));
+        assertThat(db.since(tx4).t(), is(db.t()));
+        assertThat(db.since(txInst4).t(), is(db.t()));
+
+        assertThat(db.since(t5).t(), is(db.t()));
+        assertThat(db.since(tx5).t(), is(db.t()));
+        assertThat(db.since(txInst5).t(), is(db.t()));
+
+        // Use sinceT to retrieve since t of filtered db
+        assertThat(db.since(t4).sinceT(), is(t4));
+        assertThat(db.since(tx4).sinceT(), is(t4));
+        assertThat(db.since(txInst4).sinceT(), is(t4));
+
+        assertThat(db.since(t5).sinceT(), is(t5));
+        assertThat(db.since(tx5).sinceT(), is(t5));
+        assertThat(db.since(txInst5).sinceT(), is(t5));
+
+        // Un-filtered db has no since t
+        assertThat(db.sinceT(), is(0L));
+
+        // Use sinceTxInst to retrieve since tx instant of filtered db.
+        // Normally this is not available since the since-filtered db excludes
+        // the time point, but we are cache it when applying the filter on the
+        // still unfiltered db.
+        assertThat(db.since(t4).sinceTxInst(), is(txInst4));
+        assertThat(db.since(tx4).sinceTxInst(), is(txInst4));
+        assertThat(db.since(txInst4).sinceTxInst(), is(txInst4));
+
+        assertThat(db.since(t5).sinceTxInst(), is(txInst5));
+        assertThat(db.since(tx5).sinceTxInst(), is(txInst5));
+        assertThat(db.since(txInst5).sinceTxInst(), is(txInst5));
+
+
+        // since-filtered db has no asOfT
+        assertThat(db.since(t4).asOfT(), is(0L));
+        assertThat(db.since(tx4).asOfT(), is(0L));
+        assertThat(db.since(txInst4).asOfT(), is(0L));
+        assertThat(db.since(t5).asOfT(), is(0L));
+        assertThat(db.since(tx5).asOfT(), is(0L));
+        assertThat(db.since(txInst5).asOfT(), is(0L));
+
+        // since-filtered db has no asOfTxInst
+        assertThat(db.since(t4).asOfTxInst(), is(nullValue()));
+        assertThat(db.since(tx4).asOfTxInst(), is(nullValue()));
+        assertThat(db.since(txInst4).asOfTxInst(), is(nullValue()));
+        assertThat(db.since(t5).asOfTxInst(), is(nullValue()));
+        assertThat(db.since(tx5).asOfTxInst(), is(nullValue()));
+        assertThat(db.since(txInst5).asOfTxInst(), is(nullValue()));
     }
 
     @Test
@@ -196,7 +249,7 @@ public class AsyncDbTest extends SetupAsync {
         AsyncDb db = conn.db();
 
         assertThat(db.history().dbName(), is("hello"));
-        assertThat(db.history().basisT(), is(tAfter()));
+        assertThat(db.history().t(), is(tAfter()));
         assertThat(db.history().asOfT(), is(0L));
         assertThat(db.history().sinceT(), is(0L));
         assertThat(db.history().isHistory(), is(true));
@@ -211,9 +264,13 @@ public class AsyncDbTest extends SetupAsync {
 
         // State before last tx
         assertThat(films(conn.db().asOf(tBefore())), is(empty()));
+        assertThat(films(conn.db().asOf(txBefore)), is(empty()));
+        assertThat(films(conn.db().asOf(txInstBefore)), is(empty()));
 
         // State after last tx same as current state
         assertThat(films(conn.db().asOf(tAfter())), is(threeFilms));
+        assertThat(films(conn.db().asOf(txAfter())), is(threeFilms));
+        assertThat(films(conn.db().asOf(txInstAfter())), is(threeFilms));
 
         // We can use the transaction id too
         assertThat(films(conn.db().asOf(txBefore)), is(empty()));
@@ -224,9 +281,13 @@ public class AsyncDbTest extends SetupAsync {
     public void since() throws ExecutionException, InterruptedException {
         // State created since previous t
         assertThat(films(conn.db().since(tBefore())), is(threeFilms));
+        assertThat(films(conn.db().since(txBefore)), is(threeFilms));
+        assertThat(films(conn.db().since(txInstBefore)), is(threeFilms));
 
         // Nothing created after
         assertThat(films(conn.db().since(tAfter())), is(empty()));
+        assertThat(films(conn.db().since(txAfter())), is(empty()));
+        assertThat(films(conn.db().since(txInstAfter())), is(empty()));
     }
 
 
@@ -257,6 +318,10 @@ public class AsyncDbTest extends SetupAsync {
         ).right_value();
         AsyncDb db6Films = txReport6films.dbAfter();
         assertThat(films(db6Films), is(sixFilms));
+
+        // Combining `with` and `asOf`
+        // todo: peer-server doesn't allow combining `with` filter with other filters
+        assertThat(films(db6Films.asOf(txReport5films.tx())), is(fiveFilms));
 
         // Original state is unaffected
         assertThat(films(originalDb), is(threeFilms));
@@ -337,17 +402,244 @@ public class AsyncDbTest extends SetupAsync {
     }
 
 
-    @Test
-    public void datoms() throws ExecutionException, InterruptedException {
+    private List<Datom> datoms(
+        String index,
+        List<?> components,
+        Integer timeout,
+        Integer offset,
+        Integer limit
+    ) throws ExecutionException, InterruptedException {
         Iterator<Datom> it = ((Right<?, Stream<Datom>>) conn.db()
-            .datoms(":avet", list(read(":movie/title"))).get())
+            .datoms(index, components, timeout, offset, limit).get())
             .right_value().iterator();
-        List<String> films = new ArrayList<>();
+        List<Datom> datoms = new ArrayList<>();
+
         while (it.hasNext()) {
-            films.add(it.next().v().toString());
+            datoms.add(it.next());
         }
-        Collections.sort(films);
-        assertThat(films, is(threeFilms));
+        return datoms;
+    }
+
+    private List<Datom> datoms(
+        String index,
+        List<?> components
+    ) throws ExecutionException, InterruptedException {
+        return datoms(index, components, 0, 0, 1000);
+    }
+
+    @Test
+    public void datomsAVET() throws ExecutionException, InterruptedException {
+
+        // AVET index is sorted by
+        // Attribute (id, not name!) - Value - Entity id - Transaction id
+
+        // Supply A value (as clojure.lang.Keyword)
+        // Get all datoms of attribute :movie/title
+        assertThat(datoms(
+            ":avet",
+            list(read(":movie/title"))
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true),
+            new Datom(e3(), a1(), "Repo Man", txAfter(), true),
+            new Datom(e1(), a1(), "The Goonies", txAfter(), true)
+        )));
+
+        // For brevity we only show the value in following tests...
+
+        // A and V
+        assertThat(datoms(
+            ":avet",
+            list(read(":movie/title"), "Commando")
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true)
+        )));
+
+        // A, V and E (e2 is the eid of the Commando film entity)
+        assertThat(datoms(
+            ":avet",
+            list(read(":movie/title"), "Commando", e2())
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true)
+        )));
+
+        // A, V, E and T (tAfter is the time point of the film saving tx)
+        // Time point T can be a t or tx (not a txInstant / Date)
+        assertThat(datoms(
+            ":avet",
+            list(read(":movie/title"), "Commando", e2(), tAfter())
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true)
+        )));
+
+        // (only dev-local is re-created on each test and therefore has a stable size)
+        if (system == "dev-local") {
+            // We can supply an empty components list and get the entire (!) db (requires
+            // though to set limit = -1)
+            assertThat(datoms(
+                ":avet",
+                list(),
+                0, 0, -1 // to fetch all!
+            ).size(), is(243));
+        }
+
+        // limit number of datoms returned
+        assertThat(datoms(
+            ":avet",
+            list(read(":movie/title")),
+            0, 0, 2
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true),
+            new Datom(e3(), a1(), "Repo Man", txAfter(), true)
+        )));
+
+        // Add offset for first datom in index to return
+        assertThat(datoms(
+            ":avet",
+            list(read(":movie/title")),
+            0, 1, 2
+        ), is(list(
+            new Datom(e3(), a1(), "Repo Man", txAfter(), true),
+            new Datom(e1(), a1(), "The Goonies", txAfter(), true)
+        )));
+    }
+
+
+    @Test
+    public void datomsEAVT() throws ExecutionException, InterruptedException {
+
+        // EAVT index is sorted by
+        // Entity id - Attribute id (not name!) - Value - Transaction id
+
+        // E - Get all datoms of entity e2
+        assertThat(datoms(
+            ":eavt",
+            list(e2())
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true),
+            new Datom(e2(), a2(), "thriller/action", txAfter(), true),
+            new Datom(e2(), a3(), 1985, txAfter(), true)
+        )));
+
+        // EA
+        assertThat(datoms(
+            ":eavt",
+            list(e2(), read(":movie/title"))
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true)
+        )));
+
+        // EAV
+        assertThat(datoms(
+            ":eavt",
+            list(e2(), read(":movie/title"), "Commando")
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true)
+        )));
+
+        // EAVT
+        assertThat(datoms(
+            ":eavt",
+            list(e2(), read(":movie/title"), "Commando", txAfter())
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true)
+        )));
+    }
+
+
+    @Test
+    public void datomsAEVT() throws ExecutionException, InterruptedException {
+
+        // AEVT index is sorted by
+        // Attribute id (not name!) - Entity id - Value - Transaction id
+
+        // A
+        assertThat(datoms(
+            ":aevt",
+            list(read(":movie/title"))
+        ), is(list(
+            new Datom(e1(), a1(), "The Goonies", txAfter(), true),
+            new Datom(e2(), a1(), "Commando", txAfter(), true),
+            new Datom(e3(), a1(), "Repo Man", txAfter(), true)
+        )));
+
+        // AE
+        assertThat(datoms(
+            ":aevt",
+            list(read(":movie/title"), e2())
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true)
+        )));
+
+        // AEV
+        assertThat(datoms(
+            ":aevt",
+            list(read(":movie/title"), e2(), "Commando")
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true)
+        )));
+
+        // AEVT
+        assertThat(datoms(
+            ":aevt",
+            list(read(":movie/title"), e2(), "Commando", txAfter())
+        ), is(list(
+            new Datom(e2(), a1(), "Commando", txAfter(), true)
+        )));
+    }
+
+
+    @Test
+    public void datomsVAET() {
+        // The VAET index is for following relationships in reverse.
+        // No ref type is defined here, but it follows the same pattern as
+        // shown above.
+        // See https://docs.datomic.com/cloud/query/raw-index-access.html#vaet
+
+        // VAET index is sorted by
+        // Value (ref value) - Attribute id (not name!) - Entity id - Transaction id
+    }
+
+
+    private List<String> indexRange(
+        String attrId,
+        Object start,
+        Object end,
+        Integer timeout,
+        Integer offset,
+        Integer limit
+    ) throws ExecutionException, InterruptedException {
+        List<String> titles = new ArrayList<>();
+        Iterator<Datom> datoms = ((Right<?, Stream<Datom>>) conn.db()
+            .indexRange(attrId, start, end, timeout, offset, limit).get())
+            .right_value().iterator();
+
+        while (datoms.hasNext()) {
+            titles.add(
+                datoms.next().v().toString()
+            );
+        }
+        return titles;
+    }
+
+    private List<String> indexRange(
+        String attrId,
+        Object start,
+        Object end
+    ) throws ExecutionException, InterruptedException {
+        return indexRange(attrId, start, end, 0, 0, 1000);
+    }
+
+    private List<String> indexRange(
+        String attrId,
+        Object start
+    ) throws ExecutionException, InterruptedException {
+        return indexRange(attrId, start, null, 0, 0, 1000);
+    }
+
+    private List<String> indexRange(
+        String attrId
+    ) throws ExecutionException, InterruptedException {
+        return indexRange(attrId, null, null, 0, 0, 1000);
     }
 
     @Test
@@ -366,7 +658,108 @@ public class AsyncDbTest extends SetupAsync {
         while (datoms.hasNext()) {
             assertThat(datoms.next(), is(datomsCheckIt.next()));
         }
+
+        // The test above in short format:
+        assertThat(
+            indexRange(":movie/title"),
+            is(list("Commando", "Repo Man", "The Goonies"))
+        );
+
+        // Retrieve all (!) datoms for :movie/title (in this case just 3)
+        assertThat(
+            indexRange(":movie/title", null, null, 0, 0, -1),
+            is(list("Commando", "Repo Man", "The Goonies"))
+        );
+
+
+        // Range --------------------
+
+        // Titles sorting after C (no end value)
+        assertThat(
+            indexRange(":movie/title", "C"),
+            is(list("Commando", "Repo Man", "The Goonies")));
+
+        // Titles sorting after Cu
+        assertThat(
+            indexRange(":movie/title", "Cu"),
+            is(list("Repo Man", "The Goonies")));
+
+        // Titles after D (no start value)
+        assertThat(
+            indexRange(":movie/title", "D"),
+            is(list("Repo Man", "The Goonies")));
+
+        // Titles after d - case-sensitivity regards small letters after capital letters
+        assertThat(
+            indexRange(":movie/title", "c"),
+            is(empty()));
+
+        // Titles before S
+        assertThat(
+            indexRange(":movie/title", null, "S"),
+            is(list("Commando", "Repo Man")));
+
+        // Titles before T ("The Goonies" is before "T")
+        assertThat(
+            indexRange(":movie/title", null, "T"),
+            is(list("Commando", "Repo Man")));
+
+        // Titles after C, before S
+        assertThat(
+            indexRange(":movie/title", "C", "S"),
+            is(list("Commando", "Repo Man")));
+
+        // Titles after D, before S
+        assertThat(
+            indexRange(":movie/title", "D", "S"),
+            is(list("Repo Man")));
+
+
+        // Limit --------------------
+
+        assertThat(
+            indexRange(":movie/title", null, null, 0, 0, 2),
+            is(list("Commando", "Repo Man")));
+        assertThat(
+            indexRange(":movie/title", null, null, 0, 0, 1),
+            is(list("Commando")));
+
+        ExecutionException limitCantBeZero = assertThrows(
+            ExecutionException.class,
+            () -> indexRange(":movie/title", null, null, 0, 0, 0)
+        );
+        assertThat(
+            limitCantBeZero.getMessage(),
+            is("java.lang.IllegalArgumentException: " + ErrorMsg.limit())
+        );
+
+        // Take all (!)
+        assertThat(
+            indexRange(":movie/title", null, null, 0, 0, -1),
+            is(list("Commando", "Repo Man", "The Goonies")));
+
+
+        // Offset --------------------
+
+        assertThat(
+            indexRange(":movie/title", null, null, 0, 0, 1000),
+            is(list("Commando", "Repo Man", "The Goonies")));
+
+        // Commando is skipped
+        assertThat(
+            indexRange(":movie/title", null, null, 0, 1, 1000),
+            is(list("Repo Man", "The Goonies")));
+
+        // Notice that offset is from current range (Repo Man is skipped)
+        assertThat(
+            indexRange(":movie/title", "D", null, 0, 1, 1000),
+            is(list("The Goonies")));
+
+        assertThat(
+            indexRange(":movie/title", null, null, 0, 1, 1),
+            is(list("Repo Man")));
     }
+
 
     @Test
     public void pull() throws ExecutionException, InterruptedException {

@@ -145,6 +145,8 @@ public class SetupAsync extends SchemaAndData {
     public long e3() {return txData().get(7).e();}
 
     public int a1() {return (isDevLocal()) ? 73 : 72;}
+    public int a2() {return (isDevLocal()) ? 74 : 73;}
+    public int a3() {return (isDevLocal()) ? 75 : 74;}
 
     // Convenience retriever
     public List<String> films(AsyncDb db) throws ExecutionException, InterruptedException {

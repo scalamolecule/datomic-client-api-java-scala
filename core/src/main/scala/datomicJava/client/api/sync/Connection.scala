@@ -47,21 +47,21 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     Helper.nestedTxsIterable(isDevLocal, rawTxs0)
   }
 
-  def txRange()
+  def txRange(timePointStart: Any, timePointEnd: Any, limit: Int)
   : jIterable[Pair[Long, jIterable[Datom]]] =
-    txRange(0, 0, 0, 0, -1)
-
-  def txRange(limit: Int)
-  : jIterable[Pair[Long, jIterable[Datom]]] =
-    txRange(0, 0, 0, 0, limit)
+    txRange(timePointStart, timePointEnd, 0, 0, limit)
 
   def txRange(timePointStart: Any, timePointEnd: Any)
   : jIterable[Pair[Long, jIterable[Datom]]] =
     txRange(timePointStart, timePointEnd, 0, 0, -1)
 
-  def txRange(timePointStart: Any, timePointEnd: Any, limit: Int)
+  def txRange(limit: Int)
   : jIterable[Pair[Long, jIterable[Datom]]] =
-    txRange(timePointStart, timePointEnd, 0, 0, limit)
+    txRange(0, 0, 0, 0, limit)
+
+  def txRange()
+  : jIterable[Pair[Long, jIterable[Datom]]] =
+    txRange(0, 0, 0, 0, -1)
 
 
   def txRangeArray(
@@ -79,21 +79,21 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     Helper.nestedTxsArray(isDevLocal, rawTxs0)
   }
 
-  def txRangeArray()
+  def txRangeArray(timePointStart: Any, timePointEnd: Any, limit: Int)
   : Array[Pair[Long, Array[Datom]]] =
-    txRangeArray(0, 0, 0, 0, -1)
-
-  def txRangeArray(limit: Int)
-  : Array[Pair[Long, Array[Datom]]] =
-    txRangeArray(0, 0, 0, 0, limit)
+    txRangeArray(timePointStart, timePointEnd, 0, 0, limit)
 
   def txRangeArray(timePointStart: Any, timePointEnd: Any)
   : Array[Pair[Long, Array[Datom]]] =
     txRangeArray(timePointStart, timePointEnd, 0, 0, -1)
 
-  def txRangeArray(timePointStart: Any, timePointEnd: Any, limit: Int)
+  def txRangeArray(limit: Int)
   : Array[Pair[Long, Array[Datom]]] =
-    txRangeArray(timePointStart, timePointEnd, 0, 0, limit)
+    txRangeArray(0, 0, 0, 0, limit)
+
+  def txRangeArray()
+  : Array[Pair[Long, Array[Datom]]] =
+    txRangeArray(0, 0, 0, 0, -1)
 
 
   // Convenience method for single invocation from connection

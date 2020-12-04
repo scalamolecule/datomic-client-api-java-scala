@@ -9,7 +9,10 @@ import datomicClient.anomaly.CognitectAnomaly
 import datomicJava.client.api.{Datom, DbStats, Helper, async}
 
 
-case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
+case class AsyncDb(
+  datomicDb: AnyRef,
+  sinceTimePoint: Option[(Long, Long, Date)] = None
+) extends DbLookup(datomicDb, sinceTimePoint) {
 
 
   def dbStats: CompletableFuture[Either[CognitectAnomaly, DbStats]] = {
@@ -27,10 +30,15 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
   // Time filters --------------------------------------
 
   def asOf(t: Long): AsyncDb = AsyncDb(InvokeAsync.asOf(datomicDb, t))
+
   def asOf(d: Date): AsyncDb = AsyncDb(InvokeAsync.asOf(datomicDb, d))
 
-  def since(t: Long): AsyncDb = AsyncDb(InvokeAsync.since(datomicDb, t))
-  def since(d: Date): AsyncDb = AsyncDb(InvokeAsync.since(datomicDb, d))
+
+  def since(tOrTx: Long): AsyncDb =
+    AsyncDb(InvokeAsync.since(datomicDb, tOrTx), extractSinceTimePoint(tOrTx))
+
+  def since(d: Date): AsyncDb =
+    AsyncDb(InvokeAsync.since(datomicDb, d), extractSinceTimePoint(d))
 
 
   // Presuming a `withDb` is passed.
@@ -91,11 +99,16 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
    *                   result.
    * @return List[datomicFacade.client.api.Datom] Wrapped Datoms with a unified api
    */
-  def datoms(index: String, components: jList[_])
-  : CompletableFuture[Either[CognitectAnomaly, jStream[Datom]]] = {
+  def datoms(
+    index: String,
+    components: jList[_],
+    timeout: Int,
+    offset: Int,
+    limit: Int
+  ): CompletableFuture[Either[CognitectAnomaly, jStream[Datom]]] = {
     CompletableFuture.supplyAsync { () =>
       Channel[Any](
-        InvokeAsync.datoms(datomicDb, index, components)
+        InvokeAsync.datoms(datomicDb, index, components, timeout, offset, limit)
       ).chunk
     }.thenApply {
       case Right(datoms) => Channel[jStream[Datom]](
@@ -105,18 +118,34 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     }
   }
 
+  def datoms(
+    index: String,
+    components: jList[_],
+    timeout: Int
+  ): CompletableFuture[Either[CognitectAnomaly, jStream[Datom]]] =
+    datoms(index, components, timeout, 0, 1000)
+
+  def datoms(
+    index: String,
+    components: jList[_]
+  ): CompletableFuture[Either[CognitectAnomaly, jStream[Datom]]] =
+    datoms(index, components, 0, 0, 1000)
+
+
   def indexRange(
     attrId: String,
-    start: Any,
-    end: Any,
+    start0: Any,
+    end0: Any,
     timeout: Int,
     offset: Int,
     limit: Int
   ): CompletableFuture[Either[CognitectAnomaly, jStream[Datom]]] = {
+    val start = Option(start0)
+    val end = Option(end0)
     CompletableFuture.supplyAsync { () =>
       Channel[Any](
         InvokeAsync.indexRange(
-          datomicDb, attrId, Option(start), Option(end), timeout, offset, limit
+          datomicDb, attrId, start, end, timeout, offset, limit
         )
       ).chunk
     }.thenApply {
@@ -127,20 +156,20 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     }
   }
 
-  def indexRange[T](attrId: String)
-  : CompletableFuture[Either[CognitectAnomaly, jStream[Datom]]] =
-    indexRange(attrId, null, null, 0, 0, 1000)
-
-  def indexRange[T](attrId: String, start: Long)
-  : CompletableFuture[Either[CognitectAnomaly, jStream[Datom]]] =
-    indexRange(attrId, start, null, 0, 0, 1000)
-
   def indexRange[T](
     attrId: String,
     start: Any,
     end: Any
   ): CompletableFuture[Either[CognitectAnomaly, jStream[Datom]]] =
     indexRange(attrId, start, end, 0, 0, 1000)
+
+  def indexRange[T](attrId: String, start: Long)
+  : CompletableFuture[Either[CognitectAnomaly, jStream[Datom]]] =
+    indexRange(attrId, start, null, 0, 0, 1000)
+
+  def indexRange[T](attrId: String)
+  : CompletableFuture[Either[CognitectAnomaly, jStream[Datom]]] =
+    indexRange(attrId, null, null, 0, 0, 1000)
 
 
   // Pull --------------------------------------
@@ -159,13 +188,13 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     }
   }
 
-  def pull(selector: String, eid: Any)
-  : CompletableFuture[Either[CognitectAnomaly, jMap[_, _]]] =
-    pull(selector, eid, 0, 0, 1000)
-
   def pull(selector: String, eid: Any, limit: Int)
   : CompletableFuture[Either[CognitectAnomaly, jMap[_, _]]] =
     pull(selector, eid, 0, 0, limit)
+
+  def pull(selector: String, eid: Any)
+  : CompletableFuture[Either[CognitectAnomaly, jMap[_, _]]] =
+    pull(selector, eid, 0, 0, 1000)
 
 
   def indexPull(
@@ -177,8 +206,6 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     offset: Int,
     limit: Int,
   ): CompletableFuture[Either[CognitectAnomaly, jStream[_]]] = {
-    if (!Seq(":avet", ":aevt").contains(index))
-      throw new IllegalArgumentException(ErrorMsg.indexPull)
     CompletableFuture.supplyAsync { () =>
       Channel[Any](
         InvokeAsync.indexPull(
@@ -196,9 +223,11 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
   def indexPull(
     index: String,
     selector: String,
-    start: String
+    start: String,
+    reverse: Boolean,
+    limit: Int,
   ): CompletableFuture[Either[CognitectAnomaly, jStream[_]]] = {
-    indexPull(index, selector, start, false, 0, 0, 1000)
+    indexPull(index, selector, start, reverse, 0, 0, limit)
   }
 
   def indexPull(
@@ -213,10 +242,8 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
   def indexPull(
     index: String,
     selector: String,
-    start: String,
-    reverse: Boolean,
-    limit: Int,
+    start: String
   ): CompletableFuture[Either[CognitectAnomaly, jStream[_]]] = {
-    indexPull(index, selector, start, reverse, 0, 0, limit)
+    indexPull(index, selector, start, false, 0, 0, 1000)
   }
 }

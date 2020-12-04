@@ -64,21 +64,21 @@ case class AsyncConnection(datomicConn: AnyRef) {
       }
     }
 
-  def txRange()
+  def txRange(timePointStart: Any, timePointEnd: Any, limit: Int)
   : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
-    txRange(0, 0, 0, 0, -1)
-
-  def txRange(limit: Int)
-  : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
-    txRange(0, 0, 0, 0, limit)
+    txRange(timePointStart, timePointEnd, 0, 0, limit)
 
   def txRange(timePointStart: Any, timePointEnd: Any)
   : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
     txRange(timePointStart, timePointEnd, 0, 0, -1)
 
-  def txRange(timePointStart: Any, timePointEnd: Any, limit: Int)
+  def txRange(limit: Int)
   : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
-    txRange(timePointStart, timePointEnd, 0, 0, limit)
+    txRange(0, 0, 0, 0, limit)
+
+  def txRange()
+  : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
+    txRange(0, 0, 0, 0, -1)
 
 
   def txRangeArray(
@@ -103,21 +103,21 @@ case class AsyncConnection(datomicConn: AnyRef) {
     }
   }
 
-  def txRangeArray()
-  : CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
-    txRangeArray(0, 0, 0, 0, -1)
-
-  def txRangeArray(limit: Int)
-  : CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
-    txRangeArray(0, 0, 0, 0, limit)
+  def txRangeArray(timePointStart: Any, timePointEnd: Any, limit: Int
+  ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
+    txRangeArray(timePointStart, timePointEnd, 0, 0, limit)
 
   def txRangeArray(timePointStart: Any, timePointEnd: Any
   ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
     txRangeArray(timePointStart, timePointEnd, 0, 0, -1)
 
-  def txRangeArray(timePointStart: Any, timePointEnd: Any, limit: Int
-  ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
-    txRangeArray(timePointStart, timePointEnd, 0, 0, limit)
+  def txRangeArray(limit: Int)
+  : CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
+    txRangeArray(0, 0, 0, 0, limit)
+
+  def txRangeArray()
+  : CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
+    txRangeArray(0, 0, 0, 0, -1)
 
 
   // Convenience method for single invocation from connection

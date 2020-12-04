@@ -24,8 +24,8 @@ case class AsyncTxReport(rawTxReport: jMap[_, _]) {
 
   // Convenience accessors
   lazy val txDatom: Datom = txData.iterator().next()
-  lazy val basisT : Long  = dbBefore.basisT
-  lazy val t      : Long  = dbAfter.basisT
+  lazy val basisT : Long  = dbBefore.t
+  lazy val t      : Long  = dbAfter.t
   lazy val tx     : Long  = txDatom.e
   lazy val txInst : Date  = txDatom.v.asInstanceOf[Date]
 }

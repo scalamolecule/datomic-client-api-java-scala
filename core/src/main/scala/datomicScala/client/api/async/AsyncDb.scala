@@ -1,7 +1,7 @@
 package datomicScala.client.api.async
 
 import java.util.stream.{Stream => jStream}
-import java.util.{Date, List => jList, Map => jMap}
+import java.util.{Collections, Date, List => jList, Map => jMap}
 import clojure.lang.LazySeq
 import datomicClient._
 import datomicClient.anomaly.CognitectAnomaly
@@ -10,7 +10,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 
-case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
+case class AsyncDb(
+  datomicDb: AnyRef,
+  sinceTimePoint: Option[(Long, Long, Date)] = None
+) extends DbLookup(datomicDb, sinceTimePoint) {
 
   def dbStats: Future[Either[CognitectAnomaly, DbStats]] = Future {
     Channel[jMap[_, _]](
@@ -26,10 +29,15 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
   // Time filters --------------------------------------
 
   def asOf(t: Long): AsyncDb = AsyncDb(InvokeAsync.asOf(datomicDb, t))
+
   def asOf(d: Date): AsyncDb = AsyncDb(InvokeAsync.asOf(datomicDb, d))
 
-  def since(t: Long): AsyncDb = AsyncDb(InvokeAsync.since(datomicDb, t))
-  def since(d: Date): AsyncDb = AsyncDb(InvokeAsync.since(datomicDb, d))
+
+  def since(tOrTx: Long): AsyncDb =
+    AsyncDb(InvokeAsync.since(datomicDb, tOrTx), extractSinceTimePoint(tOrTx))
+
+  def since(d: Date): AsyncDb =
+    AsyncDb(InvokeAsync.since(datomicDb, d), extractSinceTimePoint(d))
 
 
   // Presuming a `withDb` is passed.
@@ -85,13 +93,22 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
    *                   result.
    * @return List[datomicFacade.client.api.Datom] Wrapped Datoms with a unified api
    */
-  def datoms(index: String, components: jList[_])
-  : Future[Either[CognitectAnomaly, jStream[Datom]]] = Future {
+  def datoms(
+    index: String,
+    components: jList[_],
+    timeout: Int = 0,
+    offset: Int = 0,
+    limit: Int = 1000
+  ): Future[Either[CognitectAnomaly, jStream[Datom]]] = Future {
     Channel[Any](
-      InvokeAsync.datoms(datomicDb, index, components)
-    ).lazyList.head match {
-      case Right(datoms) =>
-        Channel[jStream[Datom]](Helper.streamOfDatoms(datoms)).lazyList.head
+      InvokeAsync.datoms(datomicDb, index, components, timeout, offset, limit)
+    ).lazyList.headOption.fold(
+      Channel[jStream[Datom]](jStream.empty()).lazyList.head
+    ) {
+      case Right(datoms) => Channel[jStream[Datom]](
+        Helper.streamOfDatoms(datoms)
+      ).lazyList.head
+
       case Left(anomaly) => Left(anomaly)
     }
   }
@@ -109,9 +126,13 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
       InvokeAsync.indexRange(
         datomicDb, attrId, start, end, timeout, offset, limit
       )
-    ).lazyList.head match {
-      case Right(datoms) =>
-        Channel[jStream[Datom]](Helper.streamOfDatoms(datoms)).lazyList.head
+    ).lazyList.headOption.fold(
+      Channel[jStream[Datom]](jStream.empty()).lazyList.head
+    ) {
+      case Right(datoms) => Channel[jStream[Datom]](
+        Helper.streamOfDatoms(datoms)
+      ).lazyList.head
+
       case Left(anomaly) => Left(anomaly)
     }
   }
@@ -130,7 +151,9 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
       InvokeAsync.pull(
         datomicDb, selector, eid, timeout, offset, limit
       )
-    ).lazyList.head
+    ).lazyList.headOption.getOrElse(
+      Channel[jMap[_, _]](Collections.EMPTY_MAP).lazyList.head
+    )
   }
 
 
@@ -143,14 +166,14 @@ case class AsyncDb(datomicDb: AnyRef) extends Lookup(datomicDb) {
     offset: Int = 0,
     limit: Int = 1000
   ): Future[Either[CognitectAnomaly, jStream[_]]] = {
-    if (!Seq(":avet", ":aevt").contains(index))
-      throw new IllegalArgumentException(ErrorMsg.indexPull)
     Future(
       Channel[Any](
         InvokeAsync.indexPull(
           datomicDb, index, selector, start, reverse, timeout, offset, limit
         )
-      ).lazyList.head match {
+      ).lazyList.headOption.fold(
+        Channel[jStream[_]](jStream.empty()).lazyList.head
+      ) {
         case Right(indexPull) =>
           Channel[jStream[_]](
             indexPull.asInstanceOf[LazySeq].stream()

@@ -41,6 +41,7 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
 
   private def anyOpt(key: String, opt: Option[Any]): String = opt match {
     case None            => ""
+    case Some(d: Date)   => s""":$key #inst "${date2datomicStr(d)}""""
     case Some(s: String) => s""":$key "${read(s)}""""
     case Some(v)         => s":$key $v"
   }
@@ -67,12 +68,6 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
         s"Unexpected time point `$x` of type ${x.getClass}."
       )
     }
-  }
-
-  def keywordAware(components: jList[_]): jList[_] = {
-    val aware: jList[Any] = new util.ArrayList[Any]()
-    components.forEach(v => aware.add(read(v.toString)))
-    aware
   }
 
 
@@ -203,15 +198,22 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
   def datoms(
     datomicDb: AnyRef,
     index: String,
-    componentsList: jList[_]
+    componentsList: jList[_],
+    timeout: Int = 0,
+    offset: Int = 0,
+    limit: Int = 1000
   ): AnyRef = catchAnomaly {
-    val components = edn(keywordAware(componentsList))
+    val components = if (componentsList.isEmpty) "" else
+      ":components " + edn(componentsList)
     fn("datoms").invoke(
       datomicDb,
       read(
         s"""{
            |:index $index
-           |:components $components
+           |$components
+           |${timeoutOpt(timeout)}
+           |${offsetOpt(offset)}
+           |${limitOpt(limit)}
            |}""".stripMargin
       )
     )
@@ -255,22 +257,27 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): AnyRef = catchAnomaly {
-    val reverse_ = if (reverse) ":reverse true" else ""
-    fn("index-pull").invoke(
-      datomicDb,
-      read(
-        s"""{
-           |:index $index
-           |:selector $selector
-           |:start $start
-           |$reverse_
-           |${timeoutOpt(timeout)}
-           |${offsetOpt(offset)}
-           |${limitOpt(limit)}
-           |}""".stripMargin
+  ): AnyRef = {
+    if (!Seq(":avet", ":aevt").contains(index))
+      throw new IllegalArgumentException(ErrorMsg.indexPull)
+
+    catchAnomaly {
+      val reverse_ = if (reverse) ":reverse true" else ""
+      fn("index-pull").invoke(
+        datomicDb,
+        read(
+          s"""{
+             |:index $index
+             |:selector $selector
+             |:start $start
+             |$reverse_
+             |${timeoutOpt(timeout)}
+             |${offsetOpt(offset)}
+             |${limitOpt(limit)}
+             |}""".stripMargin
+        )
       )
-    )
+    }
   }
 
 
@@ -411,7 +418,7 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     val txData = edn(stmts)
     fn("with").invoke(
       withDb,
-      read(s"{:tx-data $txData}")
+      readString(s"{:tx-data $txData}")
     )
   }
 

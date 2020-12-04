@@ -107,9 +107,9 @@ case class AsyncClient(
     }
   }
 
-  def listDatabases(): CompletableFuture[Either[CognitectAnomaly, jList[String]]] =
-    listDatabases(0, 0, 1000)
-
   def listDatabases(limit: Int): CompletableFuture[Either[CognitectAnomaly, jList[String]]] =
     listDatabases(0, 0, limit)
+
+  def listDatabases(): CompletableFuture[Either[CognitectAnomaly, jList[String]]] =
+    listDatabases(0, 0, 1000)
 }

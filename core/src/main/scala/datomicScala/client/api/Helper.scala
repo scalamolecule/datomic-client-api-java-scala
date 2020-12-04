@@ -11,12 +11,18 @@ import scala.jdk.CollectionConverters._
 
 object Helper {
 
+  lazy val e     = read(":e")
+  lazy val a     = read(":a")
+  lazy val v     = read(":v")
+  lazy val tx    = read(":tx")
+  lazy val added = read(":added")
+
   def getDatom(d: ILookup): Datom = Datom(
-    d.valAt(read(":e")).asInstanceOf[Long],
-    d.valAt(read(":a")),
-    d.valAt(read(":v")),
-    d.valAt(read(":tx")).asInstanceOf[Long],
-    d.valAt(read(":added")).asInstanceOf[Boolean]
+    d.valAt(e).asInstanceOf[Long],
+    d.valAt(a),
+    d.valAt(v),
+    d.valAt(tx).asInstanceOf[Long],
+    d.valAt(added).asInstanceOf[Boolean]
   )
 
 
@@ -42,6 +48,8 @@ object Helper {
           override def next(): Datom = getDatom(it.next.asInstanceOf[ILookup])
         }
       )
+
+      case _ => jStream.empty()
     }
   }
 
