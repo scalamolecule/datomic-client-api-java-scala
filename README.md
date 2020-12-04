@@ -176,7 +176,7 @@ Add Java dependency in POM file:
 <dependency>
     <groupId>org.scalamolecule</groupId>
     <artifactId>datomic-client-api-java-scala</artifactId>
-    <version>0.5.0</version>
+    <version>0.5.1</version>
 </dependency>
 
 <!-- If using dev-local -->
@@ -190,7 +190,7 @@ Add Java dependency in POM file:
 Add Scala dependency in sbt build file:
 ```
 libraryDependencies ++= Seq(
-  "org.scalamolecule" % "datomic-client-api-java-scala" % "0.5.0",
+  "org.scalamolecule" % "datomic-client-api-java-scala" % "0.5.1",
   
   // If using dev-local
   "com.datomic" % "dev-local" % "0.9.225"

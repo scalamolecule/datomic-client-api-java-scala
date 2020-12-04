@@ -44,7 +44,7 @@ case class AsyncConnection(datomicConn: AnyRef) {
     timePointEnd: Option[Any] = None,
     timeout: Int = 0,
     offset: Int = 0,
-    limit: Int = -1 // default to all
+    limit: Int = 1000
   ): Future[Either[CognitectAnomaly, Iterable[(Long, Iterable[Datom])]]] = Future {
     Channel[AnyRef](
       Invoke.txRange(datomicConn, timePointStart, timePointEnd, timeout, offset, limit)
@@ -62,7 +62,7 @@ case class AsyncConnection(datomicConn: AnyRef) {
     timePointEnd: Option[Any] = None,
     timeout: Int = 0,
     offset: Int = 0,
-    limit: Int = -1 // default to all
+    limit: Int = 1000
   ): Future[Either[CognitectAnomaly, Array[(Long, Array[Datom])]]] = Future {
     Channel[AnyRef](
       Invoke.txRange(datomicConn, timePointStart, timePointEnd, timeout, offset, limit)

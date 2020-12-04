@@ -53,7 +53,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
   def txRange(timePointStart: Any, timePointEnd: Any)
   : jIterable[Pair[Long, jIterable[Datom]]] =
-    txRange(timePointStart, timePointEnd, 0, 0, -1)
+    txRange(timePointStart, timePointEnd, 0, 0, 1000)
 
   def txRange(limit: Int)
   : jIterable[Pair[Long, jIterable[Datom]]] =
@@ -61,7 +61,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
   def txRange()
   : jIterable[Pair[Long, jIterable[Datom]]] =
-    txRange(0, 0, 0, 0, -1)
+    txRange(0, 0, 0, 0, 1000)
 
 
   def txRangeArray(
@@ -85,7 +85,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
   def txRangeArray(timePointStart: Any, timePointEnd: Any)
   : Array[Pair[Long, Array[Datom]]] =
-    txRangeArray(timePointStart, timePointEnd, 0, 0, -1)
+    txRangeArray(timePointStart, timePointEnd, 0, 0, 1000)
 
   def txRangeArray(limit: Int)
   : Array[Pair[Long, Array[Datom]]] =
@@ -93,7 +93,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
 
   def txRangeArray()
   : Array[Pair[Long, Array[Datom]]] =
-    txRangeArray(0, 0, 0, 0, -1)
+    txRangeArray(0, 0, 0, 0, 1000)
 
 
   // Convenience method for single invocation from connection

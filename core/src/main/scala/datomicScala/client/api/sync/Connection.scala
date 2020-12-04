@@ -37,7 +37,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     timePointEnd: Option[Any] = None,
     timeout: Int = 0,
     offset: Int = 0,
-    limit: Int = -1 // default to all
+    limit: Int = 1000
   ): Iterable[(Long, Iterable[Datom])] = {
     val rawTxs0 = {
       Invoke.txRange(datomicConn, timePointStart, timePointEnd, timeout, offset, limit)
@@ -51,7 +51,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     timePointEnd: Option[Any] = None,
     timeout: Int = 0,
     offset: Int = 0,
-    limit: Int = -1 // default to all
+    limit: Int = 1000
   ): Array[(Long, Array[Datom])] = {
     val rawTxs0 = {
       Invoke.txRange(datomicConn, timePointStart, timePointEnd, timeout, offset, limit)

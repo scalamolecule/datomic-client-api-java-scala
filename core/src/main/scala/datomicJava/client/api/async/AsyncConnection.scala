@@ -70,7 +70,7 @@ case class AsyncConnection(datomicConn: AnyRef) {
 
   def txRange(timePointStart: Any, timePointEnd: Any)
   : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
-    txRange(timePointStart, timePointEnd, 0, 0, -1)
+    txRange(timePointStart, timePointEnd, 0, 0, 1000)
 
   def txRange(limit: Int)
   : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
@@ -78,7 +78,7 @@ case class AsyncConnection(datomicConn: AnyRef) {
 
   def txRange()
   : CompletableFuture[Either[CognitectAnomaly, jIterable[Pair[Long, jIterable[Datom]]]]] =
-    txRange(0, 0, 0, 0, -1)
+    txRange(0, 0, 0, 0, 1000)
 
 
   def txRangeArray(
@@ -109,7 +109,7 @@ case class AsyncConnection(datomicConn: AnyRef) {
 
   def txRangeArray(timePointStart: Any, timePointEnd: Any
   ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
-    txRangeArray(timePointStart, timePointEnd, 0, 0, -1)
+    txRangeArray(timePointStart, timePointEnd, 0, 0, 1000)
 
   def txRangeArray(limit: Int)
   : CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
@@ -117,7 +117,7 @@ case class AsyncConnection(datomicConn: AnyRef) {
 
   def txRangeArray()
   : CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
-    txRangeArray(0, 0, 0, 0, -1)
+    txRangeArray(0, 0, 0, 0, 1000)
 
 
   // Convenience method for single invocation from connection
