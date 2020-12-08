@@ -24,14 +24,19 @@ trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
 
   override def map(fs: => Fragments): Fragments =
     step(setupDevLocal()) ^
-//      fs.mapDescription(d => Text(s"$system: " + d.show))
-      fs.mapDescription(d => Text(s"$system: " + d.show)) ^
-      step(setupPeerServer()) ^
-      fs.mapDescription(d => Text(s"$system: " + d.show))
+        fs.mapDescription(d => Text(s"$system: " + d.show)) ^
+        step(setupPeerServer()) ^
+        fs.mapDescription(d => Text(s"$system: " + d.show))
 
   def setupDevLocal(): Unit = {
     system = "dev-local"
-    client = Datomic.clientDevLocal("Hello system name")
+    try {
+      client = Datomic.clientDevLocal("Hello system name")
+    } catch {
+      case t: Throwable =>
+        // Catch error from setup (suppressed during setup)
+        setupException = Some(t)
+    }
   }
 
   def setupPeerServer(): Unit = {
@@ -44,7 +49,7 @@ trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
       // bin/run -m datomic.peer-serverh localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:dev://localhost:4334/hello
 
       // In-mem, run Peer Server:
-      // bin/run -m datomic.peer-server -h localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:mem://hello
+      // bin/run -m datomic.peer-server -a myaccesskey,mysecret -d hello,datomic:mem://hello
 
       client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
     } catch {

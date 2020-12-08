@@ -260,21 +260,22 @@ class DbTest extends Spec {
 
 
   "with" in new Setup {
-    val originalDb = conn.db
+    // Original state
+    films(conn.db) === threeFilms
 
     // Test adding a 4th film
     // OBS: Note that a `conn.withDb` has to be passed initially!
-    val txReport4films = originalDb.`with`(conn.withDb, film4)
+    val txReport4films = conn.db.`with`(conn.withDb, film4)
     val db4Films       = txReport4films.dbAfter
     films(db4Films) === fourFilms
 
     // Add 5th film by passing with-modified Db
-    val txReport5films = originalDb.`with`(db4Films, film5)
+    val txReport5films = db4Films.`with`(db4Films, film5)
     val db5Films       = txReport5films.dbAfter
     films(db5Films) === fiveFilms
 
     // Add 6th film by passing with-modified Db from TxReport
-    val txReport6films = originalDb.`with`(txReport5films, film6)
+    val txReport6films = conn.db.`with`(txReport5films, film6)
     val db6Films       = txReport6films.dbAfter
     films(db6Films) === sixFilms
 
@@ -283,7 +284,7 @@ class DbTest extends Spec {
     films(db6Films.asOf(txReport5films.tx)) === fiveFilms
 
     // Original state is unaffected
-    films(originalDb) === threeFilms
+    films(conn.db) === threeFilms
   }
 
 
