@@ -270,7 +270,7 @@ class DbTest extends Spec {
     films(db4Films) === fourFilms
 
     // Add 5th film by passing with-modified Db
-    val txReport5films = db4Films.`with`(db4Films, film5)
+    val txReport5films = conn.db.`with`(db4Films, film5)
     val db5Films       = txReport5films.dbAfter
     films(db5Films) === fiveFilms
 

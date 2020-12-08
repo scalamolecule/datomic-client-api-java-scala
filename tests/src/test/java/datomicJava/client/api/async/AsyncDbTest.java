@@ -293,12 +293,13 @@ public class AsyncDbTest extends SetupAsync {
 
     @Test
     public void with() throws ExecutionException, InterruptedException {
-        AsyncDb originalDb = conn.db();
+        // Original state is unaffected
+        assertThat(films(conn.db()), is(threeFilms));
 
         // Test adding a 4th film
         // OBS: Note that a `conn.withDb` has to be passed initially!
         AsyncTxReport txReport4films = (
-            (Right<?, AsyncTxReport>) originalDb.with(conn.withDb(), film4).get()
+            (Right<?, AsyncTxReport>) conn.db().with(conn.withDb(), film4).get()
         ).right_value();
         AsyncDb db4Films = txReport4films.dbAfter();
         assertThat(films(db4Films), is(fourFilms));
@@ -306,7 +307,7 @@ public class AsyncDbTest extends SetupAsync {
         // Test adding a 4th film
         // OBS: Note that a `conn.withDb` has to be passed initially!
         AsyncTxReport txReport5films = (
-            (Right<?, AsyncTxReport>) originalDb.with(db4Films, film5).get()
+            (Right<?, AsyncTxReport>) conn.db().with(db4Films, film5).get()
         ).right_value();
         AsyncDb db5Films = txReport5films.dbAfter();
         assertThat(films(db5Films), is(fiveFilms));
@@ -314,7 +315,7 @@ public class AsyncDbTest extends SetupAsync {
         // Test adding a 4th film
         // OBS: Note that a `conn.withDb` has to be passed initially!
         AsyncTxReport txReport6films = (
-            (Right<?, AsyncTxReport>) originalDb.with(txReport5films, film6).get()
+            (Right<?, AsyncTxReport>) conn.db().with(txReport5films, film6).get()
         ).right_value();
         AsyncDb db6Films = txReport6films.dbAfter();
         assertThat(films(db6Films), is(sixFilms));
@@ -324,7 +325,7 @@ public class AsyncDbTest extends SetupAsync {
         assertThat(films(db6Films.asOf(txReport5films.tx())), is(fiveFilms));
 
         // Original state is unaffected
-        assertThat(films(originalDb), is(threeFilms));
+        assertThat(films(conn.db()), is(threeFilms));
     }
 
 

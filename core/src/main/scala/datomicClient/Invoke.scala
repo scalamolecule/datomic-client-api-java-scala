@@ -77,9 +77,8 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     datomicClient: AnyRef,
     options: jMap[_, _]
   ): jMap[_, _] = catchAnomaly {
-    fn("administer-system")
-      .invoke(datomicClient, edn(options))
-      .asInstanceOf[jMap[_, _]]
+    val args = edn(options)
+    fn("administer-system").invoke(datomicClient, args).asInstanceOf[jMap[_, _]]
   }
 
 
@@ -98,17 +97,16 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     credsProvider: AWSCredentialsProviderChain,
     proxyPort: Int
   ): AnyRef = catchAnomaly {
-    fn("client").invoke(
-      read(
-        s"""{
-           |:server-type :cloud
-           |:region "$region"
-           |:system "$system"
-           |:endpoint "$endpoint"
-           |:creds-provider $credsProvider
-           |:proxy-port $proxyPort
-           |}""".stripMargin)
-    )
+    val argsMap = read(
+      s"""{
+         |:server-type :cloud
+         |:region "$region"
+         |:system "$system"
+         |:endpoint "$endpoint"
+         |:creds-provider $credsProvider
+         |:proxy-port $proxyPort
+         |}""".stripMargin)
+    fn("client").invoke(argsMap)
   }
 
   def clientCloudCredsProfile(
@@ -118,17 +116,16 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     credsProfile: String,
     proxyPort: Int
   ): AnyRef = catchAnomaly {
-    fn("client").invoke(
-      read(
-        s"""{
-           |:server-type :cloud
-           |:region "$region"
-           |:system "$system"
-           |:endpoint "$endpoint"
-           |:creds-profile "$credsProfile"
-           |:proxy-port $proxyPort
-           |}""".stripMargin)
-    )
+    val argsMap = read(
+      s"""{
+         |:server-type :cloud
+         |:region "$region"
+         |:system "$system"
+         |:endpoint "$endpoint"
+         |:creds-profile "$credsProfile"
+         |:proxy-port $proxyPort
+         |}""".stripMargin)
+    fn("client").invoke(argsMap)
   }
 
   def clientDevLocal(
@@ -137,14 +134,13 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
   ): AnyRef = catchAnomaly {
     val storage = if (storageDir.nonEmpty)
       s""":storage-dir "$storageDir"""".stripMargin else ""
-    fn("client").invoke(
-      read(
-        s"""{
-           |:server-type :dev-local
-           |:system "$system"
-           |$storage
-           |}""".stripMargin)
-    )
+    val argsMap = read(
+      s"""{
+         |:server-type :dev-local
+         |:system "$system"
+         |$storage
+         |}""".stripMargin)
+    fn("client").invoke(argsMap)
   }
 
   def clientPeerServer(
@@ -153,16 +149,15 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     endpoint: String,
     validateHostnames: Boolean
   ): AnyRef = catchAnomaly {
-    fn("client").invoke(
-      read(
-        s"""{
-           |:server-type :peer-server
-           |:access-key "$accessKey"
-           |:secret "$secret"
-           |:endpoint "$endpoint"
-           |:validate-hostnames $validateHostnames
-           |}""".stripMargin)
-    )
+    val argsMap = read(
+      s"""{
+         |:server-type :peer-server
+         |:access-key "$accessKey"
+         |:secret "$secret"
+         |:endpoint "$endpoint"
+         |:validate-hostnames $validateHostnames
+         |}""".stripMargin)
+    fn("client").invoke(argsMap)
   }
 
   def connect(
@@ -170,15 +165,13 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     dbName: String,
     timeout: Int = 0
   ): AnyRef = catchAnomaly {
+    val argsMap = read(
+      s"""{
+         |:db-name "$dbName"
+         |${timeoutOpt(timeout)}
+         |}""".stripMargin)
     // Returns a connection or throws
-    fn("connect").invoke(
-      datomicClient,
-      read(
-        s"""{
-           |:db-name "$dbName"
-           |${timeoutOpt(timeout)}
-           |}""".stripMargin)
-    )
+    fn("connect").invoke(datomicClient, argsMap)
   }
 
 
@@ -187,11 +180,9 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     dbName: String,
     timeout: Int = 0
   ): AnyRef = catchAnomaly {
+    val argsMap = read(s"""{:db-name "$dbName"${timeoutOpt(timeout)}}""")
     // Returns true or anomaly
-    fn("create-database").invoke(
-      datomicClient,
-      read(s"""{:db-name "$dbName"${timeoutOpt(timeout)}}""")
-    )
+    fn("create-database").invoke(datomicClient, argsMap)
   }
 
 
@@ -205,18 +196,16 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
   ): AnyRef = catchAnomaly {
     val components = if (componentsList.isEmpty) "" else
       ":components " + edn(componentsList)
-    fn("datoms").invoke(
-      datomicDb,
-      read(
-        s"""{
-           |:index $index
-           |$components
-           |${timeoutOpt(timeout)}
-           |${offsetOpt(offset)}
-           |${limitOpt(limit)}
-           |}""".stripMargin
-      )
+    val argsMap    = read(
+      s"""{
+         |:index $index
+         |$components
+         |${timeoutOpt(timeout)}
+         |${offsetOpt(offset)}
+         |${limitOpt(limit)}
+         |}""".stripMargin
     )
+    fn("datoms").invoke(datomicDb, argsMap)
   }
 
 
@@ -235,11 +224,9 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     dbName: String,
     timeout: Int = 0
   ): AnyRef = catchAnomaly {
+    val argsMap = read(s"""{:db-name "$dbName"${timeoutOpt(timeout)}}""")
     // Returns true or anomaly
-    fn("delete-database").invoke(
-      datomicClient,
-      read(s"""{:db-name "$dbName"${timeoutOpt(timeout)}}""")
-    )
+    fn("delete-database").invoke(datomicClient, argsMap)
   }
 
 
@@ -263,20 +250,18 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
 
     catchAnomaly {
       val reverse_ = if (reverse) ":reverse true" else ""
-      fn("index-pull").invoke(
-        datomicDb,
-        read(
-          s"""{
-             |:index $index
-             |:selector $selector
-             |:start $start
-             |$reverse_
-             |${timeoutOpt(timeout)}
-             |${offsetOpt(offset)}
-             |${limitOpt(limit)}
-             |}""".stripMargin
-        )
+      val argsMap  = read(
+        s"""{
+           |:index $index
+           |:selector $selector
+           |:start $start
+           |$reverse_
+           |${timeoutOpt(timeout)}
+           |${offsetOpt(offset)}
+           |${limitOpt(limit)}
+           |}""".stripMargin
       )
+      fn("index-pull").invoke(datomicDb, argsMap)
     }
   }
 
@@ -290,19 +275,17 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     offset: Int = 0,
     limit: Int = 1000
   ): AnyRef = catchAnomaly {
-    fn("index-range").invoke(
-      datomicDb,
-      read(
-        s"""{
-           |:attrid $attrId
-           |${anyOpt("start", start)}
-           |${anyOpt("end", end)}
-           |${timeoutOpt(timeout)}
-           |${offsetOpt(offset)}
-           |${limitOpt(limit)}
-           |}""".stripMargin
-      )
+    val argsMap = read(
+      s"""{
+         |:attrid $attrId
+         |${anyOpt("start", start)}
+         |${anyOpt("end", end)}
+         |${timeoutOpt(timeout)}
+         |${offsetOpt(offset)}
+         |${limitOpt(limit)}
+         |}""".stripMargin
     )
+    fn("index-range").invoke(datomicDb, argsMap)
   }
 
 
@@ -312,16 +295,14 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     offset: Int = 0,
     limit: Int = 1000
   ): AnyRef = catchAnomaly {
-    fn("list-databases").invoke(
-      datomicClient,
-      read(
-        s"""{
-           |${timeoutOpt(timeout)}
-           |${offsetOpt(offset)}
-           |${limitOpt(limit)}
-           |}""".stripMargin
-      )
+    val argsMap = read(
+      s"""{
+         |${timeoutOpt(timeout)}
+         |${offsetOpt(offset)}
+         |${limitOpt(limit)}
+         |}""".stripMargin
     )
+    fn("list-databases").invoke(datomicClient, argsMap)
   }
 
 
@@ -333,18 +314,16 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     offset: Int = 0,
     limit: Int = 1000
   ): AnyRef = catchAnomaly {
-    fn("pull").invoke(
-      datomicDb,
-      read(
-        s"""{
-           |:selector $selector
-           |:eid $eid
-           |${timeoutOpt(timeout)}
-           |${offsetOpt(offset)}
-           |${limitOpt(limit)}
-           |}""".stripMargin
-      )
+    val argsMap = read(
+      s"""{
+         |:selector $selector
+         |:eid $eid
+         |${timeoutOpt(timeout)}
+         |${offsetOpt(offset)}
+         |${limitOpt(limit)}
+         |}""".stripMargin
     )
+    fn("pull").invoke(datomicDb, argsMap)
   }
 
 
@@ -375,16 +354,11 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     datomicConn: AnyRef,
     stmts: jList[_]
   ): AnyRef = catchAnomaly {
-    val txData = edn(stmts)
-    fn("transact").invoke(
-      datomicConn,
-      //      datomic.Util.map(read(":tx-data"), stmts)
-      //      read(s"{:tx-data $txData}")
-
-      // clojure.tools.reader/read-string needed to interpret uri representation
-      // When maps of data are accepted (bug fixed), we can likely use `read` again
-      readString(s"{:tx-data $txData}")
-    )
+    val txData  = edn(stmts)
+    // clojure.tools.reader/read-string needed to interpret uri representation.
+    // When maps of data are accepted (bug fixed), we can likely use `read` again
+    val argsMap = readString(s"{:tx-data $txData}")
+    fn("transact").invoke(datomicConn, argsMap)
   }
 
 
@@ -396,18 +370,15 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     offset: Int = 0,
     limit: Int = 1000
   ): AnyRef = catchAnomaly {
-    fn("tx-range").invoke(
-      datomicConn,
-      read(
-        s"""{
-           |${timePointOpt("start", start)}
-           |${timePointOpt("end", end)}
-           |${timeoutOpt(timeout)}
-           |${offsetOpt(offset)}
-           |${limitOpt(limit)}
-           |}""".stripMargin
-      )
-    )
+    val argsMap = read(
+      s"""{
+         |${timePointOpt("start", start)}
+         |${timePointOpt("end", end)}
+         |${timeoutOpt(timeout)}
+         |${offsetOpt(offset)}
+         |${limitOpt(limit)}
+         |}""".stripMargin)
+    fn("tx-range").invoke(datomicConn, argsMap)
   }
 
 
@@ -415,11 +386,9 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     withDb: AnyRef,
     stmts: jList[_]
   ): AnyRef = catchAnomaly {
-    val txData = edn(stmts)
-    fn("with").invoke(
-      withDb,
-      readString(s"{:tx-data $txData}")
-    )
+    val txData  = edn(stmts)
+    val argsMap = readString(s"{:tx-data $txData}")
+    fn("with").invoke(withDb, argsMap)
   }
 
   def withDb(

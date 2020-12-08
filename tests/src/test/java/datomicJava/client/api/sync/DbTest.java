@@ -279,23 +279,24 @@ public class DbTest extends Setup {
 
     @Test
     public void with() {
-        Db originalDb = conn.db();
+        // Original state
+        assertThat(films(conn.db()), is(threeFilms));
 
         // Test adding a 4th film
         // OBS: Note that a `conn.withDb` has to be passed initially!
-        TxReport txReport4films = originalDb.with(conn.withDb(), film4);
+        TxReport txReport4films = conn.db().with(conn.withDb(), film4);
         Db db4Films = txReport4films.dbAfter();
         assertThat(films(db4Films), is(fourFilms));
 
         // Test adding a 4th film
         // OBS: Note that a `conn.withDb` has to be passed initially!
-        TxReport txReport5films = originalDb.with(db4Films, film5);
+        TxReport txReport5films = conn.db().with(db4Films, film5);
         Db db5Films = txReport5films.dbAfter();
         assertThat(films(db5Films), is(fiveFilms));
 
         // Test adding a 4th film
         // OBS: Note that a `conn.withDb` has to be passed initially!
-        TxReport txReport6films = originalDb.with(txReport5films, film6);
+        TxReport txReport6films = conn.db().with(txReport5films, film6);
         Db db6Films = txReport6films.dbAfter();
         assertThat(films(db6Films), is(sixFilms));
 
@@ -304,7 +305,7 @@ public class DbTest extends Setup {
         assertThat(films(db6Films.asOf(txReport5films.tx())), is(fiveFilms));
 
         // Original state is unaffected
-        assertThat(films(originalDb), is(threeFilms));
+        assertThat(films(conn.db()), is(threeFilms));
     }
 
 

@@ -263,21 +263,22 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
 
 
   "with" in new AsyncSetup {
-    val originalDb = conn.db
+    // Original state
+    films(conn.db) === threeFilms
 
     // Test adding a 4th film
     // OBS: Note that a `conn.withDb` has to be passed initially!
-    val txReport4films = waitFor(originalDb.`with`(conn.withDb, film4)).toOption.get
+    val txReport4films = waitFor(conn.db.`with`(conn.withDb, film4)).toOption.get
     val db4Films       = txReport4films.dbAfter
     films(db4Films) === fourFilms
 
     // Add 5th film by passing with-modified Db
-    val txReport5films = waitFor(originalDb.`with`(db4Films, film5)).toOption.get
+    val txReport5films = waitFor(conn.db.`with`(db4Films, film5)).toOption.get
     val db5Films       = txReport5films.dbAfter
     films(db5Films) === fiveFilms
 
     // Add 6th film by passing with-modified Db from TxReport
-    val txReport6films = waitFor(originalDb.`with`(txReport5films, film6)).toOption.get
+    val txReport6films = waitFor(conn.db.`with`(txReport5films, film6)).toOption.get
     val db6Films       = txReport6films.dbAfter
     films(db6Films) === sixFilms
 
@@ -286,7 +287,7 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
     films(db6Films.asOf(txReport5films.tx)) === fiveFilms
 
     // Original state is unaffected
-    films(originalDb) === threeFilms
+    films(conn.db) === threeFilms
   }
 
 
