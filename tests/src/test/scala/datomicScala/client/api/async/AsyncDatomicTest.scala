@@ -69,7 +69,7 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
          */
 
         val client: AsyncClient =
-          AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
+          AsyncDatomic.clientPeerServer("k", "s", "localhost:8998")
 
         // Confirm that client is valid and can connect to a database
         client.connect("hello")
@@ -105,7 +105,7 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
         }
 
         // Wrong endpoint
-        AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "x")
+        AsyncDatomic.clientPeerServer("k", "s", "x")
           .connect("hello") === Left(
           NotFound("x: nodename nor servname provided, or not known")
         )

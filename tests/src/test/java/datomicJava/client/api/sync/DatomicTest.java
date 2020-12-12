@@ -79,7 +79,7 @@ public class DatomicTest extends Setup {
               > bin/run -m datomic.peer-server -h localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:dev://localhost:4334/hello
              */
 
-            Client client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998");
+            Client client = Datomic.clientPeerServer("k", "s", "localhost:8998");
 
             // Confirm that client is valid and can connect to a database
             client.connect("hello");
@@ -115,7 +115,7 @@ public class DatomicTest extends Setup {
             // Wrong endpoint
             NotFound wrongEndpoint = assertThrows(
                 NotFound.class,
-                () -> Datomic.clientPeerServer("myaccesskey", "mysecret", "x")
+                () -> Datomic.clientPeerServer("k", "s", "x")
                     .connect("hello")
             );
             assertThat(wrongEndpoint.msg(), is("x: nodename nor servname provided, or not known"));

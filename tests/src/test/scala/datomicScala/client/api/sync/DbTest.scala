@@ -56,8 +56,10 @@ class DbTest extends Spec {
   "Db lookup" >> {
 
     "Lookup as-of" in new Setup {
-
+      // Make sure there's at leas 1 ms between dates
+      Thread.sleep(5)
       val txReport4 = conn.transact(film4)
+      Thread.sleep(5)
       val txReport5 = conn.transact(film5)
       val db        = conn.db
 
@@ -135,8 +137,10 @@ class DbTest extends Spec {
 
 
     "Lookup since" in new Setup {
-
+      // Make sure there's at leas 1 ms between dates
+      Thread.sleep(5)
       val txReport4 = conn.transact(film4)
+      Thread.sleep(5)
       val txReport5 = conn.transact(film5)
       val db        = conn.db
 

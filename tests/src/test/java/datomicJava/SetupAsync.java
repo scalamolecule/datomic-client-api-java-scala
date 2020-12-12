@@ -39,7 +39,7 @@ public class SetupAsync extends SchemaAndData {
             resetDevLocalDb();
 
         } else if (system == "peer-server") {
-            client = AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998");
+            client = AsyncDatomic.clientPeerServer("k", "s", "localhost:8998");
             conn = ((Right<?, AsyncConnection>) client.connect("hello").get()).right_value();
             resetPeerServerDb();
 

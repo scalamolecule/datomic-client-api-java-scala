@@ -58,8 +58,10 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
   "Db lookup" >> {
 
     "Lookup as-of" in new AsyncSetup {
-
+      // Make sure there's at leas 1 ms between dates
+      Thread.sleep(5)
       val txReport4 = waitFor(conn.transact(film4)).toOption.get
+      Thread.sleep(5)
       val txReport5 = waitFor(conn.transact(film5)).toOption.get
       val db        = conn.db
 
@@ -137,8 +139,10 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
 
 
     "Lookup since" in new AsyncSetup {
-
+      // Make sure there's at leas 1 ms between dates
+      Thread.sleep(5)
       val txReport4 = waitFor(conn.transact(film4)).toOption.get
+      Thread.sleep(5)
       val txReport5 = waitFor(conn.transact(film5)).toOption.get
       val db        = conn.db
 

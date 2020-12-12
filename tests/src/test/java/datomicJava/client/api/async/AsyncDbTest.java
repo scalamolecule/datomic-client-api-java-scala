@@ -165,7 +165,10 @@ public class AsyncDbTest extends SetupAsync {
 
     @Test
     public void lookupSince() throws ExecutionException, InterruptedException {
+        // Make sure there's at leas 1 ms between dates
+        Thread.sleep(5);
         AsyncTxReport txReport4 = ((Right<?, AsyncTxReport>) conn.transact(film4).get()).right_value();
+        Thread.sleep(5);
         AsyncTxReport txReport5 = ((Right<?, AsyncTxReport>) conn.transact(film5).get()).right_value();
         AsyncDb db = conn.db();
 

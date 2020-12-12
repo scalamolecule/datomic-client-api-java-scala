@@ -36,7 +36,7 @@ public class Setup extends SchemaAndData {
             resetDevLocalDb();
 
         } else if (system == "peer-server") {
-            client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998");
+            client = Datomic.clientPeerServer("k", "s", "localhost:8998");
             conn = client.connect("hello");
             resetPeerServerDb();
 

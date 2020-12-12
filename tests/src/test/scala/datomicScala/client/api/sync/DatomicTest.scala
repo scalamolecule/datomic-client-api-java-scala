@@ -62,7 +62,7 @@ class DatomicTest extends Spec with AnomalyWrapper {
          */
 
         val client: Client =
-          Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
+          Datomic.clientPeerServer("k", "s", "localhost:8998")
 
         // Confirm that client is valid and can connect to a database
         client.connect("hello")
@@ -98,7 +98,7 @@ class DatomicTest extends Spec with AnomalyWrapper {
         }
 
         // Wrong endpoint
-        Datomic.clientPeerServer("myaccesskey", "mysecret", "x")
+        Datomic.clientPeerServer("k", "s", "x")
           .connect("hello") must throwA(
           NotFound("x: nodename nor servname provided, or not known")
         )

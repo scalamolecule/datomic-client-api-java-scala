@@ -70,8 +70,11 @@ public class DbTest extends Setup {
 
 
     @Test
-    public void lookupAsOf() {
+    public void lookupAsOf() throws InterruptedException {
+        // Make sure there's at leas 1 ms between dates
+        Thread.sleep(5);
         TxReport txReport4 = conn.transact(film4);
+        Thread.sleep(5);
         TxReport txReport5 = conn.transact(film5);
         Db db = conn.db();
 
@@ -149,8 +152,11 @@ public class DbTest extends Setup {
 
 
     @Test
-    public void lookupSince() {
+    public void lookupSince() throws InterruptedException {
+        // Make sure there's at leas 1 ms between dates
+        Thread.sleep(5);
         TxReport txReport4 = conn.transact(film4);
+        Thread.sleep(5);
         TxReport txReport5 = conn.transact(film5);
         Db db = conn.db();
 

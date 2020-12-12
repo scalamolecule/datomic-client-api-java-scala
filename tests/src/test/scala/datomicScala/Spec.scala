@@ -42,16 +42,7 @@ trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
   def setupPeerServer(): Unit = {
     system = "peer-server"
     try {
-      // With transactor, run two processes in separate tabs:
-      // process 1:
-      // bin/transactor config/samples/dev-transactor-template.properties
-      // process 2:
-      // bin/run -m datomic.peer-serverh localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:dev://localhost:4334/hello
-
-      // In-mem, run Peer Server:
-      // bin/run -m datomic.peer-server -a myaccesskey,mysecret -d hello,datomic:mem://hello
-
-      client = Datomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
+      client = Datomic.clientPeerServer("k", "s", "localhost:8998")
     } catch {
       case t: Throwable =>
         // Catch error from setup (suppressed during setup)

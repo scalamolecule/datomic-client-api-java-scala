@@ -30,6 +30,7 @@ trait SpecAsync extends Specification with SchemaAndData {
   override def map(fs: => Fragments): Fragments =
     step(setupDevLocal()) ^
       fs.mapDescription(d => Text(s"$system: " + d.show))
+  // todo: switch on when we can supply args as a map
   //          fs.mapDescription(d => Text(s"$system: " + d.show)) ^
   //          step(setupPeerServer()) ^
   //          fs.mapDescription(d => Text(s"$system: " + d.show))
@@ -44,7 +45,7 @@ trait SpecAsync extends Specification with SchemaAndData {
   def setupPeerServer(): Unit = {
     system = "peer-server"
     try {
-      client = AsyncDatomic.clientPeerServer("myaccesskey", "mysecret", "localhost:8998")
+      client = AsyncDatomic.clientPeerServer("k", "s", "localhost:8998")
     } catch {
       case t: Throwable =>
         // Catch error from setup (suppressed during setup)

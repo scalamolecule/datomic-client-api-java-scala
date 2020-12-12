@@ -4,7 +4,7 @@ import sbt.url
 
 lazy val commonSettings = Seq(
   name := "datomic-client-api-java-scala",
-  version := "0.5.2-SNAPSHOT",
+  version := "0.5.2",
   scalaVersion := "2.13.3",
   organization := "org.scalamolecule",
   organizationName := "ScalaMolecule",
@@ -77,7 +77,7 @@ lazy val tests = project.in(file("tests"))
     libraryDependencies ++= Seq(
       // To test against dev-local, please download from
       // https://cognitect.com/dev-tools and install locally per included instructions
-      "com.datomic" % "dev-local" % "0.9.225",
+      "com.datomic" % "dev-local" % "0.9.229",
       "org.specs2" %% "specs2-core" % "4.10.3" % Test,
       "com.novocode" % "junit-interface" % "0.11" % Test,
       "junit" % "junit" % "4.13" % Test,

@@ -134,22 +134,56 @@ Cognitect anomalies are thrown as runtime exceptions.
 
 ## Setup
 
-This library presumes that you have a Datomic installation downloaded. It can
-be a free/starter/pro version, although the free version is a bit behind and
-won't provide all functionality. It's recommended to download an up-to-date
- version of starter/pro. On older versions of Datomic, some functionality might
- not be available. The `qseq` method was added in version 1.0.6165 for instance.
-
-To use with dev-local, please download and install the [dev-tools][dev-tools].
-Running dev-local doesn't require a transactor process to be running.
-
-To use with peer-server, please start a [transactor][transactor] first and then 
-a [Peer Server][peer-server].
-
-Clone the project and open in your IDE to explore.
+Clone this project and open in your IDE to explore.
 ```
 git clone https://github.com/scalamolecule/datomic-client-api-java-scala.git
 ```
+
+This library presumes that you have a Datomic installation downloaded. It can
+be a free/starter/pro version, although the free version is a bit behind and
+won't provide all functionality. It's recommended to download an up-to-date
+ version of [starter/pro][download-datomic-pro]. On older versions of Datomic, 
+some functionality might not be available. The `qseq` method was added in 
+version 1.0.6165 for instance.
+
+Start by creating a test database `hello` from within the Datomic 
+installation folder. This only have to be done once:
+
+    cd <datomic-installation>
+
+    // Create `hello` database (if it has not already been created)
+    bin/shell
+    datomic % Peer.createDatabase("datomic:dev://localhost:4334/hello");
+    <ctrl-c>
+
+### Peer-server in-mem
+
+Running a peer-server in-mem doesn't require a transactor process to be running.
+So you can simply start the Peer Server directly from within the datomic
+installation directory:
+
+    bin/run -m datomic.peer-server -a k,s -d hello,datomic:mem://hello
+
+
+### Peer-server against transactor
+
+To use a peer-server against a transacor, please start a [transactor][transactor] 
+in one process, and the [Peer Server][peer-server] in another process:
+
+process 1:
+
+    bin/transactor config/samples/dev-transactor-template.properties
+
+process 2:
+
+    bin/run -m datomic.peer-server -h localhost -p 8998 -a k,s -d hello,datomic:dev://localhost:4334/hello
+
+
+### Dev-local / Cloud
+
+To run tests against dev-local, please download the [dev-tools][dev-tools] and
+follow the instructions to install on your local machine.
+
 
 ## Testing
 
@@ -161,7 +195,8 @@ Run the Scala tests by right-clicking on the `test.scala.datomicScala.client` pa
 in the project view (in IntelliJ) and choose Run -> Specs2 in 'client' (or run 
 individual tests similarly).
 
-### Temporary limitation
+
+#### Temporary limitation
 Due to a bug in the Peer Server async implementation, all asynchronous Peer 
 Server tests won't pass since we can't build a Client with map data. Hopefully
 this will be solved soon, and then all asynchronous Peer Server tests should pass.
@@ -176,24 +211,24 @@ Add Java dependency in POM file:
 <dependency>
     <groupId>org.scalamolecule</groupId>
     <artifactId>datomic-client-api-java-scala</artifactId>
-    <version>0.5.1</version>
+    <version>0.5.2</version>
 </dependency>
 
 <!-- If using dev-local -->
 <dependency>
     <groupId>com.datomic</groupId>
     <artifactId>dev-local</artifactId>
-    <version>0.9.225</version>
+    <version>0.9.229</version>
 </dependency>
 ```
 
 Add Scala dependency in sbt build file:
 ```
 libraryDependencies ++= Seq(
-  "org.scalamolecule" % "datomic-client-api-java-scala" % "0.5.1",
+  "org.scalamolecule" % "datomic-client-api-java-scala" % "0.5.2",
   
   // If using dev-local
-  "com.datomic" % "dev-local" % "0.9.225"
+  "com.datomic" % "dev-local" % "0.9.229"
 )
 ```
 
@@ -222,6 +257,7 @@ Marc Grue. Licensed under the [Apache License 2.0][apache2].
 [code Db]: https://github.com/scalamolecule/datomic-client-api-java-scala/blob/master/src/main/scala/datomicScala/client/api/sync/Db.scala
 
 [dev-tools]: https://docs.datomic.com/cloud/dev-local.html
+[download-datomic-pro]: https://my.datomic.com/downloads/pro
 [peer-server]: https://docs.datomic.com/on-prem/peer-server.html
 [transactor]: https://docs.datomic.com/on-prem/transactor.html
 [apache2]: http://en.wikipedia.org/wiki/Apache_license
