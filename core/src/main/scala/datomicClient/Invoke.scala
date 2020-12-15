@@ -309,11 +309,15 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
   def pull(
     datomicDb: AnyRef,
     selector: String,
-    eid: Any,
+    eid0: Any,
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
   ): AnyRef = catchAnomaly {
+    val eid = eid0 match {
+      case l: jList[_] => edn(l)
+      case number      => number
+    }
     val argsMap = read(
       s"""{
          |:selector $selector
