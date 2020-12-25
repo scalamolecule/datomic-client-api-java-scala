@@ -10,8 +10,8 @@ This project contains thin Java and Scala facades to the
 You can then use the various Datomic systems depending on the Client api from 
 Java and Scala: 
 
-- Dev local
 - Peer Server
+- Dev local
 - Cloud
 
 Using the facade in a live Cloud setting has not yet been tested. But since 
@@ -147,7 +147,7 @@ some functionality might not be available. The `qseq` method was added in
 version 1.0.6165 for instance.
 
 Start by creating a test database `hello` from within the Datomic 
-installation folder. This only have to be done once:
+installation folder. This only has to be done once:
 
     cd <datomic-installation>
 
@@ -195,6 +195,24 @@ Run the Scala tests by right-clicking on the `test.scala.datomicScala.client` pa
 in the project view (in IntelliJ) and choose Run -> Specs2 in 'client' (or run 
 individual tests similarly).
 
+Or run tests with sbt:
+```
+sbt
+
+// Single test
+sbt:datomic-client-api-java-scala> testOnly datomicScala.client.api.sync.DatomicTest
+
+// Tests for Java
+sbt:datomic-client-api-java-scala> testOnly datomicJava.client.api.*
+
+// Tests for Scala 2.13 (default)
+sbt:datomic-client-api-java-scala> testOnly datomicScala.client.api.*
+
+// Tests for scala 2.12
+sbt:datomic-client-api-java-scala> ++2.12.12; testOnly datomicJava.client.api.*
+sbt:datomic-client-api-java-scala> ++2.12.12; testOnly datomicScala.client.api.*
+```
+
 
 #### Temporary limitation
 Due to a bug in the Peer Server async implementation, all asynchronous Peer 
@@ -211,7 +229,7 @@ Add Java dependency in POM file:
 <dependency>
     <groupId>org.scalamolecule</groupId>
     <artifactId>datomic-client-api-java-scala</artifactId>
-    <version>0.5.3</version>
+    <version>0.6.0</version>
 </dependency>
 
 <!-- If using dev-local -->
@@ -220,20 +238,31 @@ Add Java dependency in POM file:
     <artifactId>dev-local</artifactId>
     <version>0.9.229</version>
 </dependency>
+
+<!-- If using peer-server -->
+<dependency>
+    <groupId>com.datomic</groupId>
+    <artifactId>datomic-pro</artifactId>
+    <version>1.0.6222</version>
+</dependency>
 ```
 
-Add Scala dependency in sbt build file:
+Add Scala dependency in sbt build file (crosscompiles to Scala 2.12 and 2.13):
 ```
 libraryDependencies ++= Seq(
-  "org.scalamolecule" % "datomic-client-api-java-scala" % "0.5.3",
+  "org.scalamolecule" %% "datomic-client-api-java-scala" % "0.6.0",
   
   // If using dev-local
-  "com.datomic" % "dev-local" % "0.9.229"
+  "com.datomic" % "dev-local" % "0.9.229",
+  
+  // If using peer-server
+  "com.datomic" % "datomic-pro" % "1.0.6222"
 )
 ```
 
 To use dev-local, please download from https://cognitect.com/dev-tools and install 
-locally per included instructions.
+locally per included instructions and same for 
+[datomic pro](https://www.datomic.com/get-datomic.html).
 
 
 ## Author / License

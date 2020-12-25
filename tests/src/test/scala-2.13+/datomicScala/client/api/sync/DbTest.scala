@@ -1,23 +1,23 @@
-package datomicScala.client.api.async
+package datomicScala.client.api.sync
 
+import java.util
 import java.util.stream.{Stream => jStream}
 import java.util.{Map => jMap}
-import clojure.lang.{PersistentArrayMap, PersistentVector}
+import clojure.lang.{IPersistentMap, PersistentVector}
 import datomic.Util
 import datomic.Util._
 import datomicClient.ErrorMsg
-import datomicClient.anomaly.AnomalyWrapper
-import datomicScala.SpecAsync
+import datomicClient.anomaly.Interrupted
+import datomicScala.Spec
 import datomicScala.client.api.{Datom, DbStats}
 import scala.jdk.CollectionConverters._
 import scala.jdk.StreamConverters._
 
 
-class AsyncDbTest extends SpecAsync with AnomalyWrapper {
+class DbTest extends Spec {
 
-  "stats" in new AsyncSetup {
-    val db: AsyncDb = conn.db
-
+  "stats" in new Setup {
+    val db: Db = conn.db
     db.dbName === "hello"
     db.t === tAfter
     db.asOfT === 0
@@ -25,7 +25,7 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
     db.isHistory === false
 
     if (isDevLocal) {
-      waitFor(db.dbStats).toOption.get === DbStats(
+      db.dbStats === DbStats(
         243,
         Some(Map(
           ":db.install/partition" -> 3,
@@ -48,21 +48,20 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
     } else {
       // Peer server db is not re-created on each test,
       // so we can only test some stable values
-      val dbStats = waitFor(db.dbStats).toOption.get
-      dbStats.datoms >= 0
-      dbStats.attrs.get(":db.install/partition") === 3
+      db.dbStats.datoms >= 0
+      db.dbStats.attrs.get(":db.install/partition") === 3
     }
   }
 
 
   "Db lookup" >> {
 
-    "Lookup as-of" in new AsyncSetup {
+    "Lookup as-of" in new Setup {
       // Make sure there's at leas 1 ms between dates
       Thread.sleep(5)
-      val txReport4 = waitFor(conn.transact(film4)).toOption.get
+      val txReport4 = conn.transact(film4)
       Thread.sleep(5)
-      val txReport5 = waitFor(conn.transact(film5)).toOption.get
+      val txReport5 = conn.transact(film5)
       val db        = conn.db
 
       val t4basis = txReport4.basisT
@@ -138,12 +137,12 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
     }
 
 
-    "Lookup since" in new AsyncSetup {
+    "Lookup since" in new Setup {
       // Make sure there's at leas 1 ms between dates
       Thread.sleep(5)
-      val txReport4 = waitFor(conn.transact(film4)).toOption.get
+      val txReport4 = conn.transact(film4)
       Thread.sleep(5)
-      val txReport5 = waitFor(conn.transact(film5)).toOption.get
+      val txReport5 = conn.transact(film5)
       val db        = conn.db
 
       val t4basis = txReport4.basisT
@@ -222,7 +221,7 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
     }
 
 
-    "Lookup history" in new AsyncSetup {
+    "Lookup history" in new Setup {
       val db = conn.db
       db.history.dbName === "hello"
       db.history.t === tAfter
@@ -233,8 +232,7 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
   }
 
 
-  "as-of" in new AsyncSetup {
-
+  "as-of" in new Setup {
     // Current state
     films(conn.db) === threeFilms
 
@@ -253,7 +251,7 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
   }
 
 
-  "since" in new AsyncSetup {
+  "since" in new Setup {
     // State created since previous t
     films(conn.db.since(tBefore)) === threeFilms
     films(conn.db.since(txBefore)) === threeFilms
@@ -266,48 +264,49 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
   }
 
 
-  "with" in new AsyncSetup {
+  "with" in new Setup {
     // Original state
     films(conn.db) === threeFilms
 
     // Test adding a 4th film
     // OBS: Note that a `conn.withDb` has to be passed initially!
-    val txReport4films = waitFor(conn.db.`with`(conn.withDb, film4)).toOption.get
+    val txReport4films = conn.db.`with`(conn.withDb, film4)
     val db4Films       = txReport4films.dbAfter
     films(db4Films) === fourFilms
 
     // Add 5th film by passing with-modified Db
-    val txReport5films = waitFor(conn.db.`with`(db4Films, film5)).toOption.get
+    val txReport5films = conn.db.`with`(db4Films, film5)
     val db5Films       = txReport5films.dbAfter
     films(db5Films) === fiveFilms
 
     // Add 6th film by passing with-modified Db from TxReport
-    val txReport6films = waitFor(conn.db.`with`(txReport5films, film6)).toOption.get
+    val txReport6films = conn.db.`with`(txReport5films, film6)
     val db6Films       = txReport6films.dbAfter
     films(db6Films) === sixFilms
 
     // Combining `with` and `asOf`
     // todo: peer-server doesn't allow combining `with` filter with other filters
-    films(db6Films.asOf(txReport5films.tx)) === fiveFilms
+    if (system == "dev-local")
+      films(db6Films.asOf(txReport5films.tx)) === fiveFilms
 
     // Original state is unaffected
     films(conn.db) === threeFilms
   }
 
 
-  "with - single invocation" in new AsyncSetup {
+  "with - single invocation" in new Setup {
     // As a convenience, a single-invocation shorter version of `with`:
-    films(waitFor(conn.widh(film4)).toOption.get) === fourFilms
+    films(conn.widh(film4)) === fourFilms
 
     // Applying another data set still augments the original db
-    films(waitFor(conn.widh(film5)).toOption.get) === (threeFilms :+ "Film 5").sorted
+    films(conn.widh(film5)) === (threeFilms :+ "Film 5").sorted
 
     // Current state is unaffected
     films(conn.db) === threeFilms
   }
 
 
-  "history" in new AsyncSetup {
+  "history" in new Setup {
 
     // Not testing Peer Server history since history is accumulating when we
     // can't re-create database for each test without shutting down Peer Server.
@@ -315,28 +314,28 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
     if (isDevLocal) {
 
       // Current and history db are currently the same
-      films(conn.db) == threeFilms
-      films(conn.db.history) == threeFilms
+      films(conn.db) === threeFilms
+      films(conn.db.history) === threeFilms
 
       // As long as we only add data, current/history will be the same
-      val tx = waitFor(conn.transact(film4)).toOption.get
-      films(conn.db) == fourFilms
-      films(conn.db.history) == fourFilms
+      val tx = conn.transact(film4)
+      films(conn.db) === fourFilms
+      films(conn.db.history) === fourFilms
 
       // Now retract the last entity
       val retractedEid = tx.txData.toScala(List).last.e
-      waitFor(conn.transact(list(list(read(":db/retractEntity"), retractedEid))))
-      films(conn.db) == threeFilms
-      films(conn.db.history) == fourFilms
+      conn.transact(list(list(read(":db/retractEntity"), retractedEid)))
+      films(conn.db) === threeFilms
+      films(conn.db.history) === fourFilms
 
       // History of movie title assertions and retractions
-      waitFor(AsyncDatomic.q(
+      Datomic.q(
         """[:find ?movie-title ?tx ?added
           |:where [_ :movie/title ?movie-title ?tx ?added]]""".stripMargin,
 
         // Use history database
         conn.db.history
-      )).head.toOption.get.iterator().asScala.toList
+      ).asInstanceOf[PersistentVector].asScala.toList
         .map { row =>
           val List(v, tx, added) = row.asInstanceOf[PersistentVector].asScala.toList
           (v.toString, tx.asInstanceOf[Long], added.asInstanceOf[Boolean])
@@ -362,44 +361,44 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
     // Datoms from specified index
     // Optionally filter by components of the index.
 
-    "datoms AVET" in new AsyncSetup {
+    "datoms AVET" in new Setup {
 
       // AVET index is sorted by
       // Attribute (id, not name!) - Value - Entity id - Transaction id
 
       // Supply A value (as clojure.lang.Keyword)
       // Get all datoms of attribute :movie/title
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":avet",
         list(read(":movie/title"))
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true),
         Datom(e3, a1, "Repo Man", txAfter, true),
         Datom(e1, a1, "The Goonies", txAfter, true)
       )
 
       // A and V
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":avet",
         list(read(":movie/title"), "Commando")
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true)
       )
 
       // A, V and E (e2 is the eid of the Commando film entity)
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":avet",
         list(read(":movie/title"), "Commando", e2)
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true)
       )
 
       // A, V, E and T (tAfter is the time point of the film saving tx)
       // Time point T can be a t or tx (not a txInstant / Date)
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":avet",
         list(read(":movie/title"), "Commando", e2, tAfter)
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true)
       )
 
@@ -407,119 +406,121 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
       if (system == "dev-local") {
         // We can supply an empty components list and get the entire (!) db (requires
         // though to set limit = -1)
-        waitFor(conn.db.datoms(
+        conn.db.datoms(
           ":avet",
           list(),
           limit = -1 // to fetch all!
-        )).toOption.get.toScala(List).size === 243
+        ).toScala(List).size === 243
       }
 
       // limit number of datoms returned
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":avet",
         list(read(":movie/title")),
         limit = 2
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true),
-        Datom(e3, a1, "Repo Man", txAfter, true),
+        Datom(e3, a1, "Repo Man", txAfter, true)
       )
 
       // Add offset for first datom in index to return
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":avet",
         list(read(":movie/title")),
         offset = 1,
         limit = 2
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e3, a1, "Repo Man", txAfter, true),
         Datom(e1, a1, "The Goonies", txAfter, true)
       )
     }
 
 
-    "datoms EAVT" in new AsyncSetup {
+    "datoms EAVT" in new Setup {
 
       // EAVT index is sorted by
       // Entity id - Attribute id (not name!) - Value - Transaction id
 
       // E - Get all datoms of entity e2
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":eavt",
         list(e2)
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true),
         Datom(e2, a2, "thriller/action", txAfter, true),
         Datom(e2, a3, 1985, txAfter, true)
       )
 
       // EA
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":eavt",
         list(e2, read(":movie/title"))
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true)
       )
 
       // EAV
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":eavt",
         list(e2, read(":movie/title"), "Commando")
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true)
       )
 
       // EAVT
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":eavt",
         list(e2, read(":movie/title"), "Commando", txAfter)
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true)
       )
     }
 
 
-    "datoms AEVT" in new AsyncSetup {
+    "datoms AEVT" in new Setup {
 
       // AEVT index is sorted by
       // Attribute id (not name!) - Entity id - Value - Transaction id
 
       // A
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":aevt",
         list(read(":movie/title"))
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e1, a1, "The Goonies", txAfter, true),
         Datom(e2, a1, "Commando", txAfter, true),
         Datom(e3, a1, "Repo Man", txAfter, true),
       )
 
       // AE
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":aevt",
         list(read(":movie/title"), e2)
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true)
       )
 
       // AEV
-      waitFor(conn.db.datoms(
+      conn.db.datoms(
         ":aevt",
         list(read(":movie/title"), e2, "Commando")
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true)
       )
 
       // AEVT
-      waitFor(conn.db.datoms(
+//      val l = list(read(":movie/title"), e2, "Commando", txAfter)
+
+      conn.db.datoms(
         ":aevt",
         list(read(":movie/title"), e2, "Commando", txAfter)
-      )).toOption.get.toScala(List) === List(
+      ).toScala(List) === List(
         Datom(e2, a1, "Commando", txAfter, true)
       )
     }
 
 
-    "datoms VAET" in new AsyncSetup {
+    "datoms VAET" in new Setup {
 
       // The VAET index is for following relationships in reverse.
       // No ref type is defined here, but it follows the same pattern as
@@ -541,26 +542,30 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
     timeout: Int = 0,
     offset: Int = 0,
     limit: Int = 1000
-  ): List[String] = waitFor(conn.db.indexRange(
+  ): List[String] = conn.db.indexRange(
     attrId, startValue, endValue, timeout, offset, limit
-  )).toOption.get.toScala(List).map(_.v.toString)
+  ).toScala(List).map(_.v.toString)
 
 
-  "indexRange" in new AsyncSetup {
+  "indexRange" in new Setup {
+
     // Datoms from AVET index sorted by attribute-value-entity-tx
 
+    // indexRange allows to narrow the datoms selection withing a value range
+    // from start value, inclusive, until end value, exclusive.
+
     // This retrieves the first 1000 datoms for :movie/title
-    waitFor(conn.db.indexRange(":movie/title")).toOption.get.toScala(List).sortBy(_.e) === List(
-      Datom(e1, a1, "The Goonies", txAfter, true),
+    conn.db.indexRange(":movie/title").toScala(List) === List(
       Datom(e2, a1, "Commando", txAfter, true),
       Datom(e3, a1, "Repo Man", txAfter, true),
+      Datom(e1, a1, "The Goonies", txAfter, true),
     )
 
     // Retrieve all (!) datoms for :movie/title (in this case just 3)
-    waitFor(conn.db.indexRange(":movie/title", limit = -1)).toOption.get.toScala(List).sortBy(_.e) === List(
-      Datom(e1, a1, "The Goonies", txAfter, true),
+    conn.db.indexRange(":movie/title", limit = -1).toScala(List) === List(
       Datom(e2, a1, "Commando", txAfter, true),
       Datom(e3, a1, "Repo Man", txAfter, true),
+      Datom(e1, a1, "The Goonies", txAfter, true),
     )
 
     // For brevity, only the v value of the datoms is shown below...
@@ -617,37 +622,31 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
   }
 
 
-  "pull" in new AsyncSetup {
-    waitFor(conn.db.pull("[*]", e3)).toOption.get.toString ===
+  "pull" in new Setup {
+    conn.db.pull("[*]", e3).toString ===
       s"""{:db/id $e3, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
 
-    waitFor(conn.db.pull("[*]", e3, 1000)).toOption.get.toString ===
+    conn.db.pull("[*]", e3, 1000).toString ===
       s"""{:db/id $e3, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
 
     // dev-local in-memory db will pull within 1 ms
-    if (!isDevLocal)
-      waitFor(conn.db.pull("[*]", e3, 1)).toOption.get must throwA(
-        new clojure.lang.ExceptionInfo(
-          "Datomic Client Timeout",
-          new PersistentArrayMap(
-            Array(
-              read(":cognitect.anomalies/category"), read(":cognitect.anomalies/interrupted"),
-              read(":cognitect.anomalies/message"), "Datomic Client Timeout"
-            )
-          )
-        )
+    if (!isDevLocal) {
+      conn.db.pull("[*]", e3, 1) must throwA(
+        Interrupted("Datomic Client Timeout")
       )
+    }
   }
 
 
-  "indexPull" in new AsyncSetup {
+  // since 1.0.61.65
+  "indexPull" in new Setup {
 
-    // Pull lazy java Stream of indexes
-    val javaStream: jStream[_] = waitFor(conn.db.indexPull(
+    // Pull from :avet index
+    val javaStream: jStream[_] = conn.db.indexPull(
       ":avet",
       "[:movie/title :movie/release-year]",
       "[:movie/release-year 1985]"
-    )).toOption.get
+    )
 
     // Lazily convert to scala LazyList
     val scalaLazyList: LazyList[Any] = javaStream.toScala(LazyList)
@@ -660,7 +659,7 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
     val firstFilm = scalaLazyList.head
 
     // The underlying type of pulled indexes are clojure.lang.PersistentArrayMaps
-    // that need to be cast to java Maps before we can be access values of the map.
+    // that need to be cast to java Maps before we can access values of the map.
     firstFilm.getClass === classOf[clojure.lang.PersistentArrayMap]
     val firstFilmMap = firstFilm.asInstanceOf[jMap[_, _]]
 

@@ -36,7 +36,7 @@ public class AsyncDatomicTest extends SetupAsync {
             add path to where you want to save data as per instructions in link above
 
             Add dependency to dev-local in your project
-            "com.datomic" % "dev-local" % "0.9.195",
+            "com.datomic" % "dev-local" % "0.9.229",
 
             As long dev-local has a dependency on clojure 1.10.0-alpha4
             we also need to import a newer version of clojure
@@ -47,7 +47,7 @@ public class AsyncDatomicTest extends SetupAsync {
 
             // Retrieve client for a specific system
             // (this one has been created in SetupSpec)
-            AsyncClient client = AsyncDatomic.clientDevLocal("Hello system name");
+            AsyncClient client = AsyncDatomic.clientDevLocal("test-datomic-client-api-java");
 
             // Confirm that client is valid and can connect to a database
             client.connect("hello");
@@ -63,7 +63,7 @@ public class AsyncDatomicTest extends SetupAsync {
             // Wrong db name
             assertThat(
                 ((Left<CognitectAnomaly, ?>) AsyncDatomic
-                    .clientDevLocal("Hello system name").connect("y").get()
+                    .clientDevLocal("test-datomic-client-api-java").connect("y").get()
                 ).left_value().getMessage(),
                 is("Db not found: y")
             );
@@ -77,7 +77,6 @@ public class AsyncDatomicTest extends SetupAsync {
               > bin/transactor config/samples/free-transactor-template.properties
 
               2. Create sample db 'hello' by running 'create hello db' test (only) in CreateTestDb
-              Peer.createDatabase("datomic:free://localhost:4334/hello")
 
               Start Peer Server for some existing database (like `hello` here)
               > bin/run -m datomic.peer-server -h localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:dev://localhost:4334/hello

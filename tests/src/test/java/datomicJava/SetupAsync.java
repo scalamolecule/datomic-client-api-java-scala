@@ -35,7 +35,7 @@ public class SetupAsync extends SchemaAndData {
     @Before
     public void setUp() throws ExecutionException, InterruptedException {
         if (system == "dev-local") {
-            client = AsyncDatomic.clientDevLocal("Hello system name");
+            client = AsyncDatomic.clientDevLocal("test-datomic-client-api-java");
             resetDevLocalDb();
 
         } else if (system == "peer-server") {

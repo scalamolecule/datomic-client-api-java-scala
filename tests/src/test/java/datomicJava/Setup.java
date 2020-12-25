@@ -32,7 +32,7 @@ public class Setup extends SchemaAndData {
     @Before
     public void setUp() {
         if (system == "dev-local") {
-            client = Datomic.clientDevLocal("Hello system name");
+            client = Datomic.clientDevLocal("test-datomic-client-api-java");
             resetDevLocalDb();
 
         } else if (system == "peer-server") {

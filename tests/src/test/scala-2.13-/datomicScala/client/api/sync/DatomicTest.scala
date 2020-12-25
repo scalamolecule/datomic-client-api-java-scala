@@ -20,7 +20,7 @@ class DatomicTest extends Spec with AnomalyWrapper {
           add path to where you want to save data as per instructions in link above
 
           Add dependency to dev-local in your project
-          "com.datomic" % "dev-local" % "0.9.195",
+          "com.datomic" % "dev-local" % "0.9.229",
 
           As long dev-local has a dependency on clojure 1.10.0-alpha4
           we also need to import a newer version of clojure
@@ -31,7 +31,7 @@ class DatomicTest extends Spec with AnomalyWrapper {
 
         // Retrieve client for a specific system
         // (this one has been created in SetupSpec)
-        val client: Client = Datomic.clientDevLocal("Hello system name")
+        val client: Client = Datomic.clientDevLocal("test-datomic-client-api-scala-2.12")
 
         // Confirm that client is valid and can connect to a database
         client.connect("hello")
@@ -42,7 +42,7 @@ class DatomicTest extends Spec with AnomalyWrapper {
         )
 
         // Wrong db name
-        Datomic.clientDevLocal("Hello system name").connect("y") must throwA(
+        Datomic.clientDevLocal("test-datomic-client-api-scala-2.12").connect("y") must throwA(
           NotFound("Db not found: y")
         )
       }
@@ -52,13 +52,14 @@ class DatomicTest extends Spec with AnomalyWrapper {
           To run tests against a Peer Server do these 3 steps first:
 
           1. Start transactor
-          > bin/transactor config/samples/free-transactor-template.properties
+          > bin/transactor config/samples/dev-transactor-template.properties
 
           2. Create sample db 'hello' by running 'create hello db' test (only) in CreateTestDb
-          Peer.createDatabase("datomic:free://localhost:4334/hello")
 
           Start Peer Server for some existing database (like `hello` here)
-          > bin/run -m datomic.peer-server -h localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:dev://localhost:4334/hello
+          > bin/run -m datomic.peer-server -a k,s -d hello,datomic:mem://hello
+          or
+          > bin/run -m datomic.peer-server -h localhost -p 8998 -a k,s -d hello,datomic:dev://localhost:4334/hello
          */
 
         val client: Client =
@@ -187,7 +188,7 @@ class DatomicTest extends Spec with AnomalyWrapper {
         """[:find ?movie-title
           |:where [_ :movie/title ?movie-title]]""".stripMargin,
         read(":args"), list(conn.db.datomicDb),
-        read(":limit"), 2,
+        read(":limit"), 2: java.lang.Integer,
       )
     ) === list(list("Commando"), list("The Goonies"))
 
@@ -198,9 +199,9 @@ class DatomicTest extends Spec with AnomalyWrapper {
         """[:find ?movie-title
           |:where [_ :movie/title ?movie-title]]""".stripMargin,
         read(":args"), list(conn.db.datomicDb),
-        read(":offset"), 1,
-        read(":limit"), 1,
-        read(":timeout"), 2000
+        read(":offset"), 1.asInstanceOf[Object],
+        read(":limit"), 1.asInstanceOf[Object],
+        read(":timeout"), 2000.asInstanceOf[Object]
       )
     ) === list(list("The Goonies"))
   }
@@ -214,7 +215,7 @@ class DatomicTest extends Spec with AnomalyWrapper {
       """[:find ?movie-title
         |:where [_ :movie/title ?movie-title]]""".stripMargin,
       conn.db
-    ) === LazyList(list("Commando"), list("The Goonies"), list("Repo Man"))
+    ) === Stream(list("Commando"), list("The Goonies"), list("Repo Man"))
 
 
     // qseq query & args / data structure
@@ -224,7 +225,7 @@ class DatomicTest extends Spec with AnomalyWrapper {
         read(":where"), list(read("_"), read(":movie/title"), read("?title"))
       ),
       conn.db
-    ) === LazyList(list("Commando"), list("The Goonies"), list("Repo Man"))
+    ) === Stream(list("Commando"), list("The Goonies"), list("Repo Man"))
 
     // qseq arg-map / String
     Datomic.qseq(
@@ -234,7 +235,7 @@ class DatomicTest extends Spec with AnomalyWrapper {
           |:where [_ :movie/title ?movie-title]]""".stripMargin,
         read(":args"), list(conn.db.datomicDb),
       )
-    ) === LazyList(list("Commando"), list("The Goonies"), list("Repo Man"))
+    ) === Stream(list("Commando"), list("The Goonies"), list("Repo Man"))
 
     // arg-map / data structure
     Datomic.qseq(
@@ -245,7 +246,7 @@ class DatomicTest extends Spec with AnomalyWrapper {
         ),
         read(":args"), list(conn.db.datomicDb)
       )
-    ) === LazyList(list("Commando"), list("The Goonies"), list("Repo Man"))
+    ) === Stream(list("Commando"), list("The Goonies"), list("Repo Man"))
 
     // arg-map / String with :limit
     Datomic.qseq(
@@ -254,9 +255,9 @@ class DatomicTest extends Spec with AnomalyWrapper {
         """[:find ?movie-title
           |:where [_ :movie/title ?movie-title]]""".stripMargin,
         read(":args"), list(conn.db.datomicDb),
-        read(":limit"), 2,
+        read(":limit"), 2.asInstanceOf[Object],
       )
-    ) === LazyList(list("Commando"), list("The Goonies"))
+    ) === Stream(list("Commando"), list("The Goonies"))
 
     // arg-map / String with :offset, :limit :timeout
     Datomic.qseq(
@@ -265,10 +266,10 @@ class DatomicTest extends Spec with AnomalyWrapper {
         """[:find ?movie-title
           |:where [_ :movie/title ?movie-title]]""".stripMargin,
         read(":args"), list(conn.db.datomicDb),
-        read(":offset"), 1,
-        read(":limit"), 1,
-        read(":timeout"), 2000,
+        read(":offset"), 1.asInstanceOf[Object],
+        read(":limit"), 1.asInstanceOf[Object],
+        read(":timeout"), 2000.asInstanceOf[Object],
       )
-    ) === LazyList(list("The Goonies"))
+    ) === Stream(list("The Goonies"))
   }
 }

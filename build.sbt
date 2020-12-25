@@ -4,8 +4,9 @@ import sbt.url
 
 lazy val commonSettings = Seq(
   name := "datomic-client-api-java-scala",
-  version := "0.5.3",
-  scalaVersion := "2.13.3",
+  version in ThisBuild := "0.6.0",
+  crossScalaVersions := Seq("2.12.12", "2.13.4"),
+  scalaVersion in ThisBuild := "2.13.4",
   organization := "org.scalamolecule",
   organizationName := "ScalaMolecule",
   organizationHomepage := Some(url("http://www.scalamolecule.org")),
@@ -21,7 +22,14 @@ lazy val commonSettings = Seq(
     ("ICM repository" at "http://maven.icm.edu.pl/artifactory/repo/").withAllowInsecureProtocol(true),
     mavenLocal
   ),
-  crossPaths := false,
+  unmanagedSourceDirectories in Compile ++= {
+    (unmanagedSourceDirectories in Compile).value.map { dir =>
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 13)) => file(dir.getPath ++ "-2.13+")
+        case _             => file(dir.getPath ++ "-2.13-")
+      }
+    }
+  }
 )
 
 lazy val core = project.in(file("core"))
@@ -74,14 +82,27 @@ lazy val tests = project.in(file("tests"))
     publish / skip := true,
     publish := ((): Unit),
     publishLocal := ((): Unit),
+    parallelExecution in Test := false,
     libraryDependencies ++= Seq(
-      // To test against dev-local, please download from
-      // https://cognitect.com/dev-tools and install locally per included instructions
+      // To test against dev-local, please download cognitect-dev-tools from
+      // https://cognitect.com/dev-tools and run `./install`
       "com.datomic" % "dev-local" % "0.9.229",
+      // To test against peer-server, please download datomic-pro from
+      // https://www.datomic.com/get-datomic.html and run `bin/maven-install`
+      "com.datomic" % "datomic-pro" % "1.0.6222",
       "org.specs2" %% "specs2-core" % "4.10.3" % Test,
       "com.novocode" % "junit-interface" % "0.11" % Test,
       "junit" % "junit" % "4.13" % Test,
       "org.hamcrest" % "hamcrest-junit" % "2.0.0.0" % Test
-    )
+    ),
+    excludeDependencies += ExclusionRule("com.datomic", "datomic-free"),
+    unmanagedSourceDirectories in Test ++= {
+      (unmanagedSourceDirectories in Test).value.map { dir =>
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 13)) => file(dir.getPath ++ "-2.13+")
+          case _             => file(dir.getPath ++ "-2.13-")
+        }
+      }
+    }
   ))
 

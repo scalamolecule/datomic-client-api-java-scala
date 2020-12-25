@@ -34,7 +34,7 @@ public class DatomicTest extends Setup {
             add path to where you want to save data as per instructions in link above
 
             Add dependency to dev-local in your project
-            "com.datomic" % "dev-local" % "0.9.195",
+            "com.datomic" % "dev-local" % "0.9.229",
 
             As long dev-local has a dependency on clojure 1.10.0-alpha4
             we also need to import a newer version of clojure
@@ -45,7 +45,7 @@ public class DatomicTest extends Setup {
 
             // Retrieve client for a specific system
             // (this one has been created in SetupSpec)
-            Client client = Datomic.clientDevLocal("Hello system name");
+            Client client = Datomic.clientDevLocal("test-datomic-client-api-java");
 
             // Confirm that client is valid and can connect to a database
             client.connect("hello");
@@ -60,7 +60,7 @@ public class DatomicTest extends Setup {
             // Wrong db name
             NotFound wrongDbName = assertThrows(
                 NotFound.class,
-                () -> Datomic.clientDevLocal("Hello system name").connect("y")
+                () -> Datomic.clientDevLocal("test-datomic-client-api-java").connect("y")
             );
             assertThat(wrongDbName.msg(), is("Db not found: y"));
 
@@ -70,13 +70,14 @@ public class DatomicTest extends Setup {
               To run tests against a Peer Server do these 3 steps first:
 
               1. Start transactor
-              > bin/transactor config/samples/free-transactor-template.properties
+              > bin/transactor config/samples/dev-transactor-template.properties
 
               2. Create sample db 'hello' by running 'create hello db' test (only) in CreateTestDb
-              Peer.createDatabase("datomic:free://localhost:4334/hello")
 
               Start Peer Server for some existing database (like `hello` here)
-              > bin/run -m datomic.peer-server -h localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:dev://localhost:4334/hello
+              > bin/run -m datomic.peer-server -a k,s -d hello,datomic:mem://hello
+              or
+              > bin/run -m datomic.peer-server -h localhost -p 8998 -a k,s -d hello,datomic:dev://localhost:4334/hello
              */
 
             Client client = Datomic.clientPeerServer("k", "s", "localhost:8998");

@@ -55,6 +55,8 @@ class ConnectionTest extends Spec {
     // Getting all transactions (!) -----------------------------------
 
     val iterable: Iterable[(Long, Iterable[Datom])] = conn.txRange()
+
+    // OBS: if this doesn't pass, try restarting the peer server
     iterable.last._1 === tAfter
     iterable.last._2.toList === List(
       Datom(txAfter, 50, txInstAfter, txAfter, true),

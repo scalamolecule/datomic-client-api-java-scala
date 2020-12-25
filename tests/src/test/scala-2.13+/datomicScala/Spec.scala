@@ -24,14 +24,14 @@ trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
 
   override def map(fs: => Fragments): Fragments =
     step(setupDevLocal()) ^
-        fs.mapDescription(d => Text(s"$system: " + d.show)) ^
-        step(setupPeerServer()) ^
-        fs.mapDescription(d => Text(s"$system: " + d.show))
+      fs.mapDescription(d => Text(s"$system: " + d.show)) ^
+      step(setupPeerServer()) ^
+      fs.mapDescription(d => Text(s"$system: " + d.show))
 
   def setupDevLocal(): Unit = {
     system = "dev-local"
     try {
-      client = Datomic.clientDevLocal("Hello system name")
+      client = Datomic.clientDevLocal("test-datomic-client-api-scala-2.13")
     } catch {
       case t: Throwable =>
         // Catch error from setup (suppressed during setup)
@@ -115,7 +115,6 @@ trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
     // Ids of the three attributes
     val List(a1, a2, a3) = if (system == "dev-local")
       List(73, 74, 75) else List(72, 73, 74)
-    //      List(73, 74, 75) else List(63, 64, 65) // sometimes this is needed instead...
 
     def films(db: Db): Seq[String] = Datomic.q(filmQuery, db)
       .asInstanceOf[PersistentVector].asScala.toList

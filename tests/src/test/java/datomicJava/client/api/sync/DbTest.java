@@ -308,7 +308,8 @@ public class DbTest extends Setup {
 
         // Combining `with` and `asOf`
         // todo: peer-server doesn't allow combining `with` filter with other filters
-        assertThat(films(db6Films.asOf(txReport5films.tx())), is(fiveFilms));
+        if (system == "dev-local")
+            assertThat(films(db6Films.asOf(txReport5films.tx())), is(fiveFilms));
 
         // Original state is unaffected
         assertThat(films(conn.db()), is(threeFilms));

@@ -1,16 +1,15 @@
 package datomicScala
 
-import java.util.{Date, List => jList}
+import java.util.{Date, stream, List => jList}
 import clojure.lang.PersistentVector
 import datomic.Util.list
+import datomicClient.anomaly.CognitectAnomaly
 import datomicScala.client.api.async._
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.specification.core.{Fragments, Text}
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.jdk.CollectionConverters._
-import scala.jdk.StreamConverters._
 
 
 trait SpecAsync extends Specification with SchemaAndData {
@@ -38,7 +37,7 @@ trait SpecAsync extends Specification with SchemaAndData {
 
   def setupDevLocal(): Unit = {
     system = "dev-local"
-    client = AsyncDatomic.clientDevLocal("Hello system name")
+    client = AsyncDatomic.clientDevLocal("test-datomic-client-api-scala-2.12")
   }
 
 
@@ -97,7 +96,7 @@ trait SpecAsync extends Specification with SchemaAndData {
         .head.toOption.get
         .asInstanceOf[jList[_]].forEach { l =>
         val eid: Any = l.asInstanceOf[jList[_]].get(0)
-        lastTx = waitFor(conn.transact(list(list(":db/retractEntity", eid)))).toOption.get
+        lastTx = waitFor(conn.transact(list(list(":db/retractEntity", eid.asInstanceOf[Object])))).toOption.get
       }
       txBefore = lastTx.tx
       txInstBefore = lastTx.txInst
@@ -105,24 +104,27 @@ trait SpecAsync extends Specification with SchemaAndData {
       filmDataTx = waitFor(conn.transact(filmData)).toOption.get
     }
 
-    lazy val dbAfter          = filmDataTx.dbAfter
-    lazy val tBefore          = filmDataTx.basisT
-    lazy val tAfter           = filmDataTx.t
-    lazy val txAfter          = filmDataTx.tx
-    lazy val txInstAfter      = filmDataTx.txInst
-    lazy val List(e1, e2, e3) = filmDataTx.txData.toScala(List).map(_.e).distinct.drop(1).sorted
+    lazy val dbAfter     = filmDataTx.dbAfter
+    lazy val tBefore     = filmDataTx.basisT
+    lazy val tAfter      = filmDataTx.t
+    lazy val txAfter     = filmDataTx.tx
+    lazy val txInstAfter = filmDataTx.txInst
 
+    private var films = List.empty[Long]
+    filmDataTx.txData.skip(1).forEach(d => films = films :+ d.e)
+    lazy val List(e1, e2, e3) = films.distinct.sorted
 
     // Ids of the three attributes
     val List(a1, a2, a3) = if (system == "dev-local")
       List(73, 74, 75) else List(72, 73, 74)
 
     def films(db: AsyncDb): Seq[String] = {
-      val lazyList = waitFor(AsyncDatomic.q(filmQuery, db))
+      val lazyList: Stream[Either[CognitectAnomaly, stream.Stream[_]]] = waitFor(AsyncDatomic.q(filmQuery, db))
       if (lazyList.nonEmpty) {
-        lazyList.head.toOption.get.iterator().asScala.toList
-          .map(row => row.asInstanceOf[PersistentVector].asScala.toList.head.toString)
-          .sorted
+        // Avoid scala.jdk.CollectionConverters._ to work with both scala 2.12 and 2.13
+        var films = Seq.empty[String]
+        lazyList.head.toOption.get.forEach(f => films = films :+ f.asInstanceOf[PersistentVector].get(0).toString)
+        films.sorted
       } else Nil
     }
   }
