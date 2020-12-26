@@ -21,12 +21,13 @@ trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
   var filmDataTx: TxReport   = null // set in Setup class
 
   var setupException = Option.empty[Throwable]
-
+  def addSystem(fs: => Fragments, system: String) = fs.mapDescription {
+    case Text(t)    => Text(s"$system        $t")
+    case otherDescr => otherDescr
+  }
   override def map(fs: => Fragments): Fragments =
-    step(setupDevLocal()) ^
-      fs.mapDescription(d => Text(s"$system: " + d.show)) ^
-      step(setupPeerServer()) ^
-      fs.mapDescription(d => Text(s"$system: " + d.show))
+    step(setupDevLocal()) ^ addSystem(fs, "dev-local  ") ^
+      step(setupPeerServer()) ^ addSystem(fs, "peer-server")
 
   def setupDevLocal(): Unit = {
     system = "dev-local"

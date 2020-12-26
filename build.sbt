@@ -4,7 +4,7 @@ import sbt.url
 
 lazy val commonSettings = Seq(
   name := "datomic-client-api-java-scala",
-  version in ThisBuild := "0.6.0",
+  version in ThisBuild := "0.6.1",
   crossScalaVersions := Seq("2.12.12", "2.13.4"),
   scalaVersion in ThisBuild := "2.13.4",
   organization := "org.scalamolecule",
@@ -17,10 +17,10 @@ lazy val commonSettings = Seq(
     "-Yrangepos"
   ),
   resolvers ++= Seq(
+    mavenLocal,
     ("datomic" at "http://files.datomic.com/maven").withAllowInsecureProtocol(true),
     ("clojars" at "http://clojars.org/repo").withAllowInsecureProtocol(true),
-    ("ICM repository" at "http://maven.icm.edu.pl/artifactory/repo/").withAllowInsecureProtocol(true),
-    mavenLocal
+    ("ICM repository" at "http://maven.icm.edu.pl/artifactory/repo/").withAllowInsecureProtocol(true)
   ),
   unmanagedSourceDirectories in Compile ++= {
     (unmanagedSourceDirectories in Compile).value.map { dir =>
@@ -37,6 +37,7 @@ lazy val core = project.in(file("core"))
     libraryDependencies ++= Seq(
       // datomic-free uses 1.8, but we need >=1.9 (otherwise `int?` method is missing)
       "org.clojure" % "clojure" % "1.10.1",
+      "org.clojure" % "tools.analyzer.jvm" % "1.1.0",
       "com.datomic" % "datomic-free" % "0.9.5697",
       "com.datomic" % "client-pro" % "0.9.63",
       "com.datomic" % "client-cloud" % "0.8.102",
@@ -90,7 +91,7 @@ lazy val tests = project.in(file("tests"))
       // To test against peer-server, please download datomic-pro from
       // https://www.datomic.com/get-datomic.html and run `bin/maven-install`
       "com.datomic" % "datomic-pro" % "1.0.6222",
-      "org.specs2" %% "specs2-core" % "4.10.3" % Test,
+      "org.specs2" %% "specs2-core" % "4.10.5" % Test,
       "com.novocode" % "junit-interface" % "0.11" % Test,
       "junit" % "junit" % "4.13" % Test,
       "org.hamcrest" % "hamcrest-junit" % "2.0.0.0" % Test

@@ -28,14 +28,17 @@ trait SpecAsync extends Specification with SchemaAndData {
   // Convenience await (name 'await' is already used by specs2)
   def waitFor[T](body: => Future[T]): T = Await.result(body, Duration.Inf)
 
+  def addSystem(fs: => Fragments, system: String) = fs.mapDescription {
+    case Text(t)    => Text(s"$system        $t")
+    case otherDescr => otherDescr
+  }
+
   // todo: awaiting to find a way to invoke data as maps against Peer Server
   override def map(fs: => Fragments): Fragments =
-    step(setupDevLocal()) ^
-      fs.mapDescription(d => Text(s"$system: " + d.show))
+    step(setupDevLocal()) ^ addSystem(fs, "dev-local  ")
   // todo: switch on when we can supply args as a map
-  //          fs.mapDescription(d => Text(s"$system: " + d.show)) ^
-  //          step(setupPeerServer()) ^
-  //          fs.mapDescription(d => Text(s"$system: " + d.show))
+  //    step(setupDevLocal()) ^ addSystem(fs, "dev-local  ") ^
+  //    step(setupPeerServer()) ^ addSystem(fs, "peer-server")
 
 
   def setupDevLocal(): Unit = {
