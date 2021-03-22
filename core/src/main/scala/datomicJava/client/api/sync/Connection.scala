@@ -1,5 +1,6 @@
 package datomicJava.client.api.sync
 
+import java.io.{Reader, StringReader}
 import java.lang.{Iterable => jIterable}
 import java.util.{List => jList, Map => jMap}
 import datomic.Util
@@ -30,6 +31,12 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     else
       TxReport(Invoke.transact(datomicConn, stmts).asInstanceOf[jMap[_, _]])
   }
+
+  def transact(stmtsReader: Reader): TxReport =
+    transact(readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
+
+  def transact(edn: String): TxReport =
+    transact(readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]])
 
 
   def txRange(
@@ -102,6 +109,13 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
     val dbAfter  = txReport.get(read(":db-after"))
     Db(dbAfter.asInstanceOf[AnyRef])
   }
+
+  def widh(stmtsReader: Reader): Db =
+    widh(readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
+
+  def widh(edn: String): Db =
+    widh(readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]])
+
 
   def withDb: AnyRef = {
     // Special db value for `with` (or `widh`)

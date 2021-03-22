@@ -1,45 +1,36 @@
 # Java/Scala facade to datomic.client.api/api.async
 
 
-This project contains thin Java and Scala facades to the 
-[Datomic][datomic] Clojure Client api: 
+This project contains thin Java and Scala facades to the [Datomic][datomic] Clojure Client api: 
 
 - [datomic.client.api][sync]
 - [datomic.client.api.async][async]
 
-You can then use the various Datomic systems depending on the Client api from 
-Java and Scala: 
+You can then use the various Datomic systems depending on the Client api from Java and Scala: 
 
 - Peer Server
 - Dev local
 - Cloud
 
-Using the facade in a live Cloud setting has not yet been tested. But since 
-dev-local is equivalent and works fine, Cloud should too.
+Using the facade in a live Cloud setting has not yet been tested. But since dev-local is equivalent and works fine, Cloud should too.
 
-Note that this library is an independent release not associated with 
-Datomic/Cognitect.
+Note that this library is an independent release not associated with Datomic/Cognitect.
 
 ## Java/Scala
 
 Code is written in Scala but compiles to the same bytecode as Java. 
 
-Each language has been given its own exclusive namespace to ensure full 
-compatibility and to accommodate for differences.
+Each language has been given its own exclusive namespace to ensure full compatibility and to accommodate for differences.
 
-- In the `datomicJava` namespace all interfaces take java-compatible types as 
-input and return only java-compatible types. 
-- In the `datomicScala` namespace most types are java-compatible but where 
-collections are iterated for instance, a Scala collection type is returned.
+- In the `datomicJava` namespace all interfaces take java-compatible types as input and return only java-compatible types. 
+- In the `datomicScala` namespace most types are java-compatible but where collections are iterated for instance, a Scala collection type is returned.
  
 
 ## Code organization 
 
-The implementation has largely followed the structure of the 
-[Datomic Java api][java api].
+The implementation has largely followed the structure of the [Datomic Java api][java api].
 
-Clojure functions of the Client api taking a Connection object are encapsulated 
-in a `Connection` class and so on. We end up with 4 classes and their methods:
+Clojure functions of the Client api taking a Connection object are encapsulated in a `Connection` class and so on. We end up with 4 classes and their methods:
 
 - [Datomic][code Datomic] (similar to `Peer`)
   - `clientCloud` (providing AWSCredentialsProviderChain)
@@ -77,34 +68,25 @@ Various helper classes are added too.
 
 ## Sync/async
 
-Each language namespace has a `sync` and `async` package which
-corresponds to the two Datomic client api sync/async versions. All the above 
-methods are implemented for each package.
+Each language namespace has a `sync` and `async` package which corresponds to the two Datomic client api sync/async versions. All the above methods are implemented for each package.
 
 
 ## Java async
 
-The datomic client async api for Java generally returns a `CompletableFutue` of
-a custom `Channel` type.
+The datomic client async api for Java generally returns a `CompletableFutue` of a custom `Channel` type.
 
-Once the Future has completed, chunked results can be retrieved by calling 
-`chunk` one or more times on the `Channel` object until the Clojure Channel is empty.
+Once the Future has completed, chunked results can be retrieved by calling `chunk` one or more times on the `Channel` object until the Clojure Channel is empty.
 
-Each chunk is a custom `Either` type that can be either a `Left` 
-projection with a `CognitectAnomaly` or a `Right` projection containing the 
-successful result of a type `T` for the operation in question. That way, the 
-result can be type checked for an anomaly or a success.
+Each chunk is a custom `Either` type that can be either a `Left` projection with a `CognitectAnomaly` or a `Right` projection containing the successful result of a type `T` for the operation in question. That way, the result can be type checked for an anomaly or a success.
 
-When the Clojure Channel is empty, `Right(null)` is returned. Consuming Java code 
-might therefore want to check for such terminating null value (when needed). 
+When the Clojure Channel is empty, `Right(null)` is returned. Consuming Java code might therefore want to check for such terminating null value (when needed). 
 
 - See [Java async tests][java async]
 
 
 ## Java sync
 
-The datomic client sync api for Java returns the result as is (equivalent to
-the type `T` of the async api).
+The datomic client sync api for Java returns the result as is (equivalent to the type `T` of the async api).
 
 Cognitect anomalies are thrown as runtime exceptions.
 
@@ -113,19 +95,15 @@ Cognitect anomalies are thrown as runtime exceptions.
 
 ## Scala async
 
-The datomic client async api for Scala returns a `Future` of a `LazyList` of
-chunks of data. The first (head) chunk of the `LazyList` is eargerly evaluated
-and subsequent chunks can be retrieved lazily by simply looping the `LazyList`.
+The datomic client async api for Scala returns a `Future` of a `LazyList` of chunks of data. The first (head) chunk of the `LazyList` is eargerly evaluated and subsequent chunks can be retrieved lazily by simply looping the `LazyList`.
 
-Each chunk in the `LazyList` is an `Either` of either a `Left[CognitectAnomaly]`
-or a `Right[T]` where `T` is the main result type.
+Each chunk in the `LazyList` is an `Either` of either a `Left[CognitectAnomaly]` or a `Right[T]` where `T` is the main result type.
 
 - See [Scala async tests][scala async]
 
 ## Scala sync
 
-The datomic client sync api for Scala returns the result as is (equivalent to
-the type `T` of the async api).
+The datomic client sync api for Scala returns the result as is (equivalent to the type `T` of the async api).
 
 Cognitect anomalies are thrown as runtime exceptions.
 
@@ -139,36 +117,29 @@ Clone this project and open in your IDE to explore.
 git clone https://github.com/scalamolecule/datomic-client-api-java-scala.git
 ```
 
-This library presumes that you have a Datomic installation downloaded. It can
-be a free/starter/pro version, although the free version is a bit behind and
-won't provide all functionality. It's recommended to download an up-to-date
- version of [starter/pro][download-datomic-pro]. On older versions of Datomic, 
-some functionality might not be available. The `qseq` method was added in 
-version 1.0.6165 for instance.
+This library presumes that you have a Datomic installation downloaded. It can be a free/starter/pro version, although the free version is a bit behind and won't provide all functionality. It's recommended to download an up-to-date version of [starter/pro][download-datomic-pro]. On older versions of Datomic, some functionality might not be available. The `qseq` method was added in version 1.0.6165 for instance.
 
-Start by creating a test database `hello` from within the Datomic 
-installation folder. This only has to be done once:
+In one process, start a transactor:
 
     cd <datomic-installation>
+    bin/transactor config/samples/dev-transactor-template.properties
 
-    // Create `hello` database (if it has not already been created)
+Then in another process (new tab in terminal) create a test database `hello` (if it has not already been created):
+
     bin/shell
     datomic % Peer.createDatabase("datomic:dev://localhost:4334/hello");
     <ctrl-c>
 
 ### Peer-server in-mem
 
-Running a peer-server in-mem doesn't require a transactor process to be running.
-So you can simply start the Peer Server directly from within the datomic
-installation directory:
+Running a peer-server in-mem doesn't require a transactor process to be running. So you can simply start the Peer Server directly from within the datomic installation directory:
 
     bin/run -m datomic.peer-server -a k,s -d hello,datomic:mem://hello
 
 
 ### Peer-server against transactor
 
-To use a peer-server against a transacor, please start a [transactor][transactor] 
-in one process, and the [Peer Server][peer-server] in another process:
+To use a peer-server against a transactor, please start a [transactor][transactor] in one process, and the [Peer Server][peer-server] in another process:
 
 process 1:
 
@@ -181,19 +152,14 @@ process 2:
 
 ### Dev-local / Cloud
 
-To run tests against dev-local, please download the [dev-tools][dev-tools] and
-follow the instructions to install on your local machine.
+To run tests against dev-local, please download the [dev-tools][dev-tools] and follow the instructions to install on your local machine.
 
 
 ## Testing
 
-Run the Java tests by right-clicking on the `test.java.datomicJava.client` package
-in the project view (in IntelliJ) and choose Run -> Tests in 'client' (or run 
-individual tests similarly).
+Run the Java tests by right-clicking on the `test.java.datomicJava.client` package in the project view (in IntelliJ) and choose Run -> Tests in 'client' (or run individual tests similarly).
 
-Run the Scala tests by right-clicking on the `test.scala.datomicScala.client` package
-in the project view (in IntelliJ) and choose Run -> Specs2 in 'client' (or run 
-individual tests similarly).
+Run the Scala tests by right-clicking on the `test.scala.datomicScala.client` package in the project view (in IntelliJ) and choose Run -> Specs2 in 'client' (or run individual tests similarly).
 
 Or run tests with sbt:
 ```
@@ -209,15 +175,13 @@ sbt:datomic-client-api-java-scala> testOnly datomicJava.client.api.*
 sbt:datomic-client-api-java-scala> testOnly datomicScala.client.api.*
 
 // Tests for scala 2.12
-sbt:datomic-client-api-java-scala> ++2.12.12; testOnly datomicJava.client.api.*
-sbt:datomic-client-api-java-scala> ++2.12.12; testOnly datomicScala.client.api.*
+sbt:datomic-client-api-java-scala> ++2.12.13; testOnly datomicJava.client.api.*
+sbt:datomic-client-api-java-scala> ++2.12.13; testOnly datomicScala.client.api.*
 ```
 
 
 #### Temporary limitation
-Due to a bug in the Peer Server async implementation, all asynchronous Peer 
-Server tests won't pass since we can't build a Client with map data. Hopefully
-this will be solved soon, and then all asynchronous Peer Server tests should pass.
+Due to a bug in the Peer Server async implementation, all asynchronous Peer Server tests won't pass since we can't build a Client with map data. Hopefully this will be solved soon, and then all asynchronous Peer Server tests should pass.
 
 
 ## Use with your project
@@ -229,40 +193,38 @@ Add Java dependency in POM file:
 <dependency>
     <groupId>org.scalamolecule</groupId>
     <artifactId>datomic-client-api-java-scala</artifactId>
-    <version>0.6.1</version>
+    <version>0.7.0</version>
 </dependency>
 
 <!-- If using dev-local -->
 <dependency>
     <groupId>com.datomic</groupId>
     <artifactId>dev-local</artifactId>
-    <version>0.9.229</version>
+    <version>0.9.232</version>
 </dependency>
 
 <!-- If using peer-server -->
 <dependency>
     <groupId>com.datomic</groupId>
     <artifactId>datomic-pro</artifactId>
-    <version>1.0.6222</version>
+    <version>1.0.6269</version>
 </dependency>
 ```
 
 Add Scala dependency in sbt build file (crosscompiles to Scala 2.12 and 2.13):
 ```
 libraryDependencies ++= Seq(
-  "org.scalamolecule" %% "datomic-client-api-java-scala" % "0.6.1",
+  "org.scalamolecule" %% "datomic-client-api-java-scala" % "0.7.0",
   
   // If using dev-local
-  "com.datomic" % "dev-local" % "0.9.229",
+  "com.datomic" % "dev-local" % "0.9.232",
   
   // If using peer-server
-  "com.datomic" % "datomic-pro" % "1.0.6222"
+  "com.datomic" % "datomic-pro" % "1.0.6269"
 )
 ```
 
-To use dev-local, please download from https://cognitect.com/dev-tools and install 
-locally per included instructions and same for 
-[datomic pro](https://www.datomic.com/get-datomic.html).
+To use dev-local, please download from https://cognitect.com/dev-tools and install locally per included instructions and same for [datomic pro](https://www.datomic.com/get-datomic.html).
 
 
 ## Author / License

@@ -9,6 +9,8 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.*;
 
 import static datomic.Util.*;
@@ -284,7 +286,7 @@ public class DbTest extends Setup {
 
 
     @Test
-    public void with() {
+    public void withJavaStmts() {
         // Original state
         assertThat(films(conn.db()), is(threeFilms));
 
@@ -315,14 +317,127 @@ public class DbTest extends Setup {
         assertThat(films(conn.db()), is(threeFilms));
     }
 
+    @Test
+    public void withEdnFile() throws FileNotFoundException {
+        // Original state
+        assertThat(films(conn.db()), is(threeFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        TxReport txReport4films = conn.db().with(
+            conn.withDb(), new FileReader("tests/resources/film4.edn")
+        );
+        Db db4Films = txReport4films.dbAfter();
+        assertThat(films(db4Films), is(fourFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        TxReport txReport5films = conn.db().with(
+            db4Films, new FileReader("tests/resources/film5.edn")
+        );
+        Db db5Films = txReport5films.dbAfter();
+        assertThat(films(db5Films), is(fiveFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        TxReport txReport6films = conn.db().with(
+            txReport5films, new FileReader("tests/resources/film6.edn")
+        );
+        Db db6Films = txReport6films.dbAfter();
+        assertThat(films(db6Films), is(sixFilms));
+
+        // Combining `with` and `asOf`
+        // todo: peer-server doesn't allow combining `with` filter with other filters
+        if (system == "dev-local")
+            assertThat(films(db6Films.asOf(txReport5films.tx())), is(fiveFilms));
+
+        // Original state is unaffected
+        assertThat(films(conn.db()), is(threeFilms));
+    }
 
     @Test
-    public void withSingleInvocation() {
+    public void withEdnString() {
+        // Original state
+        assertThat(films(conn.db()), is(threeFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        TxReport txReport4films = conn.db().with(
+            conn.withDb(), "[ {:movie/title \"Film 4\"} ]"
+        );
+        Db db4Films = txReport4films.dbAfter();
+        assertThat(films(db4Films), is(fourFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        TxReport txReport5films = conn.db().with(
+            db4Films, "[ {:movie/title \"Film 5\"} ]"
+        );
+        Db db5Films = txReport5films.dbAfter();
+        assertThat(films(db5Films), is(fiveFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        TxReport txReport6films = conn.db().with(
+            txReport5films, "[ {:movie/title \"Film 6\"} ]"
+        );
+        Db db6Films = txReport6films.dbAfter();
+        assertThat(films(db6Films), is(sixFilms));
+
+        // Combining `with` and `asOf`
+        // todo: peer-server doesn't allow combining `with` filter with other filters
+        if (system == "dev-local")
+            assertThat(films(db6Films.asOf(txReport5films.tx())), is(fiveFilms));
+
+        // Original state is unaffected
+        assertThat(films(conn.db()), is(threeFilms));
+    }
+
+
+    @Test
+    public void withJavaStmts_SingleInvocation() {
         // As a convenience, a single-invocation shorter version of `with`:
         assertThat(films(conn.widh(film4)), is(fourFilms));
 
         // Applying another data set still augments the original db
         assertThat(films(conn.widh(film4and5)), is(fiveFilms));
+
+
+        // Current state is unaffected
+        assertThat(films(conn.db()), is(threeFilms));
+    }
+
+    @Test
+    public void withEdnFile_SingleInvocation() throws FileNotFoundException {
+        // As a convenience, a single-invocation shorter version of `with`:
+        assertThat(
+            films(conn.widh(new FileReader("tests/resources/film4.edn"))),
+            is(fourFilms)
+        );
+
+        // Applying another data set still augments the original db
+        assertThat(
+            films(conn.widh(new FileReader("tests/resources/film4and5.edn"))),
+            is(fiveFilms)
+        );
+
+        // Current state is unaffected
+        assertThat(films(conn.db()), is(threeFilms));
+    }
+
+    @Test
+    public void withEdnString_SingleInvocation() {
+        // As a convenience, a single-invocation shorter version of `with`:
+        assertThat(
+            films(conn.widh("[ {:movie/title \"Film 4\"} ]")),
+            is(fourFilms)
+        );
+
+        // Applying another data set still augments the original db
+        assertThat(
+            films(conn.widh("[ {:movie/title \"Film 4\"} {:movie/title \"Film 5\"} ]")),
+            is(fiveFilms)
+        );
 
         // Current state is unaffected
         assertThat(films(conn.db()), is(threeFilms));

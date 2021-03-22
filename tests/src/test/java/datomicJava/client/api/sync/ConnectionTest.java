@@ -8,6 +8,8 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.*;
 
 import static datomic.Util.*;
@@ -53,7 +55,7 @@ public class ConnectionTest extends Setup {
 
 
     @Test
-    public void transact() {
+    public void transactJavaStmts() {
         assertThat(films(conn.db()), is(threeFilms));
         conn.transact(list(
             map(
@@ -65,6 +67,27 @@ public class ConnectionTest extends Setup {
         // Applying empty list of stmts returns empty TxReport without touching the db
         assertThat(conn.transact(list()), is(new TxReport(Util.map())));
     }
+
+    @Test
+    public void transactEdnFile() throws FileNotFoundException {
+        assertThat(films(conn.db()), is(threeFilms));
+        conn.transact(new FileReader("tests/resources/film4.edn"));
+        assertThat(films(conn.db()), is(fourFilms));
+
+        // Applying empty list of stmts returns empty TxReport without touching the db
+        assertThat(conn.transact(list()), is(new TxReport(Util.map())));
+    }
+
+    @Test
+    public void transactEdnString() {
+        assertThat(films(conn.db()), is(threeFilms));
+        conn.transact("[ {:movie/title \"Film 4\"} ]");
+        assertThat(films(conn.db()), is(fourFilms));
+
+        // Applying empty list of stmts returns empty TxReport without touching the db
+        assertThat(conn.transact(list()), is(new TxReport(Util.map())));
+    }
+
 
     public static void checkRange(
         Connection conn,

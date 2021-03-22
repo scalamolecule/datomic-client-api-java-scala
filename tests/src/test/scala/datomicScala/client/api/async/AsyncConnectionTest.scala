@@ -1,5 +1,6 @@
 package datomicScala.client.api.async
 
+import java.io.FileReader
 import datomic.Util
 import datomic.Util.{list, read}
 import datomicScala.SpecAsync
@@ -39,7 +40,7 @@ class AsyncConnectionTest extends SpecAsync {
   }
 
 
-  "transact" in new AsyncSetup {
+  "transact java stmts" in new AsyncSetup {
     films(conn.db) === threeFilms
     waitFor(conn.transact(list(
       Util.map(
@@ -50,6 +51,22 @@ class AsyncConnectionTest extends SpecAsync {
 
     // Applying empty list of stmts returns empty TxReport without touching the db
     waitFor(conn.transact(list())).toOption.get === AsyncTxReport(Util.map())
+  }
+
+  "transact edn file" in new AsyncSetup {
+    films(conn.db) === threeFilms
+    waitFor(conn.transact(
+      new FileReader("tests/resources/film4.edn")
+    )).toOption.get
+    films(conn.db) === fourFilms
+  }
+
+  "transact edn string" in new AsyncSetup {
+    films(conn.db) === threeFilms
+    waitFor(conn.transact(
+      """[ {:movie/title "Film 4"} ]"""
+    )).toOption.get
+    films(conn.db) === fourFilms
   }
 
 

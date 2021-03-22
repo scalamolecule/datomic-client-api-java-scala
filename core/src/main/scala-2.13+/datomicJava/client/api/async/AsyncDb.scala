@@ -1,9 +1,11 @@
 package datomicJava.client.api.async
 
+import java.io.{Reader, StringReader}
 import java.util.concurrent.CompletableFuture
 import java.util.stream.{Stream => jStream}
 import java.util.{Date, List => jList, Map => jMap}
 import clojure.lang.LazySeq
+import datomic.Util.readAll
 import datomicClient._
 import datomicClient.anomaly.CognitectAnomaly
 import datomicJava.client.api.{Datom, DbStats, Helper, async}
@@ -59,6 +61,15 @@ case class AsyncDb(
     }
   }
 
+  def `with`(withDb: AnyRef, stmtsReader: Reader)
+  : CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
+    `with`(withDb, readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
+
+  def `with`(withDb: AnyRef, edn: String)
+  : CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
+    `with`(withDb, readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]])
+
+
   // Convenience method to pass with-modified Db from `conn.withDb`
   def `with`(withDbFut: CompletableFuture[Either[CognitectAnomaly, AnyRef]], stmts: jList[_])
   : CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] = {
@@ -73,15 +84,52 @@ case class AsyncDb(
     }
   }
 
+  def `with`(
+    withDbFut: CompletableFuture[Either[CognitectAnomaly, AnyRef]],
+    stmtsReader: Reader
+  ): CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
+    `with`(withDbFut, readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
+
+  def `with`(
+    withDbFut: CompletableFuture[Either[CognitectAnomaly, AnyRef]],
+    edn: String
+  ): CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
+    `with`(withDbFut, readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]])
+
+
   // Convenience method to pass with-modified Db
   def `with`(db: AsyncDb, stmts: jList[_])
   : CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
     `with`(db.datomicDb, stmts)
 
+  def `with`(db: AsyncDb, stmtsReader: Reader)
+  : CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
+    `with`(db.datomicDb, readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
+
+  def `with`(db: AsyncDb, edn: String)
+  : CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
+    `with`(db.datomicDb, readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]])
+
+
   // Convenience method to pass with-modified Db from TxReport
   def `with`(txReport: AsyncTxReport, stmts: jList[_])
   : CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
     `with`(txReport.dbAfter.datomicDb, stmts)
+
+  def `with`(txReport: AsyncTxReport, stmtsReader: Reader)
+  : CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
+    `with`(
+      txReport.dbAfter.datomicDb,
+      readAll(stmtsReader).get(0).asInstanceOf[jList[_]]
+    )
+
+  def `with`(txReport: AsyncTxReport, edn: String)
+  : CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
+    `with`(
+      txReport.dbAfter.datomicDb,
+      readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]]
+    )
+
 
 
   def history: AsyncDb = AsyncDb(

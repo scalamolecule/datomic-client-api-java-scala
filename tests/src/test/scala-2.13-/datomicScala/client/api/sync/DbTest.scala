@@ -1,5 +1,6 @@
 package datomicScala.client.api.sync
 
+import java.io.FileReader
 import java.util
 import java.util.stream.{Stream => jStream}
 import java.util.{Map => jMap, List => jList}
@@ -265,7 +266,7 @@ class DbTest extends Spec {
   }
 
 
-  "with" in new Setup {
+  "with java stmts" in new Setup {
     // Original state
     films(conn.db) === threeFilms
 
@@ -294,13 +295,109 @@ class DbTest extends Spec {
     films(conn.db) === threeFilms
   }
 
+  "with edn file" in new Setup {
+    // Original state
+    films(conn.db) === threeFilms
 
-  "with - single invocation" in new Setup {
+    val txReport4films = conn.db.`with`(conn.withDb,
+      new FileReader("tests/resources/film4.edn")
+    )
+    val db4Films       = txReport4films.dbAfter
+    films(db4Films) === fourFilms
+
+    // Add 5th film by passing with-modified Db
+    val txReport5films = conn.db.`with`(db4Films,
+      new FileReader("tests/resources/film5.edn")
+    )
+    val db5Films       = txReport5films.dbAfter
+    films(db5Films) === fiveFilms
+
+    // Add 6th film by passing with-modified Db from TxReport
+    val txReport6films = conn.db.`with`(txReport5films,
+      new FileReader("tests/resources/film6.edn")
+    )
+    val db6Films       = txReport6films.dbAfter
+    films(db6Films) === sixFilms
+
+    // Combining `with` and `asOf`
+    // todo: peer-server doesn't allow combining `with` filter with other filters
+    if (system == "dev-local")
+      films(db6Films.asOf(txReport5films.tx)) === fiveFilms
+
+    // Original state is unaffected
+    films(conn.db) === threeFilms
+  }
+
+  "with edn string" in new Setup {
+    // Original state
+    films(conn.db) === threeFilms
+
+    val txReport4films = conn.db.`with`(conn.withDb,
+      """[ {:movie/title "Film 4"} ]"""
+    )
+    val db4Films       = txReport4films.dbAfter
+    films(db4Films) === fourFilms
+
+    // Add 5th film by passing with-modified Db
+    val txReport5films = conn.db.`with`(db4Films,
+      """[ {:movie/title "Film 5"} ]"""
+    )
+    val db5Films       = txReport5films.dbAfter
+    films(db5Films) === fiveFilms
+
+    // Add 6th film by passing with-modified Db from TxReport
+    val txReport6films = conn.db.`with`(txReport5films,
+      """[ {:movie/title "Film 6"} ]"""
+    )
+    val db6Films       = txReport6films.dbAfter
+    films(db6Films) === sixFilms
+
+    // Combining `with` and `asOf`
+    // todo: peer-server doesn't allow combining `with` filter with other filters
+    if (system == "dev-local")
+      films(db6Films.asOf(txReport5films.tx)) === fiveFilms
+
+    // Original state is unaffected
+    films(conn.db) === threeFilms
+  }
+
+
+  "with java stmts - single invocation" in new Setup {
     // As a convenience, a single-invocation shorter version of `with`:
     films(conn.widh(film4)) === fourFilms
 
     // Applying another data set still augments the original db
-    films(conn.widh(film5)) === (threeFilms :+ "Film 5").sorted
+    films(conn.widh(film4and5)) === fiveFilms
+
+    // Current state is unaffected
+    films(conn.db) === threeFilms
+  }
+
+  "with edn file - single invocation" in new Setup {
+    // As a convenience, a single-invocation shorter version of `with`:
+    films(conn.widh(
+      new FileReader("tests/resources/film4.edn")
+    )) === fourFilms
+
+    // Applying another data set still augments the original db
+    films(conn.widh(
+      new FileReader("tests/resources/film4and5.edn")
+    )) === fiveFilms
+
+    // Current state is unaffected
+    films(conn.db) === threeFilms
+  }
+
+  "with edn string - single invocation" in new Setup {
+    // As a convenience, a single-invocation shorter version of `with`:
+    films(conn.widh(
+      """[ {:movie/title "Film 4"} ]"""
+    )) === fourFilms
+
+    // Applying another data set still augments the original db
+    films(conn.widh(
+      """[ {:movie/title "Film 4"} {:movie/title "Film 5"} ]"""
+    )) === fiveFilms
 
     // Current state is unaffected
     films(conn.db) === threeFilms

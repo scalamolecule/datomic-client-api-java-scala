@@ -1,5 +1,6 @@
 package datomicScala.client.api.sync
 
+import java.io.FileReader
 import datomic.Util
 import datomic.Util.{list, read}
 import datomicScala.Spec
@@ -36,7 +37,7 @@ class ConnectionTest extends Spec {
   }
 
 
-  "transact" in new Setup {
+  "transact java stmts" in new Setup {
     films(conn.db) === threeFilms
     conn.transact(list(
       Util.map(
@@ -47,6 +48,18 @@ class ConnectionTest extends Spec {
 
     // Applying empty list of stmts returns empty TxReport without touching the db
     conn.transact(list()) === TxReport(Util.map())
+  }
+
+  "transact edn file" in new Setup {
+    films(conn.db) === threeFilms
+    conn.transact(new FileReader("tests/resources/film4.edn"))
+    films(conn.db) === fourFilms
+  }
+  
+  "transact edn string" in new Setup {
+    films(conn.db) === threeFilms
+    conn.transact("""[ {:movie/title "Film 4"} ]""")
+    films(conn.db) === fourFilms
   }
 
 
@@ -161,7 +174,7 @@ class ConnectionTest extends Spec {
     checkRange(Some(t4), Some(t6), List(txReport4, txReport5))
 
 
-//    Thread
+    //    Thread
     // Using Date
     checkRange(Some(txInstant4), Some(txInstant6), List(txReport4, txReport5))
   }

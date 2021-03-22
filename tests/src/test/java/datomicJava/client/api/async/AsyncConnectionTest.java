@@ -7,6 +7,8 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -56,7 +58,7 @@ public class AsyncConnectionTest extends SetupAsync {
 
 
     @Test
-    public void transact() throws ExecutionException, InterruptedException {
+    public void transactJavaStmts() throws ExecutionException, InterruptedException {
         assertThat(films(conn.db()), is(threeFilms));
         conn.transact(list(
             map(
@@ -70,6 +72,20 @@ public class AsyncConnectionTest extends SetupAsync {
         Either emptyResult = conn.transact(list()).get();
         AsyncTxReport txReport = ((Right<?, AsyncTxReport>) emptyResult).right_value();
         assertThat(txReport.rawTxReport().isEmpty(), is(true));
+    }
+
+    @Test
+    public void transactEdnFile() throws ExecutionException, InterruptedException, FileNotFoundException {
+        assertThat(films(conn.db()), is(threeFilms));
+        conn.transact(new FileReader("tests/resources/film4.edn")).get(); // Await future completion
+        assertThat(films(conn.db()), is(fourFilms));
+    }
+
+    @Test
+    public void transactEdnString() throws ExecutionException, InterruptedException {
+        assertThat(films(conn.db()), is(threeFilms));
+        conn.transact("[ {:movie/title \"Film 4\"} ]").get(); // Await future completion
+        assertThat(films(conn.db()), is(fourFilms));
     }
 
 

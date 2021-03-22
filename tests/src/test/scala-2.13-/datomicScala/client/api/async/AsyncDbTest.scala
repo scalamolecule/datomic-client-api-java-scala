@@ -1,5 +1,6 @@
 package datomicScala.client.api.async
 
+import java.io.FileReader
 import java.util.stream.{Stream => jStream}
 import java.util.{Map => jMap}
 import clojure.lang.{PersistentArrayMap, PersistentVector}
@@ -267,7 +268,7 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
   }
 
 
-  "with" in new AsyncSetup {
+  "with java stmts" in new AsyncSetup {
     // Original state
     films(conn.db) === threeFilms
 
@@ -296,13 +297,113 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
     films(conn.db) === threeFilms
   }
 
+  "with edn file" in new AsyncSetup {
+    // Original state
+    films(conn.db) === threeFilms
 
-  "with - single invocation" in new AsyncSetup {
+    // Test adding a 4th film
+    // OBS: Note that a `conn.withDb` has to be passed initially!
+    val txReport4films = waitFor(conn.db.`with`(
+      conn.withDb, new FileReader("tests/resources/film4.edn")
+    )).toOption.get
+    val db4Films       = txReport4films.dbAfter
+    films(db4Films) === fourFilms
+
+    // Add 5th film by passing with-modified Db
+    val txReport5films = waitFor(conn.db.`with`(
+      db4Films, new FileReader("tests/resources/film5.edn")
+    )).toOption.get
+    val db5Films       = txReport5films.dbAfter
+    films(db5Films) === fiveFilms
+
+    // Add 6th film by passing with-modified Db from TxReport
+    val txReport6films = waitFor(conn.db.`with`(
+      txReport5films, new FileReader("tests/resources/film6.edn")
+    )).toOption.get
+    val db6Films       = txReport6films.dbAfter
+    films(db6Films) === sixFilms
+
+    // Combining `with` and `asOf`
+    // todo: peer-server doesn't allow combining `with` filter with other filters
+    if (system == "dev-local")
+      films(db6Films.asOf(txReport5films.tx)) === fiveFilms
+
+    // Original state is unaffected
+    films(conn.db) === threeFilms
+  }
+
+  "with edn string" in new AsyncSetup {
+    // Original state
+    films(conn.db) === threeFilms
+
+    // Test adding a 4th film
+    // OBS: Note that a `conn.withDb` has to be passed initially!
+    val txReport4films = waitFor(conn.db.`with`(
+      conn.withDb, """[ {:movie/title "Film 4"} ]"""
+    )).toOption.get
+    val db4Films       = txReport4films.dbAfter
+    films(db4Films) === fourFilms
+
+    // Add 5th film by passing with-modified Db
+    val txReport5films = waitFor(conn.db.`with`(
+      db4Films, """[ {:movie/title "Film 5"} ]"""
+    )).toOption.get
+    val db5Films       = txReport5films.dbAfter
+    films(db5Films) === fiveFilms
+
+    // Add 6th film by passing with-modified Db from TxReport
+    val txReport6films = waitFor(conn.db.`with`(
+      txReport5films, """[ {:movie/title "Film 6"} ]"""
+    )).toOption.get
+    val db6Films       = txReport6films.dbAfter
+    films(db6Films) === sixFilms
+
+    // Combining `with` and `asOf`
+    // todo: peer-server doesn't allow combining `with` filter with other filters
+    if (system == "dev-local")
+      films(db6Films.asOf(txReport5films.tx)) === fiveFilms
+
+    // Original state is unaffected
+    films(conn.db) === threeFilms
+  }
+
+
+  "with java stmts - single invocation" in new AsyncSetup {
     // As a convenience, a single-invocation shorter version of `with`:
     films(waitFor(conn.widh(film4)).toOption.get) === fourFilms
 
     // Applying another data set still augments the original db
-    films(waitFor(conn.widh(film5)).toOption.get) === (threeFilms :+ "Film 5").sorted
+    films(waitFor(conn.widh(film4and5)).toOption.get) === fiveFilms
+
+    // Current state is unaffected
+    films(conn.db) === threeFilms
+  }
+
+  "with edn file - single invocation" in new AsyncSetup {
+    // As a convenience, a single-invocation shorter version of `with`:
+    films(waitFor(conn.widh(
+      new FileReader("tests/resources/film4.edn")
+    )).toOption.get) === fourFilms
+
+    // Applying another data set still augments the original db
+    films(waitFor(conn.widh(
+      new FileReader("tests/resources/film4and5.edn")
+    )).toOption.get) === fiveFilms
+
+    // Current state is unaffected
+    films(conn.db) === threeFilms
+  }
+
+  "with edn string - single invocation" in new AsyncSetup {
+    // As a convenience, a single-invocation shorter version of `with`:
+    films(waitFor(conn.widh(
+      """[ {:movie/title "Film 4"} ]"""
+    )).toOption.get) === fourFilms
+
+    // Applying another data set still augments the original db
+    films(waitFor(conn.widh(
+      """[ {:movie/title "Film 4"} {:movie/title "Film 5"} ]"""
+    )).toOption.get) === fiveFilms
 
     // Current state is unaffected
     films(conn.db) === threeFilms

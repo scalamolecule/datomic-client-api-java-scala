@@ -4,9 +4,9 @@ import sbt.url
 
 lazy val commonSettings = Seq(
   name := "datomic-client-api-java-scala",
-  version in ThisBuild := "0.6.1",
-  crossScalaVersions := Seq("2.12.12", "2.13.4"),
-  scalaVersion in ThisBuild := "2.13.4",
+  version in ThisBuild := "0.7.0",
+  crossScalaVersions := Seq("2.12.13", "2.13.5"),
+  scalaVersion in ThisBuild := "2.13.5",
   organization := "org.scalamolecule",
   organizationName := "ScalaMolecule",
   organizationHomepage := Some(url("http://www.scalamolecule.org")),
@@ -39,8 +39,8 @@ lazy val core = project.in(file("core"))
       "org.clojure" % "clojure" % "1.10.1",
       "org.clojure" % "tools.analyzer.jvm" % "1.1.0",
       "com.datomic" % "datomic-free" % "0.9.5697",
-      "com.datomic" % "client-pro" % "0.9.63",
-      "com.datomic" % "client-cloud" % "0.8.102",
+      "com.datomic" % "client-pro" % "0.9.66",
+      "com.datomic" % "client-cloud" % "0.8.105",
       "us.bpsm" % "edn-java" % "0.7.1",
       "co.fs2" %% "fs2-core" % "2.4.4",
     ),
@@ -87,10 +87,10 @@ lazy val tests = project.in(file("tests"))
     libraryDependencies ++= Seq(
       // To test against dev-local, please download cognitect-dev-tools from
       // https://cognitect.com/dev-tools and run `./install`
-      "com.datomic" % "dev-local" % "0.9.229",
+      "com.datomic" % "dev-local" % "0.9.232",
       // To test against peer-server, please download datomic-pro from
       // https://www.datomic.com/get-datomic.html and run `bin/maven-install`
-      "com.datomic" % "datomic-pro" % "1.0.6222",
+      "com.datomic" % "datomic-pro" % "1.0.6269",
       "org.specs2" %% "specs2-core" % "4.10.5" % Test,
       "com.novocode" % "junit-interface" % "0.11" % Test,
       "junit" % "junit" % "4.13" % Test,

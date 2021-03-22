@@ -1,5 +1,6 @@
 package datomicJava.client.api.async
 
+import java.io.{Reader, StringReader}
 import java.lang.{Iterable => jIterable}
 import java.util.concurrent.CompletableFuture
 import java.util.{List => jList, Map => jMap}
@@ -42,6 +43,13 @@ case class AsyncConnection(datomicConn: AnyRef) {
         }
       }
   }
+
+  def transact(stmtsReader: Reader): CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
+    transact(readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
+
+  def transact(edn: String): CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
+    transact(readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]])
+
 
   def txRange(
     timePointStart: Any, // Int | Long | java.util.Date
@@ -137,6 +145,13 @@ case class AsyncConnection(datomicConn: AnyRef) {
       case Left(anomaly) => async.Left(anomaly)
     }
   }
+
+  def widh(stmtsReader: Reader): CompletableFuture[Either[CognitectAnomaly, AsyncDb]] =
+    widh(readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
+
+  def widh(edn: String): CompletableFuture[Either[CognitectAnomaly, AsyncDb]] =
+    widh(readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]])
+
 
   def withDb: CompletableFuture[Either[CognitectAnomaly, AnyRef]] = {
     // Special db value for `with` (or `widh`)

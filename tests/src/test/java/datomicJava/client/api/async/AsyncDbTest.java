@@ -9,6 +9,8 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
@@ -295,7 +297,7 @@ public class AsyncDbTest extends SetupAsync {
 
 
     @Test
-    public void with() throws ExecutionException, InterruptedException {
+    public void withJavaStmts() throws ExecutionException, InterruptedException {
         // Original state is unaffected
         assertThat(films(conn.db()), is(threeFilms));
 
@@ -332,9 +334,97 @@ public class AsyncDbTest extends SetupAsync {
         assertThat(films(conn.db()), is(threeFilms));
     }
 
+    @Test
+    public void withEdnFile() throws ExecutionException, InterruptedException, FileNotFoundException {
+        // Original state is unaffected
+        assertThat(films(conn.db()), is(threeFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        AsyncTxReport txReport4films = (
+            (Right<?, AsyncTxReport>) conn.db().with(
+                conn.withDb(), new FileReader("tests/resources/film4.edn")
+            ).get()
+        ).right_value();
+        AsyncDb db4Films = txReport4films.dbAfter();
+        assertThat(films(db4Films), is(fourFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        AsyncTxReport txReport5films = (
+            (Right<?, AsyncTxReport>) conn.db().with(
+                db4Films, new FileReader("tests/resources/film5.edn")
+            ).get()
+        ).right_value();
+        AsyncDb db5Films = txReport5films.dbAfter();
+        assertThat(films(db5Films), is(fiveFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        AsyncTxReport txReport6films = (
+            (Right<?, AsyncTxReport>) conn.db().with(
+                txReport5films, new FileReader("tests/resources/film6.edn")
+            ).get()
+        ).right_value();
+        AsyncDb db6Films = txReport6films.dbAfter();
+        assertThat(films(db6Films), is(sixFilms));
+
+        // Combining `with` and `asOf`
+        // todo: peer-server doesn't allow combining `with` filter with other filters
+        if (system == "dev-local")
+            assertThat(films(db6Films.asOf(txReport5films.tx())), is(fiveFilms));
+
+        // Original state is unaffected
+        assertThat(films(conn.db()), is(threeFilms));
+    }
 
     @Test
-    public void withSingleInvocation() throws ExecutionException, InterruptedException {
+    public void withEdnString() throws ExecutionException, InterruptedException {
+        // Original state is unaffected
+        assertThat(films(conn.db()), is(threeFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        AsyncTxReport txReport4films = (
+            (Right<?, AsyncTxReport>) conn.db().with(
+                conn.withDb(), "[ {:movie/title \"Film 4\"} ]"
+            ).get()
+        ).right_value();
+        AsyncDb db4Films = txReport4films.dbAfter();
+        assertThat(films(db4Films), is(fourFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        AsyncTxReport txReport5films = (
+            (Right<?, AsyncTxReport>) conn.db().with(
+                db4Films, "[ {:movie/title \"Film 5\"} ]"
+            ).get()
+        ).right_value();
+        AsyncDb db5Films = txReport5films.dbAfter();
+        assertThat(films(db5Films), is(fiveFilms));
+
+        // Test adding a 4th film
+        // OBS: Note that a `conn.withDb` has to be passed initially!
+        AsyncTxReport txReport6films = (
+            (Right<?, AsyncTxReport>) conn.db().with(
+                txReport5films, "[ {:movie/title \"Film 6\"} ]"
+            ).get()
+        ).right_value();
+        AsyncDb db6Films = txReport6films.dbAfter();
+        assertThat(films(db6Films), is(sixFilms));
+
+        // Combining `with` and `asOf`
+        // todo: peer-server doesn't allow combining `with` filter with other filters
+        if (system == "dev-local")
+            assertThat(films(db6Films.asOf(txReport5films.tx())), is(fiveFilms));
+
+        // Original state is unaffected
+        assertThat(films(conn.db()), is(threeFilms));
+    }
+
+
+    @Test
+    public void withJavaStmts_SingleInvocation() throws ExecutionException, InterruptedException {
         // As a convenience, a single-invocation shorter version of `with`:
         assertThat(
             films(((Right<?, AsyncDb>) conn.widh(film4).get()).right_value()),
@@ -350,6 +440,51 @@ public class AsyncDbTest extends SetupAsync {
         // Current state is unaffected
         assertThat(films(conn.db()), is(threeFilms));
     }
+
+    @Test
+    public void withEdnFile_SingleInvocation() throws ExecutionException, InterruptedException, FileNotFoundException {
+        // As a convenience, a single-invocation shorter version of `with`:
+        assertThat(
+            films(((Right<?, AsyncDb>) conn.widh(
+                new FileReader("tests/resources/film4.edn")
+            ).get()).right_value()),
+            is(fourFilms)
+        );
+
+        // Applying another data set still augments the original db
+        assertThat(
+            films(((Right<?, AsyncDb>) conn.widh(
+                new FileReader("tests/resources/film4and5.edn")
+            ).get()).right_value()),
+            is(fiveFilms)
+        );
+
+        // Current state is unaffected
+        assertThat(films(conn.db()), is(threeFilms));
+    }
+
+    @Test
+    public void withEdnString_SingleInvocation() throws ExecutionException, InterruptedException {
+        // As a convenience, a single-invocation shorter version of `with`:
+        assertThat(
+            films(((Right<?, AsyncDb>) conn.widh(
+                "[ {:movie/title \"Film 4\"} ]"
+            ).get()).right_value()),
+            is(fourFilms)
+        );
+
+        // Applying another data set still augments the original db
+        assertThat(
+            films(((Right<?, AsyncDb>) conn.widh(
+                "[ {:movie/title \"Film 4\"} {:movie/title \"Film 5\"} ]"
+            ).get()).right_value()),
+            is(fiveFilms)
+        );
+
+        // Current state is unaffected
+        assertThat(films(conn.db()), is(threeFilms));
+    }
+
 
     @Test
     public void history() throws ExecutionException, InterruptedException {

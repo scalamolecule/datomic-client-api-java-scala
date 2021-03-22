@@ -1,7 +1,9 @@
 package datomicScala.client.api.sync
 
+import java.io.{Reader, StringReader}
 import java.util.stream.{Stream => jStream}
 import java.util.{Date, List => jList, Map => jMap}
+import datomic.Util.readAll
 import datomicClient.{DbLookup, Invoke}
 import datomicScala.client.api.{Datom, DbStats, Helper}
 
@@ -37,13 +39,39 @@ case class Db(
   def `with`(withDb: AnyRef, stmts: jList[_]): TxReport =
     TxReport(Invoke.`with`(withDb, stmts).asInstanceOf[jMap[_, _]])
 
+  def `with`(withDb: AnyRef, stmtsReader: Reader): TxReport =
+    `with`(withDb, readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
+
+  def `with`(withDb: AnyRef, edn: String): TxReport =
+    `with`(withDb, readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]])
+
+
   // Convenience method to pass with-modified Db
   def `with`(db: Db, stmts: jList[_]): TxReport =
     `with`(db.datomicDb, stmts)
 
+  def `with`(db: Db, stmtsReader: Reader): TxReport =
+    `with`(db.datomicDb, readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
+
+  def `with`(db: Db, edn: String): TxReport =
+    `with`(db.datomicDb, readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]])
+
+
   // Convenience method to pass with-modified Db from TxReport
   def `with`(txReport: TxReport, stmts: jList[_]): TxReport =
     `with`(txReport.dbAfter.datomicDb, stmts)
+
+  def `with`(txReport: TxReport, stmtsReader: Reader): TxReport =
+    `with`(
+      txReport.dbAfter.datomicDb,
+      readAll(stmtsReader).get(0).asInstanceOf[jList[_]]
+    )
+
+  def `with`(txReport: TxReport, edn: String): TxReport =
+    `with`(
+      txReport.dbAfter.datomicDb,
+      readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]]
+    )
 
 
   def history: Db = Db(Invoke.history(datomicDb))

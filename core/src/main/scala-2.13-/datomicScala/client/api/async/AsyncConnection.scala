@@ -1,5 +1,6 @@
 package datomicScala.client.api.async
 
+import java.io.{Reader, StringReader}
 import java.util.{List => jList, Map => jMap}
 import datomic.Util
 import datomic.Util._
@@ -38,6 +39,13 @@ case class AsyncConnection(datomicConn: AnyRef) {
         }
       }
   }
+
+  def transact(stmtsReader: Reader): Future[Either[CognitectAnomaly, AsyncTxReport]] =
+    transact(readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
+
+  def transact(edn: String): Future[Either[CognitectAnomaly, AsyncTxReport]] =
+    transact(readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]])
+
 
   def txRange(
     timePointStart: Option[Any] = None, // Int | Long | java.util.Date
@@ -93,6 +101,13 @@ case class AsyncConnection(datomicConn: AnyRef) {
       case Left(anomaly) => Left(anomaly)
     }
   }
+
+  def widh(stmtsReader: Reader): Future[Either[CognitectAnomaly, AsyncDb]] =
+    widh(readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
+
+  def widh(edn: String): Future[Either[CognitectAnomaly, AsyncDb]] =
+    widh(readAll(new StringReader(edn)).get(0).asInstanceOf[jList[_]])
+
 
   def withDb: Future[Either[CognitectAnomaly, AnyRef]] = Future {
     Channel[AnyRef](
