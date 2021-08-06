@@ -1,6 +1,5 @@
 package datomicJava.client.api.async;
 
-import clojure.lang.ExceptionInfo;
 import datomicClient.ErrorMsg;
 import datomicJava.SetupAsync;
 import datomicJava.client.api.Datom;
@@ -10,7 +9,6 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
@@ -343,7 +341,7 @@ public class AsyncDbTest extends SetupAsync {
         // OBS: Note that a `conn.withDb` has to be passed initially!
         AsyncTxReport txReport4films = (
             (Right<?, AsyncTxReport>) conn.db().with(
-                conn.withDb(), new FileReader("tests/resources/film4.edn")
+                conn.withDb(), getFileReader("resources/film4.edn")
             ).get()
         ).right_value();
         AsyncDb db4Films = txReport4films.dbAfter();
@@ -353,7 +351,7 @@ public class AsyncDbTest extends SetupAsync {
         // OBS: Note that a `conn.withDb` has to be passed initially!
         AsyncTxReport txReport5films = (
             (Right<?, AsyncTxReport>) conn.db().with(
-                db4Films, new FileReader("tests/resources/film5.edn")
+                db4Films, getFileReader("resources/film5.edn")
             ).get()
         ).right_value();
         AsyncDb db5Films = txReport5films.dbAfter();
@@ -363,7 +361,7 @@ public class AsyncDbTest extends SetupAsync {
         // OBS: Note that a `conn.withDb` has to be passed initially!
         AsyncTxReport txReport6films = (
             (Right<?, AsyncTxReport>) conn.db().with(
-                txReport5films, new FileReader("tests/resources/film6.edn")
+                txReport5films, getFileReader("resources/film6.edn")
             ).get()
         ).right_value();
         AsyncDb db6Films = txReport6films.dbAfter();
@@ -446,7 +444,7 @@ public class AsyncDbTest extends SetupAsync {
         // As a convenience, a single-invocation shorter version of `with`:
         assertThat(
             films(((Right<?, AsyncDb>) conn.widh(
-                new FileReader("tests/resources/film4.edn")
+                getFileReader("resources/film4.edn")
             ).get()).right_value()),
             is(fourFilms)
         );
@@ -454,7 +452,7 @@ public class AsyncDbTest extends SetupAsync {
         // Applying another data set still augments the original db
         assertThat(
             films(((Right<?, AsyncDb>) conn.widh(
-                new FileReader("tests/resources/film4and5.edn")
+                getFileReader("resources/film4and5.edn")
             ).get()).right_value()),
             is(fiveFilms)
         );
@@ -910,20 +908,18 @@ public class AsyncDbTest extends SetupAsync {
         assertThat(entity.get(read(":movie/genre")), is("punk dystopia"));
         assertThat(entity.get(read(":movie/release-year")), is(1984L));
 
-        // dev-local in-memory db will pull within 1 ms
-        if (!isDevLocal()) {
-            ExceptionInfo timedOut = assertThrows(
-                ExceptionInfo.class,
-                () -> conn.db().pull("[*]", e3(), 1, 0, 0)
-            );
-            assertThat(timedOut.getMessage(), is("Datomic Client Timeout"));
-            assertThat(timedOut.getData(), is(
-                map(
-                    read(":cognitect.anomalies/category"), read(":cognitect.anomalies/interrupted"),
-                    read(":cognitect.anomalies/message"), "Datomic Client Timeout"
-                )
-            ));
-        }
+        // Both dev-local and peer-server inmem pull within 1 ms, so we can't test it here
+        //        ExceptionInfo timedOut = assertThrows(
+        //            ExceptionInfo.class,
+        //            () -> conn.db().pull("[*]", e3(), 1, 0, 0)
+        //        );
+        //        assertThat(timedOut.getMessage(), is("Datomic Client Timeout"));
+        //        assertThat(timedOut.getData(), is(
+        //            map(
+        //                read(":cognitect.anomalies/category"), read(":cognitect.anomalies/interrupted"),
+        //                read(":cognitect.anomalies/message"), "Datomic Client Timeout"
+        //            )
+        //        ));
     }
 
     // since 1.0.61.65

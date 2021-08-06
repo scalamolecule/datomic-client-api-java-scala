@@ -3,8 +3,7 @@ package datomicJava.client.api.async
 import java.io.{Reader, StringReader}
 import java.util.concurrent.CompletableFuture
 import java.util.stream.{Stream => jStream}
-import java.util.{Date, List => jList, Map => jMap}
-import clojure.lang.LazySeq
+import java.util.{Date, List => jList, Map => jMap, Collection => jCollection}
 import datomic.Util.readAll
 import datomicClient._
 import datomicClient.anomaly.CognitectAnomaly
@@ -261,7 +260,7 @@ case class AsyncDb(
       ).chunk
     }.thenApply {
       case Right(indexPull) => Channel[jStream[_]](
-        indexPull.asInstanceOf[LazySeq].stream()
+        indexPull.asInstanceOf[jCollection[_]].stream()
       ).chunk
       case Left(anomaly)    => async.Left(anomaly)
     }

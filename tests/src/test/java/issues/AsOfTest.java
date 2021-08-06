@@ -1,3 +1,5 @@
+package issues;
+
 import clojure.java.api.Clojure;
 import clojure.lang.ILookup;
 
@@ -99,8 +101,8 @@ public class AsOfTest {
             read(
                 "{" +
                     ":server-type :peer-server, " +
-                    ":access-key \"myaccesskey\", " +
-                    ":secret \"mysecret\", " +
+                    ":access-key \"k\", " +
+                    ":secret \"s\", " +
                     ":endpoint \"localhost:8998\", " +
                     ":validate-hostnames false" +
                     "}"

@@ -5,12 +5,11 @@ import java.util.stream.{Stream => jStream}
 import cats.effect.IO
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import datomic.Util
-import datomic.Util.{list, _}
-import datomicClient._
+import datomic.Util._
 import datomicClient.anomaly.{AnomalyWrapper, CognitectAnomaly, Forbidden, NotFound}
 import datomicScala.SpecAsync
-import scala.concurrent.Future
 import scala.collection.JavaConverters._
+import scala.concurrent.Future
 
 
 class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
@@ -35,12 +34,9 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
           (No need to start a transactor)
          */
 
-        // Retrieve client for a specific system
-        // (this one has been created in SetupSpec)
-        val client: AsyncClient = AsyncDatomic.clientDevLocal("test-datomic-client-api-scala-2.12")
-
         // Confirm that client is valid and can connect to a database
-        client.connect("hello")
+        waitFor(AsyncDatomic.clientDevLocal("test-datomic-client-api-scala-2.12")
+          .connect("hello")).isRight
 
         // Wrong system name
         waitFor(AsyncDatomic.clientDevLocal("x").connect("hello")) === Left(
@@ -54,7 +50,6 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
       }
 
       case "peer-server" => {
-        // TODO: async peer server not available before bug fix
         /*
           To run tests against a Peer Server do these 3 steps first:
 
@@ -69,47 +64,40 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
           > bin/run -m datomic.peer-server -h localhost -p 8998 -a k,s -d hello,datomic:dev://localhost:4334/hello
          */
 
-        val client: AsyncClient =
-          AsyncDatomic.clientPeerServer("k", "s", "localhost:8998")
-
         // Confirm that client is valid and can connect to a database
-        client.connect("hello")
+        waitFor(
+          AsyncDatomic.clientPeerServer("k", "s", "localhost:8998")
+            .connect("hello")
+        ).isRight
 
         // Note that a Client is returned immediately without contacting
         // a server and can thus be invalid.
-        val client2: AsyncClient =
+        val invalidClient: AsyncClient =
         AsyncDatomic.clientPeerServer("admin", "nice-try", "localhost:8998")
 
-        // Invalid setup shows on first call to server
-        try {
-          client2.connect("hello")
-        } catch {
-          case forbidden: Forbidden =>
-            forbidden.getMessage === "forbidden"
-            forbidden.httpRequest.get("status") === 403
-            forbidden.httpRequest.get("body") === null
+        // Invalid key/pass
+        waitFor(invalidClient.connect("hello")) match {
+          case Left(anomaly: Forbidden) =>
+            anomaly.getMessage === "forbidden"
 
-          /*
-          Example of forbidden.httpRequest data:
+            anomaly.httpRequest.get("status") === 403
+            anomaly.httpRequest.get("body") === null
+            val headers = anomaly.httpRequest.get("headers").asInstanceOf[java.util.Map[String, Any]]
+            headers.get("content-length") === "19"
+            headers.get("content-type") === "application/transit+msgpack"
 
-          Map(
-            status -> 403,
-            headers -> Map(
-              server -> Jetty(9.3.7.v20160115),
-              content-length -> 19,
-              date -> Sun, 13 Sep 2020 19:14:36 GMT,
-              content-type -> application/transit+msgpack
-            ),
-            body -> null
-          )
-          */
+          case other => throw new RuntimeException("Unexpectedly didn't throw a `Forbidden` exception. Got: " + other)
         }
 
         // Wrong endpoint
-        AsyncDatomic.clientPeerServer("k", "s", "x")
-          .connect("hello") === Left(
-          NotFound("x: nodename nor servname provided, or not known")
-        )
+        waitFor(AsyncDatomic.clientPeerServer("k", "s", "x")
+          .connect("hello")) match {
+          case Left(notFound: NotFound) =>
+            // Is "x" or "x: nodename nor servname provided, or not known"
+            notFound.msg.startsWith("x") === true
+          case other =>
+            throw new RuntimeException("Unexpectedly didn't throw a `NotFound` exception. Got " + other)
+        }
       }
 
       case "cloud" => {

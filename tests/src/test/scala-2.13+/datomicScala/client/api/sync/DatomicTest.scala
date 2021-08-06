@@ -5,13 +5,14 @@ import datomic.Util
 import datomic.Util._
 import datomicClient.anomaly.{AnomalyWrapper, Forbidden, NotFound}
 import datomicScala.Spec
+import scala.util.control.NonFatal
 
 
 class DatomicTest extends Spec with AnomalyWrapper {
 
   "create client" >> {
     system match {
-      case "dev-local" => {
+      case "dev-local" =>
         /*
           Install dev-local (https://docs.datomic.com/cloud/dev-local.html)
           > mkdir ~/.datomic
@@ -20,21 +21,17 @@ class DatomicTest extends Spec with AnomalyWrapper {
           add path to where you want to save data as per instructions in link above
 
           Add dependency to dev-local in your project
-          "com.datomic" % "dev-local" % "0.9.229",
+          "com.datomic" % "dev-local" % "0.9.235",
 
           As long dev-local has a dependency on clojure 1.10.0-alpha4
-          we also need to import a newer version of clojure
-          "org.clojure" % "clojure" % "1.10.1",
+          we also need to import a newer version of clojure like this:
+          "org.clojure" % "clojure" % "1.10.1"
 
           (No need to start a transactor)
          */
 
-        // Retrieve client for a specific system
-        // (this one has been created in SetupSpec)
-        val client: Client = Datomic.clientDevLocal("test-datomic-client-api-scala-2.13")
-
         // Confirm that client is valid and can connect to a database
-        client.connect("hello")
+        Datomic.clientDevLocal("test-datomic-client-api-scala-2.13").connect("hello")
 
         // Wrong system name
         Datomic.clientDevLocal("x").connect("hello") must throwA(
@@ -45,9 +42,9 @@ class DatomicTest extends Spec with AnomalyWrapper {
         Datomic.clientDevLocal("test-datomic-client-api-scala-2.13").connect("y") must throwA(
           NotFound("Db not found: y")
         )
-      }
 
-      case "peer-server" => {
+
+      case "peer-server" =>
         /*
           To run tests against a Peer Server do these 3 steps first:
 
@@ -62,20 +59,17 @@ class DatomicTest extends Spec with AnomalyWrapper {
           > bin/run -m datomic.peer-server -h localhost -p 8998 -a k,s -d hello,datomic:dev://localhost:4334/hello
          */
 
-        val client: Client =
-          Datomic.clientPeerServer("k", "s", "localhost:8998")
-
         // Confirm that client is valid and can connect to a database
-        client.connect("hello")
+        Datomic.clientPeerServer("k", "s", "localhost:8998").connect("hello")
 
         // Note that a Client is returned immediately without contacting
         // a server and can thus be invalid.
-        val client2: Client =
+        val invalidClient: Client =
           Datomic.clientPeerServer("admin", "nice-try", "localhost:8998")
 
-        // Invalid setup shows on first call to server
         try {
-          client2.connect("hello")
+          invalidClient.connect("hello")
+          throw new RuntimeException("Unexpectedly didn't throw a `Forbidden` exception")
         } catch {
           case forbidden: Forbidden =>
             forbidden.getMessage === "forbidden"
@@ -99,13 +93,19 @@ class DatomicTest extends Spec with AnomalyWrapper {
         }
 
         // Wrong endpoint
-        Datomic.clientPeerServer("k", "s", "x")
-          .connect("hello") must throwA(
-          NotFound("x: nodename nor servname provided, or not known")
-        )
-      }
+        try {
+          Datomic.clientPeerServer("k", "s", "x").connect("hello")
+          throw new RuntimeException("Unexpectedly didn't throw a `NotFound` exception")
+        } catch {
+          case notFound: NotFound =>
+            // Is "x" or "x: nodename nor servname provided, or not known"
+            notFound.msg.startsWith("x") === true
+          case NonFatal(e)           =>
+            throw new RuntimeException("Unexpectedly didn't throw a `NotFound` exception. Got " + e)
+        }
 
-      case "cloud" => {
+
+      case "cloud" =>
         val client1: Client = Datomic.clientCloud(
           "us-east-1",
           "mysystem",
@@ -124,10 +124,8 @@ class DatomicTest extends Spec with AnomalyWrapper {
           "myprofile",
           8182
         )
-        // todo: test against a live cloud client
-      }
+      // todo: test against a live cloud client
     }
-
     ok
   }
 

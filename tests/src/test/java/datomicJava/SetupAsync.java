@@ -13,9 +13,8 @@ import java.util.stream.Stream;
 
 import static datomic.Util.list;
 
-
 @RunWith(Parameterized.class)
-public class SetupAsync extends SchemaAndData {
+public abstract class SetupAsync extends SchemaAndData {
 
     public String system;
     public AsyncClient client;
@@ -27,8 +26,7 @@ public class SetupAsync extends SchemaAndData {
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
             {"dev-local"},
-            // todo: when map-bug is fixed, these should pass:
-//            {"peer-server"}
+            {"peer-server"}
         });
     }
 
@@ -70,12 +68,11 @@ public class SetupAsync extends SchemaAndData {
 
     public void resetPeerServerDb() throws ExecutionException, InterruptedException {
         // Install schema if necessary
-        if (
-            AsyncDatomic.q(
-                "[:find ?e :where [?e :db/ident :movie/title]]",
-                conn.db()
-            ).get().toString() == "[]"
-        ) {
+        Either<CognitectAnomaly, Stream<?>> attrChunk = AsyncDatomic.q(
+            "[:find ?e :where [?e :db/ident :movie/title]]",
+            conn.db()
+        ).get().chunk();
+        if (attrChunk.isRight() && !((Right<?, Stream<?>>) attrChunk).right_value().findAny().isPresent()) {
             println("Installing Peer Server hello db schema...");
             conn.transact(schemaPeerServer).get();
         }
@@ -86,21 +83,23 @@ public class SetupAsync extends SchemaAndData {
             conn.db()
         ).get().chunk();
         final ArrayList<AsyncTxReport> lastTxList = new ArrayList<>();
-        Stream<?> rows = ((Right<?, Stream<?>>) firstChunk).right_value();
-        rows.forEach(row -> {
-                try {
-                    lastTxList.add(
-                        ((Right<?, AsyncTxReport>) conn.transact(
-                            list(list(":db/retractEntity", ((List<?>) row).get(0)))
-                        ).get()).right_value()
-                    );
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
+        if (firstChunk.isRight()) {
+            Stream<?> rows = ((Right<?, Stream<?>>) firstChunk).right_value();
+            rows.forEach(row -> {
+                    try {
+                        lastTxList.add(
+                            ((Right<?, AsyncTxReport>) conn.transact(
+                                list(list(":db/retractEntity", ((List<?>) row).get(0)))
+                            ).get()).right_value()
+                        );
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
+                    }
                 }
-            }
-        );
+            );
+        }
         int retractionCount = lastTxList.size();
         if (retractionCount > 0) {
             AsyncTxReport lastTx = lastTxList.get(retractionCount - 1);
@@ -112,15 +111,25 @@ public class SetupAsync extends SchemaAndData {
     }
 
 
-    public boolean isDevLocal() {return system.equals("dev-local");}
+    public boolean isDevLocal() {
+        return system.equals("dev-local");
+    }
 
-    public AsyncDb dbAfter() {return filmDataTx.dbAfter();}
+    public AsyncDb dbAfter() {
+        return filmDataTx.dbAfter();
+    }
 
-    public long tBefore() {return filmDataTx.basisT();}
+    public long tBefore() {
+        return filmDataTx.basisT();
+    }
 
-    public long tAfter() {return filmDataTx.t();}
+    public long tAfter() {
+        return filmDataTx.t();
+    }
 
-    public long txAfter() {return filmDataTx.tx();}
+    public long txAfter() {
+        return filmDataTx.tx();
+    }
 
     private ArrayList<Datom> txDataArray = null;
 
@@ -135,18 +144,34 @@ public class SetupAsync extends SchemaAndData {
         return txDataArray;
     }
 
-    public Date txInstAfter() {return filmDataTx.txInst();}
+    public Date txInstAfter() {
+        return filmDataTx.txInst();
+    }
 
     // Entity ids of the three films
-    public long e1() {return txData().get(1).e();}
+    public long e1() {
+        return txData().get(1).e();
+    }
 
-    public long e2() {return txData().get(4).e();}
+    public long e2() {
+        return txData().get(4).e();
+    }
 
-    public long e3() {return txData().get(7).e();}
+    public long e3() {
+        return txData().get(7).e();
+    }
 
-    public int a1() {return (isDevLocal()) ? 73 : 72;}
-    public int a2() {return (isDevLocal()) ? 74 : 73;}
-    public int a3() {return (isDevLocal()) ? 75 : 74;}
+    public int a1() {
+        return (isDevLocal()) ? 73 : 72;
+    }
+
+    public int a2() {
+        return (isDevLocal()) ? 74 : 73;
+    }
+
+    public int a3() {
+        return (isDevLocal()) ? 75 : 74;
+    }
 
     // Convenience retriever
     public List<String> films(AsyncDb db) throws ExecutionException, InterruptedException {
@@ -155,7 +180,7 @@ public class SetupAsync extends SchemaAndData {
         Either<CognitectAnomaly, Stream<?>> firstChunk = chunks.chunk();
         Stream<?> rows = ((Right<?, Stream<?>>) firstChunk).right_value();
         if (rows == null)
-            return list();
+            return new ArrayList<>();
         for (Iterator<List<String>> it = (Iterator<List<String>>) rows.iterator(); it.hasNext(); )
             titles.add(it.next().get(0));
         Collections.sort(titles);

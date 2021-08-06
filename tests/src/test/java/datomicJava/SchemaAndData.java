@@ -1,5 +1,8 @@
 package datomicJava;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static datomic.Util.*;
@@ -77,9 +80,9 @@ public class SchemaAndData {
 
 
     public static List<?> threeFilms = list("Commando", "Repo Man", "The Goonies");
-    public static List<?> fourFilms  = list("Commando", "Film 4", "Repo Man", "The Goonies");
-    public static List<?> fiveFilms  = list("Commando", "Film 4", "Film 5", "Repo Man", "The Goonies");
-    public static List<?> sixFilms  = list("Commando", "Film 4", "Film 5", "Film 6", "Repo Man", "The Goonies");
+    public static List<?> fourFilms = list("Commando", "Film 4", "Repo Man", "The Goonies");
+    public static List<?> fiveFilms = list("Commando", "Film 4", "Film 5", "Repo Man", "The Goonies");
+    public static List<?> sixFilms = list("Commando", "Film 4", "Film 5", "Film 6", "Repo Man", "The Goonies");
 
     public static List<?> film4 = list(map(read(":movie/title"), "Film 4"));
     public static List<?> film5 = list(map(read(":movie/title"), "Film 5"));
@@ -88,4 +91,17 @@ public class SchemaAndData {
         map(read(":movie/title"), "Film 4"),
         map(read(":movie/title"), "Film 5")
     );
+
+
+    // Test hacks to be able to read files with different base paths when testing in Intellij/sbt
+    // todo: resolve in Intellij/sbt settings instead
+    public FileReader getFileReader(String path) throws FileNotFoundException {
+        String prefix = "";
+        if (Paths.get(".").toAbsolutePath().endsWith("tests/.")) {
+            prefix = "";
+        } else {
+            prefix = "tests/";
+        }
+        return new FileReader(prefix + path);
+    }
 }

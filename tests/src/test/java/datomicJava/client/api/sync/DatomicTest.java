@@ -43,12 +43,8 @@ public class DatomicTest extends Setup {
             (No need to start a transactor)
            */
 
-            // Retrieve client for a specific system
-            // (this one has been created in SetupSpec)
-            Client client = Datomic.clientDevLocal("test-datomic-client-api-java");
-
             // Confirm that client is valid and can connect to a database
-            client.connect("hello");
+            Datomic.clientDevLocal("test-datomic-client-api-java").connect("hello");
 
             // Wrong system name
             NotFound wrongSystemName = assertThrows(
@@ -87,12 +83,12 @@ public class DatomicTest extends Setup {
 
             // Note that a Client is returned immediately without contacting
             // a server and can thus be invalid.
-            Client client2 = Datomic.clientPeerServer("admin", "nice-try", "localhost:8998");
+            Client invalidClient = Datomic.clientPeerServer("admin", "nice-try", "localhost:8998");
 
             // Invalid setup shows on first call to server
             Forbidden forbidden = assertThrows(
                 Forbidden.class,
-                () -> client2.connect("hello")
+                () -> invalidClient.connect("hello")
             );
             assertThat(forbidden.getMessage(), is("forbidden"));
             assertThat(forbidden.httpRequest().get("status"), is(403));
@@ -120,6 +116,7 @@ public class DatomicTest extends Setup {
                     .connect("hello")
             );
             assertThat(wrongEndpoint.msg(), is("x: nodename nor servname provided, or not known"));
+
 
         } else {
             // cloud

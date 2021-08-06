@@ -607,7 +607,7 @@ class DbTest extends Spec {
       )
 
       // AEVT
-//      val l = list(read(":movie/title"), e2, "Commando", txAfter)
+      //      val l = list(read(":movie/title"), e2, "Commando", txAfter)
 
       conn.db.datoms(
         ":aevt",
@@ -727,12 +727,10 @@ class DbTest extends Spec {
     conn.db.pull("[*]", e3, 1000).toString ===
       s"""{:db/id $e3, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
 
-    // dev-local in-memory db will pull within 1 ms, sometimes peer-server too
-    if (!isDevLocal) {
-      conn.db.pull("[*]", e3, 1) must throwA(
-        Interrupted("Datomic Client Timeout")
-      )
-    }
+    // Both dev-local and peer-server inmem pull within 1 ms, so we can't test it here
+    //    conn.db.pull("[*]", e3, 1) must throwA(
+    //      Interrupted("Datomic Client Timeout")
+    //    )
   }
 
 

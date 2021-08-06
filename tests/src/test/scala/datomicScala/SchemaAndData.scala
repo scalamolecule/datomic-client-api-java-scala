@@ -2,7 +2,7 @@ package datomicScala
 
 import java.util.{List => jList}
 import datomic.Util
-import datomic.Util.{read, _}
+import datomic.Util._
 
 trait SchemaAndData {
 

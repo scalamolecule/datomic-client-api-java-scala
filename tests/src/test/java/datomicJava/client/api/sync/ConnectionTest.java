@@ -9,8 +9,10 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 
 import static datomic.Util.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -71,7 +73,7 @@ public class ConnectionTest extends Setup {
     @Test
     public void transactEdnFile() throws FileNotFoundException {
         assertThat(films(conn.db()), is(threeFilms));
-        conn.transact(new FileReader("tests/resources/film4.edn"));
+        conn.transact(getFileReader("resources/film4.edn"));
         assertThat(films(conn.db()), is(fourFilms));
 
         // Applying empty list of stmts returns empty TxReport without touching the db

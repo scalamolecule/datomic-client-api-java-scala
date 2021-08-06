@@ -5,18 +5,18 @@ import java.util.stream.{Stream => jStream}
 import cats.effect.IO
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import datomic.Util
-import datomic.Util.{list, _}
+import datomic.Util._
 import datomicClient.anomaly.{AnomalyWrapper, CognitectAnomaly, Forbidden, NotFound}
 import datomicScala.SpecAsync
 import scala.concurrent.Future
 import scala.jdk.StreamConverters._
 
 
-class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
+class AsyncDatomicTest extends SpecAsync with AnomalyWrapper {
 
   "create client" >> {
     system match {
-      case "dev-local" => {
+      case "dev-local" =>
         /*
           Install dev-local (https://docs.datomic.com/cloud/dev-local.html)
           > mkdir ~/.datomic
@@ -34,12 +34,9 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
           (No need to start a transactor)
          */
 
-        // Retrieve client for a specific system
-        // (this one has been created in SetupSpec)
-        val client: AsyncClient = AsyncDatomic.clientDevLocal("test-datomic-client-api-scala-2.13")
-
         // Confirm that client is valid and can connect to a database
-        client.connect("hello")
+        waitFor(AsyncDatomic.clientDevLocal("test-datomic-client-api-scala-2.13")
+          .connect("hello")).isRight
 
         // Wrong system name
         waitFor(AsyncDatomic.clientDevLocal("x").connect("hello")) === Left(
@@ -50,10 +47,9 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
         waitFor(AsyncDatomic.clientDevLocal("test-datomic-client-api-scala-2.13").connect("y")) === Left(
           NotFound("Db not found: y")
         )
-      }
 
-      case "peer-server" => {
-        // TODO: async peer server not available before bug fix
+
+      case "peer-server" =>
         /*
           To run tests against a Peer Server do these 3 steps first:
 
@@ -68,50 +64,42 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
           > bin/run -m datomic.peer-server -h localhost -p 8998 -a k,s -d hello,datomic:dev://localhost:4334/hello
          */
 
-        val client: AsyncClient =
-          AsyncDatomic.clientPeerServer("k", "s", "localhost:8998")
-
         // Confirm that client is valid and can connect to a database
-        client.connect("hello")
+        waitFor(
+          AsyncDatomic.clientPeerServer("k", "s", "localhost:8998")
+            .connect("hello")
+        ).isRight
 
         // Note that a Client is returned immediately without contacting
         // a server and can thus be invalid.
-        val client2: AsyncClient =
-        AsyncDatomic.clientPeerServer("admin", "nice-try", "localhost:8998")
+        val invalidClient: AsyncClient = AsyncDatomic.clientPeerServer("admin", "nice-try", "localhost:8998")
 
-        // Invalid setup shows on first call to server
-        try {
-          client2.connect("hello")
-        } catch {
-          case forbidden: Forbidden =>
-            forbidden.getMessage === "forbidden"
-            forbidden.httpRequest.get("status") === 403
-            forbidden.httpRequest.get("body") === null
+        // Invalid key/pass
+        waitFor(invalidClient.connect("hello")) match {
+          case Left(anomaly: Forbidden) =>
+            anomaly.getMessage === "forbidden"
 
-          /*
-          Example of forbidden.httpRequest data:
+            anomaly.httpRequest.get("status") === 403
+            anomaly.httpRequest.get("body") === null
+            val headers = anomaly.httpRequest.get("headers").asInstanceOf[java.util.Map[String, Any]]
+            headers.get("content-length") === "19"
+            headers.get("content-type") === "application/transit+msgpack"
 
-          Map(
-            status -> 403,
-            headers -> Map(
-              server -> Jetty(9.3.7.v20160115),
-              content-length -> 19,
-              date -> Sun, 13 Sep 2020 19:14:36 GMT,
-              content-type -> application/transit+msgpack
-            ),
-            body -> null
-          )
-          */
+          case other => throw new RuntimeException("Unexpectedly didn't throw a `Forbidden` exception. Got: " + other)
         }
 
         // Wrong endpoint
-        AsyncDatomic.clientPeerServer("k", "s", "x")
-          .connect("hello") === Left(
-          NotFound("x: nodename nor servname provided, or not known")
-        )
-      }
+        waitFor(AsyncDatomic.clientPeerServer("k", "s", "x")
+          .connect("hello")) match {
+          case Left(notFound: NotFound) =>
+            // Is "x" or "x: nodename nor servname provided, or not known"
+            notFound.msg.startsWith("x") === true
+          case other =>
+            throw new RuntimeException("Unexpectedly didn't throw a `NotFound` exception. Got " + other)
+        }
 
-      case "cloud" => {
+
+      case "cloud" =>
         val client1: AsyncClient = AsyncDatomic.clientCloud(
           "us-east-1",
           "mysystem",
@@ -130,8 +118,8 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
           "myprofile",
           8182
         )
-        // todo: test against a live cloud client
-      }
+      // todo: test against a live cloud client
+
     }
     ok
   }
@@ -159,17 +147,17 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
   "q" in new AsyncSetup {
 
     // query & args / String - with intermediary type resolutions
-    val futureLazyChunks: Future[LazyList[Either[CognitectAnomaly, jStream[_]]]] =
+    val futureLazyChunks : Future[LazyList[Either[CognitectAnomaly, jStream[_]]]] =
       AsyncDatomic.q(
         """[:find ?movie-title
           |:where [_ :movie/title ?movie-title]]""".stripMargin,
         conn.db
       )
-    val lazyChunks: LazyList[Either[CognitectAnomaly, jStream[_]]] = waitFor(futureLazyChunks)
-    val firstChunk: Either[CognitectAnomaly, jStream[_]] = lazyChunks.head
-    val chunkDataOptional: Option[jStream[_]] = firstChunk.toOption
-    val chunkData: jStream[_] = chunkDataOptional.get
-    val chunkDataScala: List[Any] = chunkData.toScala(List)
+    val lazyChunks       : LazyList[Either[CognitectAnomaly, jStream[_]]]         = waitFor(futureLazyChunks)
+    val firstChunk       : Either[CognitectAnomaly, jStream[_]]                   = lazyChunks.head
+    val chunkDataOptional: Option[jStream[_]]                                     = firstChunk.toOption
+    val chunkData        : jStream[_]                                             = chunkDataOptional.get
+    val chunkDataScala   : List[Any]                                              = chunkData.toScala(List)
     chunkDataScala === List(
       list("Commando"), list("The Goonies"), list("Repo Man")
     )

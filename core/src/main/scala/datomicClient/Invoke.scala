@@ -2,9 +2,8 @@ package datomicClient
 
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, LocalDateTime, OffsetDateTime, ZonedDateTime}
-import java.util
 import java.util.{Date, List => jList, Map => jMap}
-import clojure.lang.IFn
+import clojure.lang.{IFn, PersistentHashMap}
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util.read
 import datomicClient.anomaly.AnomalyWrapper
@@ -149,15 +148,15 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     endpoint: String,
     validateHostnames: Boolean
   ): AnyRef = catchAnomaly {
-    val argsMap = read(
-      s"""{
-         |:server-type :peer-server
-         |:access-key "$accessKey"
-         |:secret "$secret"
-         |:endpoint "$endpoint"
-         |:validate-hostnames $validateHostnames
-         |}""".stripMargin)
-    fn("client").invoke(argsMap)
+    fn("client").invoke(
+      PersistentHashMap.createWithCheck(
+        read(":server-type"), read(":peer-server"),
+        read(":access-key"), accessKey,
+        read(":secret"), secret,
+        read(":endpoint"), endpoint,
+        read(":validate-hostnames"), validateHostnames.asInstanceOf[Object]
+      )
+    )
   }
 
   def connect(
@@ -314,7 +313,7 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
     offset: Int = 0,
     limit: Int = 1000
   ): AnyRef = catchAnomaly {
-    val eid = eid0 match {
+    val eid     = eid0 match {
       case l: jList[_] => edn(l)
       case number      => number
     }
@@ -332,12 +331,12 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
 
 
   def q(map: jMap[_, _]): AnyRef = catchAnomaly {
-    fn("q").invoke(map)
+    fn("q").invoke(PersistentHashMap.create(map))
   }
 
 
   def qseq(map: jMap[_, _]): AnyRef = catchAnomaly {
-    fn("qseq").invoke(map)
+    fn("qseq").invoke(PersistentHashMap.create(map))
   }
 
 
@@ -360,8 +359,8 @@ trait Invoke extends ClojureBridge with AnomalyWrapper {
   ): AnyRef = catchAnomaly {
     val txData  = edn(stmts)
     // clojure.tools.reader/read-string needed to interpret uri representation.
-    // When maps of data are accepted (bug fixed), we can likely use `read` again
     val argsMap = readString(s"{:tx-data $txData}")
+    //    val argsMap = read(s"{:tx-data $txData}")
     fn("transact").invoke(datomicConn, argsMap)
   }
 

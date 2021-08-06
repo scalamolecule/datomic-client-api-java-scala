@@ -8,7 +8,6 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -77,7 +76,7 @@ public class AsyncConnectionTest extends SetupAsync {
     @Test
     public void transactEdnFile() throws ExecutionException, InterruptedException, FileNotFoundException {
         assertThat(films(conn.db()), is(threeFilms));
-        conn.transact(new FileReader("tests/resources/film4.edn")).get(); // Await future completion
+        conn.transact(getFileReader("resources/film4.edn")).get(); // Await future completion
         assertThat(films(conn.db()), is(fourFilms));
     }
 

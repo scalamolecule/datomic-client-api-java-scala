@@ -14,11 +14,10 @@ You can then use the various Datomic systems depending on the Client api from Ja
 
 Using the facade in a live Cloud setting has not yet been tested. But since dev-local is equivalent and works fine, Cloud should too.
 
-Note that this library is an independent release not associated with Datomic/Cognitect.
 
 ## Java/Scala
 
-Code is written in Scala but compiles to the same bytecode as Java. 
+Most code is written in Scala but compiles to the same bytecode as Java. 
 
 Each language has been given its own exclusive namespace to ensure full compatibility and to accommodate for differences.
 
@@ -161,7 +160,7 @@ Run the Java tests by right-clicking on the `test.java.datomicJava.client` packa
 
 Run the Scala tests by right-clicking on the `test.scala.datomicScala.client` package in the project view (in IntelliJ) and choose Run -> Specs2 in 'client' (or run individual tests similarly).
 
-Or run tests with sbt:
+Run tests with sbt:
 ```
 sbt
 
@@ -175,13 +174,15 @@ sbt:datomic-client-api-java-scala> testOnly datomicJava.client.api.*
 sbt:datomic-client-api-java-scala> testOnly datomicScala.client.api.*
 
 // Tests for scala 2.12
-sbt:datomic-client-api-java-scala> ++2.12.13; testOnly datomicJava.client.api.*
-sbt:datomic-client-api-java-scala> ++2.12.13; testOnly datomicScala.client.api.*
+sbt:datomic-client-api-java-scala> ++2.12.14; testOnly datomicJava.client.api.*
+sbt:datomic-client-api-java-scala> ++2.12.14; testOnly datomicScala.client.api.*
 ```
 
+### Test caveats
 
-#### Temporary limitation
-Due to a bug in the Peer Server async implementation, all asynchronous Peer Server tests won't pass since we can't build a Client with map data. Hopefully this will be solved soon, and then all asynchronous Peer Server tests should pass.
+Sometimes you'll need to re-start the peer-server to clear the cache. Then run the sbt tests twice to allow schema creation to propagate.
+
+To run tests from IntelliJ, make sure that any previous sbt process of this project is not also running (kill it). Otherwise dev-local tests won't pass.
 
 
 ## Use with your project
@@ -193,34 +194,34 @@ Add Java dependency in POM file:
 <dependency>
     <groupId>org.scalamolecule</groupId>
     <artifactId>datomic-client-api-java-scala</artifactId>
-    <version>0.7.0</version>
+    <version>1.0.0</version>
 </dependency>
 
 <!-- If using dev-local -->
 <dependency>
     <groupId>com.datomic</groupId>
     <artifactId>dev-local</artifactId>
-    <version>0.9.232</version>
+    <version>0.9.235</version>
 </dependency>
 
 <!-- If using peer-server -->
 <dependency>
     <groupId>com.datomic</groupId>
     <artifactId>datomic-pro</artifactId>
-    <version>1.0.6269</version>
+    <version>1.0.6319</version>
 </dependency>
 ```
 
 Add Scala dependency in sbt build file (crosscompiles to Scala 2.12 and 2.13):
 ```
 libraryDependencies ++= Seq(
-  "org.scalamolecule" %% "datomic-client-api-java-scala" % "0.7.0",
+  "org.scalamolecule" %% "datomic-client-api-java-scala" % "1.0.0",
   
   // If using dev-local
-  "com.datomic" % "dev-local" % "0.9.232",
+  "com.datomic" % "dev-local" % "0.9.235",
   
   // If using peer-server
-  "com.datomic" % "datomic-pro" % "1.0.6269"
+  "com.datomic" % "datomic-pro" % "1.0.6319"
 )
 ```
 

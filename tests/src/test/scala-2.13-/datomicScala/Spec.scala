@@ -79,7 +79,7 @@ trait Spec extends Specification with SchemaAndData with AnomalyWrapper {
       if (Datomic.q(
         "[:find ?e :where [?e :db/ident :movie/title]]",
         conn.db
-      ).toString == "[]") {
+      ).isEmpty) {
         println("Installing Peer Server hello db schema...")
         lastTxOpt = Some(conn.transact(schema(true)))
       }

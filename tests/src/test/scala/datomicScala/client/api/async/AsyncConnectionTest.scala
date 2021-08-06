@@ -70,6 +70,8 @@ class AsyncConnectionTest extends SpecAsync {
   }
 
 
+  // For some reason, this doesn't pass from sbt, but pass fine when tested from IntelliJ
+
   "txRange" in new AsyncSetup {
 
     // Getting all transactions (!) -----------------------------------

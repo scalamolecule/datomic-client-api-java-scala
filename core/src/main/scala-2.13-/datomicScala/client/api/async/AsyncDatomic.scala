@@ -1,9 +1,8 @@
 package datomicScala.client.api.async
 
 import java.util.stream.{Stream => jStream}
-import java.util.{List => jList, Map => jMap}
+import java.util.{List => jList, Map => jMap, Collection => jCollection}
 import cats.effect.IO
-import clojure.lang.LazySeq
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util._
@@ -88,7 +87,7 @@ object AsyncDatomic extends ClojureBridge {
   : Future[Stream[Either[CognitectAnomaly, jStream[_]]]] = Future {
     Channel[jStream[_]](
       InvokeAsync.q(argMap),
-      Some((res: AnyRef) => res.asInstanceOf[LazySeq].stream)
+      Some((res: AnyRef) => res.asInstanceOf[jCollection[_]].stream)
     ).lazyList
   }
 
@@ -119,7 +118,7 @@ object AsyncDatomic extends ClojureBridge {
   : fs2.Stream[IO, Either[CognitectAnomaly, jStream[_]]] = {
     Channel[jStream[_]](
       InvokeAsync.q(argMap),
-      Some((res: AnyRef) => res.asInstanceOf[LazySeq].stream)
+      Some((res: AnyRef) => res.asInstanceOf[jCollection[_]].stream)
     ).myTerminatedStream
   }
 
@@ -130,7 +129,7 @@ object AsyncDatomic extends ClojureBridge {
   : Future[Stream[Either[CognitectAnomaly, jStream[_]]]] = Future {
     Channel[jStream[_]](
       InvokeAsync.qseq(argMap),
-      Some((res: AnyRef) => res.asInstanceOf[LazySeq].stream)
+      Some((res: AnyRef) => res.asInstanceOf[jCollection[_]].stream)
     ).lazyList
   }
 

@@ -47,7 +47,7 @@ class AsyncClientTest extends SpecAsync {
     } else {
       // create-database not implemented for Peer Server
       client.createDatabase("world") must throwA(
-        new RuntimeException(ErrorMsg.createDatabase("hello"))
+        new RuntimeException(ErrorMsg.createDatabase("world"))
       )
     }
   }

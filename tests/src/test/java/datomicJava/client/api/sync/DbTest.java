@@ -10,7 +10,6 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.util.*;
 
 import static datomic.Util.*;
@@ -325,7 +324,7 @@ public class DbTest extends Setup {
         // Test adding a 4th film
         // OBS: Note that a `conn.withDb` has to be passed initially!
         TxReport txReport4films = conn.db().with(
-            conn.withDb(), new FileReader("tests/resources/film4.edn")
+            conn.withDb(), getFileReader("resources/film4.edn")
         );
         Db db4Films = txReport4films.dbAfter();
         assertThat(films(db4Films), is(fourFilms));
@@ -333,7 +332,7 @@ public class DbTest extends Setup {
         // Test adding a 4th film
         // OBS: Note that a `conn.withDb` has to be passed initially!
         TxReport txReport5films = conn.db().with(
-            db4Films, new FileReader("tests/resources/film5.edn")
+            db4Films, getFileReader("resources/film5.edn")
         );
         Db db5Films = txReport5films.dbAfter();
         assertThat(films(db5Films), is(fiveFilms));
@@ -341,7 +340,7 @@ public class DbTest extends Setup {
         // Test adding a 4th film
         // OBS: Note that a `conn.withDb` has to be passed initially!
         TxReport txReport6films = conn.db().with(
-            txReport5films, new FileReader("tests/resources/film6.edn")
+            txReport5films, getFileReader("resources/film6.edn")
         );
         Db db6Films = txReport6films.dbAfter();
         assertThat(films(db6Films), is(sixFilms));
@@ -411,13 +410,13 @@ public class DbTest extends Setup {
     public void withEdnFile_SingleInvocation() throws FileNotFoundException {
         // As a convenience, a single-invocation shorter version of `with`:
         assertThat(
-            films(conn.widh(new FileReader("tests/resources/film4.edn"))),
+            films(conn.widh(getFileReader("resources/film4.edn"))),
             is(fourFilms)
         );
 
         // Applying another data set still augments the original db
         assertThat(
-            films(conn.widh(new FileReader("tests/resources/film4and5.edn"))),
+            films(conn.widh(getFileReader("resources/film4and5.edn"))),
             is(fiveFilms)
         );
 
@@ -851,14 +850,12 @@ public class DbTest extends Setup {
         assertThat(entity.get(read(":movie/genre")), is("punk dystopia"));
         assertThat(entity.get(read(":movie/release-year")), is(1984L));
 
-        // dev-local in-memory db will pull within 1 ms
-        if (!isDevLocal()) {
-            Interrupted timedOut = assertThrows(
-                Interrupted.class,
-                () -> conn.db().pull("[*]", e3(), 1)
-            );
-            assertThat(timedOut.getMessage(), is("Datomic Client Timeout"));
-        }
+        // Both dev-local and peer-server inmem pull within 1 ms, so we can't test it here
+        //        Interrupted timedOut = assertThrows(
+        //            Interrupted.class,
+        //            () -> conn.db().pull("[*]", e3(), 1)
+        //        );
+        //        assertThat(timedOut.getMessage(), is("Datomic Client Timeout"));
     }
 
     // since 1.0.61.65

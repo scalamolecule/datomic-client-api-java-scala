@@ -2,7 +2,7 @@ package datomicScala.client.api.async
 
 import java.io.{Reader, StringReader}
 import java.util.stream.{Stream => jStream}
-import java.util.{Collections, Date, List => jList, Map => jMap}
+import java.util.{Collections, Date, List => jList, Map => jMap, Collection => jCollection}
 import clojure.lang.LazySeq
 import datomic.Util.readAll
 import datomicClient._
@@ -224,7 +224,7 @@ case class AsyncDb(
       ) {
         case Right(indexPull) =>
           Channel[jStream[_]](
-            indexPull.asInstanceOf[LazySeq].stream()
+            indexPull.asInstanceOf[jCollection[_]].stream()
           ).lazyList.head
 
         case Left(anomaly) => Left(anomaly)

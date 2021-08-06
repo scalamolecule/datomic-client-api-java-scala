@@ -13,7 +13,7 @@ import static datomic.Util.list;
 
 
 @RunWith(Parameterized.class)
-public class Setup extends SchemaAndData {
+public abstract class Setup extends SchemaAndData {
 
     public String system;
     public Client client;
@@ -30,7 +30,7 @@ public class Setup extends SchemaAndData {
     }
 
     @Before
-    public void setUp() {
+    public void setUp() throws InterruptedException {
         if (system == "dev-local") {
             client = Datomic.clientDevLocal("test-datomic-client-api-java");
             resetDevLocalDb();
@@ -64,14 +64,9 @@ public class Setup extends SchemaAndData {
         filmDataTx = conn.transact(filmData);
     }
 
-    public void resetPeerServerDb() {
+    public void resetPeerServerDb() throws InterruptedException {
         // Install schema if necessary
-        if (
-            Datomic.q(
-                "[:find ?e :where [?e :db/ident :movie/title]]",
-                conn.db()
-            ).toString() == "[]"
-        ) {
+        if (Datomic.q("[:find ?e :where [?e :db/ident :movie/title]]", conn.db()).isEmpty()) {
             println("Installing Peer Server hello db schema...");
             conn.transact(schemaPeerServer);
         }
@@ -94,15 +89,25 @@ public class Setup extends SchemaAndData {
     }
 
 
-    public boolean isDevLocal() {return system.equals("dev-local");}
+    public boolean isDevLocal() {
+        return system.equals("dev-local");
+    }
 
-    public Db dbAfter() {return filmDataTx.dbAfter();}
+    public Db dbAfter() {
+        return filmDataTx.dbAfter();
+    }
 
-    public long tBefore() {return filmDataTx.basisT();}
+    public long tBefore() {
+        return filmDataTx.basisT();
+    }
 
-    public long tAfter() {return filmDataTx.t();}
+    public long tAfter() {
+        return filmDataTx.t();
+    }
 
-    public long txAfter() {return filmDataTx.tx();}
+    public long txAfter() {
+        return filmDataTx.tx();
+    }
 
     private ArrayList<Datom> txDataArray = null;
 
@@ -117,18 +122,34 @@ public class Setup extends SchemaAndData {
         return txDataArray;
     }
 
-    public Date txInstAfter() {return filmDataTx.txInst();}
+    public Date txInstAfter() {
+        return filmDataTx.txInst();
+    }
 
     // Entity ids of the three films
-    public long e1() {return txData().get(1).e();}
+    public long e1() {
+        return txData().get(1).e();
+    }
 
-    public long e2() {return txData().get(4).e();}
+    public long e2() {
+        return txData().get(4).e();
+    }
 
-    public long e3() {return txData().get(7).e();}
+    public long e3() {
+        return txData().get(7).e();
+    }
 
-    public int a1() {return (isDevLocal()) ? 73 : 72;}
-    public int a2() {return (isDevLocal()) ? 74 : 73;}
-    public int a3() {return (isDevLocal()) ? 75 : 74;}
+    public int a1() {
+        return (isDevLocal()) ? 73 : 72;
+    }
+
+    public int a2() {
+        return (isDevLocal()) ? 74 : 73;
+    }
+
+    public int a3() {
+        return (isDevLocal()) ? 75 : 74;
+    }
 
     // Convenience retriever
     public List<String> films(Db db) {

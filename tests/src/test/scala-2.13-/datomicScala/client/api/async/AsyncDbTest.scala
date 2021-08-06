@@ -727,19 +727,18 @@ class AsyncDbTest extends SpecAsync with AnomalyWrapper {
     waitFor(conn.db.pull("[*]", e3, 1000)).toOption.get.toString ===
       s"""{:db/id $e3, :movie/title "Repo Man", :movie/genre "punk dystopia", :movie/release-year 1984}"""
 
-    // dev-local in-memory db will pull within 1 ms
-    if (!isDevLocal)
-      waitFor(conn.db.pull("[*]", e3, 1)).toOption.get must throwA(
-        new clojure.lang.ExceptionInfo(
-          "Datomic Client Timeout",
-          new PersistentArrayMap(
-            Array(
-              read(":cognitect.anomalies/category"), read(":cognitect.anomalies/interrupted"),
-              read(":cognitect.anomalies/message"), "Datomic Client Timeout"
-            )
-          )
-        )
-      )
+    // Both dev-local and peer-server inmem pull within 1 ms, so we can't test it here
+    //    waitFor(conn.db.pull("[*]", e3, 1)).toOption.get must throwA(
+    //      new clojure.lang.ExceptionInfo(
+    //        "Datomic Client Timeout",
+    //        new PersistentArrayMap(
+    //          Array(
+    //            read(":cognitect.anomalies/category"), read(":cognitect.anomalies/interrupted"),
+    //            read(":cognitect.anomalies/message"), "Datomic Client Timeout"
+    //          )
+    //        )
+    //      )
+    //    )
   }
 
 

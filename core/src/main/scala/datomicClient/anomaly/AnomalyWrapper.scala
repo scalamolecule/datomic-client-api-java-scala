@@ -37,8 +37,10 @@ trait AnomalyWrapper {
     cat match {
       case "forbidden"   => {
         val httpResult = new util.HashMap[String, Any]()
-        e.data.entryAt(read(":http-result"))
-          .getValue.asInstanceOf[jMap[_, _]].forEach {
+        e.data
+          .entryAt(read(":http-result"))
+          .getValue.asInstanceOf[jMap[_, _]]
+          .forEach {
           case (k: Keyword, v: jMap[_, _]) => httpResult.put(k.getName, v)
           case (k: Keyword, v)             => httpResult.put(k.getName, v)
           case (k, v)                      => httpResult.put(k.toString, v)
@@ -70,12 +72,15 @@ trait AnomalyWrapper {
 
     cat match {
       case "forbidden"   => {
-        val httpResult = map().asInstanceOf[jMap[String, Any]]
-        anomalyMap.entryAt(read(":http-result")).getValue.asInstanceOf[jMap[_, _]].forEach {
-          case (k: Keyword, v: jMap[_, _]) => httpResult.put(k.getName, v)
-          case (k: Keyword, v)             => httpResult.put(k.getName, v)
-          case (k, v)                      => httpResult.put(k.toString, v)
-        }
+        val httpResult = new util.HashMap[String, Any]()
+        anomalyMap
+          .entryAt(read(":http-result"))
+          .getValue.asInstanceOf[jMap[_, _]]
+          .forEach {
+            case (k: Keyword, v: jMap[_, _]) => httpResult.put(k.getName, v)
+            case (k: Keyword, v)             => httpResult.put(k.getName, v)
+            case (k, v)                      => httpResult.put(k.toString, v)
+          }
         Forbidden(httpResult)
       }
       case "not-found"   => NotFound(msg)

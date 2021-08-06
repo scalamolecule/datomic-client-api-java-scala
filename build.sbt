@@ -4,9 +4,9 @@ import sbt.url
 
 lazy val commonSettings = Seq(
   name := "datomic-client-api-java-scala",
-  version in ThisBuild := "0.7.0",
-  crossScalaVersions := Seq("2.12.13", "2.13.5"),
-  scalaVersion in ThisBuild := "2.13.5",
+  ThisBuild / version := "1.0.0",
+  crossScalaVersions := Seq("2.12.14", "2.13.6"),
+  ThisBuild / scalaVersion := "2.13.6",
   organization := "org.scalamolecule",
   organizationName := "ScalaMolecule",
   organizationHomepage := Some(url("http://www.scalamolecule.org")),
@@ -22,8 +22,8 @@ lazy val commonSettings = Seq(
     ("clojars" at "http://clojars.org/repo").withAllowInsecureProtocol(true),
     ("ICM repository" at "http://maven.icm.edu.pl/artifactory/repo/").withAllowInsecureProtocol(true)
   ),
-  unmanagedSourceDirectories in Compile ++= {
-    (unmanagedSourceDirectories in Compile).value.map { dir =>
+  Compile / unmanagedSourceDirectories ++= {
+    (Compile / unmanagedSourceDirectories).value.map { dir =>
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 13)) => file(dir.getPath ++ "-2.13+")
         case _             => file(dir.getPath ++ "-2.13-")
@@ -39,8 +39,8 @@ lazy val core = project.in(file("core"))
       "org.clojure" % "clojure" % "1.10.1",
       "org.clojure" % "tools.analyzer.jvm" % "1.1.0",
       "com.datomic" % "datomic-free" % "0.9.5697",
-      "com.datomic" % "client-pro" % "0.9.66",
-      "com.datomic" % "client-cloud" % "0.8.105",
+      "com.datomic" % "client-pro" % "0.9.71",
+      "com.datomic" % "client-cloud" % "0.8.113",
       "us.bpsm" % "edn-java" % "0.7.1",
       "co.fs2" %% "fs2-core" % "2.4.4",
     ),
@@ -50,13 +50,13 @@ lazy val core = project.in(file("core"))
       Some("Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/")
     else
       Some("Sonatype OSS Staging" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/")),
-    publishArtifact in Test := false,
-    scalacOptions in Compile in doc ++= Seq(
+    Test / publishArtifact := false,
+    Compile / doc / scalacOptions ++= Seq(
       "-doc-root-content", baseDirectory.value + "/src/main/scaladoc/rootdoc.txt",
       "-diagrams", "-groups",
       "-doc-version", version.value,
       "-doc-title", "Datomic Client api for Java/Scala",
-      "-sourcepath", (baseDirectory in ThisBuild).value.toString,
+      "-sourcepath", (ThisBuild / baseDirectory).value.toString,
       "-doc-source-url", s"https://github.com/scalamolecule/datomic-client-api-java-scala/tree/master€{FILE_PATH}.scala#L1"
     ),
     pomIncludeRepository := (_ => false),
@@ -83,22 +83,22 @@ lazy val tests = project.in(file("tests"))
     publish / skip := true,
     publish := ((): Unit),
     publishLocal := ((): Unit),
-    parallelExecution in Test := false,
+    Test / parallelExecution := false,
     libraryDependencies ++= Seq(
       // To test against dev-local, please download cognitect-dev-tools from
       // https://cognitect.com/dev-tools and run `./install`
-      "com.datomic" % "dev-local" % "0.9.232",
+      "com.datomic" % "dev-local" % "0.9.235",
       // To test against peer-server, please download datomic-pro from
       // https://www.datomic.com/get-datomic.html and run `bin/maven-install`
-      "com.datomic" % "datomic-pro" % "1.0.6269",
+      "com.datomic" % "datomic-pro" % "1.0.6316",
       "org.specs2" %% "specs2-core" % "4.10.5" % Test,
       "com.novocode" % "junit-interface" % "0.11" % Test,
       "junit" % "junit" % "4.13" % Test,
       "org.hamcrest" % "hamcrest-junit" % "2.0.0.0" % Test
     ),
     excludeDependencies += ExclusionRule("com.datomic", "datomic-free"),
-    unmanagedSourceDirectories in Test ++= {
-      (unmanagedSourceDirectories in Test).value.map { dir =>
+    Test / unmanagedSourceDirectories ++= {
+      (Test / unmanagedSourceDirectories).value.map { dir =>
         CrossVersion.partialVersion(scalaVersion.value) match {
           case Some((2, 13)) => file(dir.getPath ++ "-2.13+")
           case _             => file(dir.getPath ++ "-2.13-")

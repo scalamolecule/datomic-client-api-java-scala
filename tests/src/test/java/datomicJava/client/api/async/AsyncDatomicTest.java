@@ -2,7 +2,6 @@ package datomicJava.client.api.async;
 
 import datomicClient.anomaly.CognitectAnomaly;
 import datomicClient.anomaly.Forbidden;
-import datomicClient.anomaly.NotFound;
 import datomicJava.SetupAsync;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -13,9 +12,9 @@ import java.util.stream.Stream;
 
 import static datomic.Util.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
 
 
 @FixMethodOrder(MethodSorters.JVM)
@@ -50,7 +49,10 @@ public class AsyncDatomicTest extends SetupAsync {
             AsyncClient client = AsyncDatomic.clientDevLocal("test-datomic-client-api-java");
 
             // Confirm that client is valid and can connect to a database
-            client.connect("hello");
+            assertThat(
+                client.connect("hello").get(),
+                is(instanceOf(Right.class))
+            );
 
             // Wrong system name
             assertThat(
@@ -82,20 +84,17 @@ public class AsyncDatomicTest extends SetupAsync {
               > bin/run -m datomic.peer-server -h localhost -p 8998 -a myaccesskey,mysecret -d hello,datomic:dev://localhost:4334/hello
              */
 
-            AsyncClient client = AsyncDatomic.clientPeerServer("k", "s", "localhost:8998");
-
             // Confirm that client is valid and can connect to a database
-            client.connect("hello");
+            AsyncDatomic.clientPeerServer("k", "s", "localhost:8998")
+                .connect("hello").get().isRight();
 
             // Note that a Client is returned immediately without contacting
             // a server and can thus be invalid.
-            AsyncClient client2 = AsyncDatomic.clientPeerServer("admin", "nice-try", "localhost:8998");
+            AsyncClient invalidClient = AsyncDatomic.clientPeerServer("admin", "nice-try", "localhost:8998");
 
             // Invalid setup shows on first call to server
-            Forbidden forbidden = assertThrows(
-                Forbidden.class,
-                () -> client2.connect("hello")
-            );
+            CognitectAnomaly anomaly = ((Left<CognitectAnomaly, ?>) invalidClient.connect("hello").get()).left_value();
+            Forbidden forbidden = (Forbidden) anomaly;
             assertThat(forbidden.getMessage(), is("forbidden"));
             assertThat(forbidden.httpRequest().get("status"), is(403));
             assertNull(forbidden.httpRequest().get("body"));
@@ -116,12 +115,12 @@ public class AsyncDatomicTest extends SetupAsync {
             */
 
             // Wrong endpoint
-            NotFound wrongEndpoint = assertThrows(
-                NotFound.class,
-                () -> AsyncDatomic.clientPeerServer("k", "s", "x")
-                    .connect("hello")
+            assertThat(
+                ((Left<CognitectAnomaly, ?>) AsyncDatomic
+                    .clientPeerServer("k", "s", "x").connect("hello").get()
+                ).left_value().getMessage().startsWith("x"),
+                is(true)
             );
-            assertThat(wrongEndpoint.msg(), is("x: nodename nor servname provided, or not known"));
 
         } else {
             // cloud
@@ -222,6 +221,7 @@ public class AsyncDatomicTest extends SetupAsync {
     @Test
     public void qseq() throws ExecutionException, InterruptedException {
 
+        // todo: fails on 2.12.14
         // query & args / String
         assertThat(
             ((Right<?, Stream<?>>) AsyncDatomic.qseq(

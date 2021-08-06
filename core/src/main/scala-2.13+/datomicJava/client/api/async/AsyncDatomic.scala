@@ -2,8 +2,7 @@ package datomicJava.client.api.async
 
 import java.util.concurrent.CompletableFuture
 import java.util.stream.Stream
-import java.util.{List => jList, Map => jMap}
-import clojure.lang.LazySeq
+import java.util.{List => jList, Map => jMap, Collection => jCollection}
 import com.amazonaws.auth.AWSCredentialsProviderChain
 import datomic.Util
 import datomic.Util._
@@ -85,7 +84,7 @@ object AsyncDatomic extends ClojureBridge {
     CompletableFuture.supplyAsync { () =>
       Channel[Stream[_]](
         InvokeAsync.q(argMap),
-        Some((res: AnyRef) => res.asInstanceOf[LazySeq].stream)
+        Some((res: AnyRef) => res.asInstanceOf[jCollection[_]].stream)
       )
     }
   }
@@ -113,12 +112,12 @@ object AsyncDatomic extends ClojureBridge {
 
   // Query as data structure or String + optional :offset, :limit, :timeout params
   // (see tests)
-  def qseq(map: jMap[_, _])
+  def qseq(argMap: jMap[_, _])
   : CompletableFuture[Channel[Stream[_]]] = {
     CompletableFuture.supplyAsync { () =>
       Channel[Stream[_]](
-        datomicAsyncFn("qseq").invoke(map),
-        Some((res: AnyRef) => res.asInstanceOf[LazySeq].stream)
+        InvokeAsync.qseq(argMap),
+        Some((res: AnyRef) => res.asInstanceOf[jCollection[_]].stream)
       )
     }
   }

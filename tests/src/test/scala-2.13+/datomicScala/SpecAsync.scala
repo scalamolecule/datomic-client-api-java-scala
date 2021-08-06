@@ -5,7 +5,6 @@ import clojure.lang.PersistentVector
 import datomic.Util.list
 import datomicClient.anomaly.CognitectAnomaly
 import datomicScala.client.api.async._
-import datomicScala.client.api.sync.Datomic
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.specification.core.{Fragments, Text}
@@ -35,10 +34,8 @@ trait SpecAsync extends Specification with SchemaAndData {
 
   // todo: awaiting to find a way to invoke data as maps against Peer Server
   override def map(fs: => Fragments): Fragments =
-    step(setupDevLocal()) ^ addSystem(fs, "dev-local  ")
-  // todo: switch on when we can supply args as a map
-  //    step(setupDevLocal()) ^ addSystem(fs, "dev-local  ") ^
-  //    step(setupPeerServer()) ^ addSystem(fs, "peer-server")
+    step(setupDevLocal()) ^ addSystem(fs, "dev-local  ") ^
+      step(setupPeerServer()) ^ addSystem(fs, "peer-server")
 
 
   def setupDevLocal(): Unit = {
@@ -75,6 +72,7 @@ trait SpecAsync extends Specification with SchemaAndData {
       waitFor(client.deleteDatabase("world"))
       waitFor(client.createDatabase("hello"))
       conn = waitFor(client.connect("hello")).toOption.get
+
       // Schema
       val schemaTx = waitFor(conn.transact(schema(false))).toOption.get
       txBefore = schemaTx.tx
@@ -91,7 +89,7 @@ trait SpecAsync extends Specification with SchemaAndData {
       if (waitFor(AsyncDatomic.q(
         "[:find ?e :where [?e :db/ident :movie/title]]",
         conn.db
-      )).head.toOption.get.toString == "[]") {
+      )).head.toOption.get.count() == 0) {
         println("Installing Peer Server hello db schema...")
         waitFor(conn.transact(schema(true))).toOption.get
       }
@@ -99,10 +97,14 @@ trait SpecAsync extends Specification with SchemaAndData {
       // Retract current data
       var lastTx: AsyncTxReport = null
       waitFor(AsyncDatomic.q("[:find ?e :where [?e :movie/title _]]", conn.db))
-        .head.toOption.get
-        .asInstanceOf[jList[_]].forEach { l =>
-        val eid: Any = l.asInstanceOf[jList[_]].get(0)
-        lastTx = waitFor(conn.transact(list(list(":db/retractEntity", eid)))).toOption.get
+        .head match {
+        case Right(stream) => stream.forEach { l =>
+          val eid: Any = l.asInstanceOf[jList[_]].get(0)
+          lastTx = waitFor(
+            conn.transact(list(list(":db/retractEntity", eid)))
+          ).toOption.get
+        }
+        case Left(anomaly) => throw anomaly
       }
       txBefore = lastTx.tx
       txInstBefore = lastTx.txInst
