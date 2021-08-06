@@ -253,4 +253,4 @@ Marc Grue. Licensed under the [Apache License 2.0][apache2].
 [peer-server]: https://docs.datomic.com/on-prem/peer-server.html
 [transactor]: https://docs.datomic.com/on-prem/transactor.html
 [apache2]: http://en.wikipedia.org/wiki/Apache_license
-[maven]: https://repo1.maven.org/maven2/org/scalamolecule/datomic-client-api-java-scala/
+[maven]: https://repo1.maven.org/maven2/org/scalamolecule/datomic-client-api-java-scala_2.13/
