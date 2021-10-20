@@ -4,8 +4,8 @@ import sbt.url
 
 lazy val commonSettings = Seq(
   name := "datomic-client-api-java-scala",
-  ThisBuild / version := "1.0.0",
-  crossScalaVersions := Seq("2.12.14", "2.13.6"),
+  ThisBuild / version := "1.0.1",
+  crossScalaVersions := Seq("2.12.15", "2.13.6"),
   ThisBuild / scalaVersion := "2.13.6",
   organization := "org.scalamolecule",
   organizationName := "ScalaMolecule",
@@ -36,11 +36,11 @@ lazy val core = project.in(file("core"))
   .settings(commonSettings ++ Seq(
     libraryDependencies ++= Seq(
       // datomic-free uses 1.8, but we need >=1.9 (otherwise `int?` method is missing)
-      "org.clojure" % "clojure" % "1.10.1",
+      "org.clojure" % "clojure" % "1.10.3",
       "org.clojure" % "tools.analyzer.jvm" % "1.1.0",
       "com.datomic" % "datomic-free" % "0.9.5697",
-      "com.datomic" % "client-pro" % "0.9.71",
-      "com.datomic" % "client-cloud" % "0.8.113",
+      "com.datomic" % "client-pro" % "1.0.72",
+      "com.datomic" % "client-cloud" % "1.0.117",
       "us.bpsm" % "edn-java" % "0.7.1",
       "co.fs2" %% "fs2-core" % "2.4.4",
     ),
@@ -87,11 +87,11 @@ lazy val tests = project.in(file("tests"))
     libraryDependencies ++= Seq(
       // To test against dev-local, please download cognitect-dev-tools from
       // https://cognitect.com/dev-tools and run `./install`
-      "com.datomic" % "dev-local" % "0.9.235",
+      "com.datomic" % "dev-local" % "1.0.238",
       // To test against peer-server, please download datomic-pro from
       // https://www.datomic.com/get-datomic.html and run `bin/maven-install`
-      "com.datomic" % "datomic-pro" % "1.0.6316",
-      "org.specs2" %% "specs2-core" % "4.10.5" % Test,
+      "com.datomic" % "datomic-pro" % "1.0.6344",
+      "org.specs2" %% "specs2-core" % "4.10.6" % Test,
       "com.novocode" % "junit-interface" % "0.11" % Test,
       "junit" % "junit" % "4.13" % Test,
       "org.hamcrest" % "hamcrest-junit" % "2.0.0.0" % Test

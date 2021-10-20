@@ -131,10 +131,11 @@ Then in another process (new tab in terminal) create a test database `hello` (if
 
 ### Peer-server in-mem
 
-Running a peer-server in-mem doesn't require a transactor process to be running. So you can simply start the Peer Server directly from within the datomic installation directory:
+Running a peer-server in-mem doesn't require a transactor process to be running. So you can start the Peer Server directly from within the datomic installation directory:
 
     bin/run -m datomic.peer-server -a k,s -d hello,datomic:mem://hello
 
+To run the test suite you need to have a running transactor though!
 
 ### Peer-server against transactor
 
@@ -156,6 +157,8 @@ To run tests against dev-local, please download the [dev-tools][dev-tools] and f
 
 ## Testing
 
+Start a transactor in one process and in another proces an in-mem peer-server.
+
 Run the Java tests by right-clicking on the `test.java.datomicJava.client` package in the project view (in IntelliJ) and choose Run -> Tests in 'client' (or run individual tests similarly).
 
 Run the Scala tests by right-clicking on the `test.scala.datomicScala.client` package in the project view (in IntelliJ) and choose Run -> Specs2 in 'client' (or run individual tests similarly).
@@ -174,8 +177,8 @@ sbt:datomic-client-api-java-scala> testOnly datomicJava.client.api.*
 sbt:datomic-client-api-java-scala> testOnly datomicScala.client.api.*
 
 // Tests for scala 2.12
-sbt:datomic-client-api-java-scala> ++2.12.14; testOnly datomicJava.client.api.*
-sbt:datomic-client-api-java-scala> ++2.12.14; testOnly datomicScala.client.api.*
+sbt:datomic-client-api-java-scala> ++2.12.15; testOnly datomicJava.client.api.*
+sbt:datomic-client-api-java-scala> ++2.12.15; testOnly datomicScala.client.api.*
 ```
 
 ### Test caveats
@@ -194,34 +197,34 @@ Add Java dependency in POM file:
 <dependency>
     <groupId>org.scalamolecule</groupId>
     <artifactId>datomic-client-api-java-scala</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 
 <!-- If using dev-local -->
 <dependency>
     <groupId>com.datomic</groupId>
     <artifactId>dev-local</artifactId>
-    <version>0.9.235</version>
+    <version>1.0.238</version>
 </dependency>
 
 <!-- If using peer-server -->
 <dependency>
     <groupId>com.datomic</groupId>
     <artifactId>datomic-pro</artifactId>
-    <version>1.0.6319</version>
+    <version>1.0.6344</version>
 </dependency>
 ```
 
 Add Scala dependency in sbt build file (crosscompiles to Scala 2.12 and 2.13):
 ```
 libraryDependencies ++= Seq(
-  "org.scalamolecule" %% "datomic-client-api-java-scala" % "1.0.0",
+  "org.scalamolecule" %% "datomic-client-api-java-scala" % "1.0.1",
   
   // If using dev-local
-  "com.datomic" % "dev-local" % "0.9.235",
+  "com.datomic" % "dev-local" % "1.0.238",
   
   // If using peer-server
-  "com.datomic" % "datomic-pro" % "1.0.6319"
+  "com.datomic" % "datomic-pro" % "1.0.6344"
 )
 ```
 

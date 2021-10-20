@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static datomic.Util.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,8 +67,15 @@ public class ConnectionTest extends Setup {
         ));
         assertThat(films(conn.db()), is(fourFilms));
 
-        // Applying empty list of stmts returns empty TxReport without touching the db
-        assertThat(conn.transact(list()), is(new TxReport(Util.map())));
+        // Transacting empty list of stmts creates transaction with timestamp only
+        TxReport txReport = conn.transact(list());
+        Iterator<Datom> txData = txReport.txData().iterator();
+        Datom txInstantDatom = txData.next();
+        // Only tx instant datom asserted
+        assertThat(txData.hasNext(), is(false));
+        assertThat(txInstantDatom, is(
+            new Datom(txReport.tx(), 50, txReport.txInst(), txReport.tx(), true)
+        ));
     }
 
     @Test
@@ -75,9 +83,6 @@ public class ConnectionTest extends Setup {
         assertThat(films(conn.db()), is(threeFilms));
         conn.transact(getFileReader("resources/film4.edn"));
         assertThat(films(conn.db()), is(fourFilms));
-
-        // Applying empty list of stmts returns empty TxReport without touching the db
-        assertThat(conn.transact(list()), is(new TxReport(Util.map())));
     }
 
     @Test
@@ -85,9 +90,6 @@ public class ConnectionTest extends Setup {
         assertThat(films(conn.db()), is(threeFilms));
         conn.transact("[ {:movie/title \"Film 4\"} ]");
         assertThat(films(conn.db()), is(fourFilms));
-
-        // Applying empty list of stmts returns empty TxReport without touching the db
-        assertThat(conn.transact(list()), is(new TxReport(Util.map())));
     }
 
 
@@ -105,7 +107,7 @@ public class ConnectionTest extends Setup {
             Pair<Object, Iterable<Datom>> txs = it.next();
             Iterator<Datom> datoms0 = txs.getValue().iterator();
             List<Datom> datoms1 = new ArrayList<Datom>();
-            while(datoms0.hasNext()){
+            while (datoms0.hasNext()) {
                 datoms1.add(datoms0.next());
             }
             retrievedTxs.add(new Pair<Object, List<Datom>>(txs.getKey(), datoms1));
@@ -115,11 +117,11 @@ public class ConnectionTest extends Setup {
 
         List<Pair<Object, List<Datom>>> expectedTxs = new ArrayList<>();
         Iterator<TxReport> it2 = expected.iterator();
-        while(it2.hasNext()){
+        while (it2.hasNext()) {
             TxReport txReport = it2.next();
             Iterator<Datom> datoms0 = txReport.txData().iterator();
             List<Datom> datoms1 = new ArrayList<Datom>();
-            while(datoms0.hasNext()) {
+            while (datoms0.hasNext()) {
                 datoms1.add(datoms0.next());
             }
             expectedTxs.add(new Pair<Object, List<Datom>>(txReport.t(), datoms1));

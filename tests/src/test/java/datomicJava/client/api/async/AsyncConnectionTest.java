@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import static datomic.Util.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,11 +67,15 @@ public class AsyncConnectionTest extends SetupAsync {
         )).get(); // Await future completion
         assertThat(films(conn.db()), is(fourFilms));
 
-
-        // Applying empty list of stmts returns empty TxReport without touching the db
-        Either emptyResult = conn.transact(list()).get();
-        AsyncTxReport txReport = ((Right<?, AsyncTxReport>) emptyResult).right_value();
-        assertThat(txReport.rawTxReport().isEmpty(), is(true));
+        // Transacting empty list of stmts creates transaction with timestamp only
+        AsyncTxReport txReport = ((Right<?, AsyncTxReport>) conn.transact(list()).get()).right_value();
+        Iterator<Datom> txData = txReport.txData().iterator();
+        Datom txInstantDatom = txData.next();
+        // Only tx instant datom asserted
+        assertThat(txData.hasNext(), is(false));
+        assertThat(txInstantDatom, is(
+            new Datom(txReport.tx(), 50, txReport.txInst(), txReport.tx(), true)
+        ));
     }
 
     @Test
@@ -98,7 +103,7 @@ public class AsyncConnectionTest extends SetupAsync {
         List<Pair<Object, List<Datom>>> retrievedTxs = new ArrayList<>();
 
         final Iterator<Pair<Object, Iterable<Datom>>> it =
-            ((Right<?, Iterable<Pair<Object, Iterable<Datom>>>>)conn
+            ((Right<?, Iterable<Pair<Object, Iterable<Datom>>>>) conn
                 .txRange(timePointStart, timePointEnd).get())
                 .right_value().iterator();
 
@@ -106,7 +111,7 @@ public class AsyncConnectionTest extends SetupAsync {
             Pair<Object, Iterable<Datom>> txs = it.next();
             Iterator<Datom> datoms0 = txs.getValue().iterator();
             List<Datom> datoms1 = new ArrayList<Datom>();
-            while(datoms0.hasNext()){
+            while (datoms0.hasNext()) {
                 datoms1.add(datoms0.next());
             }
             retrievedTxs.add(new Pair<Object, List<Datom>>(txs.getKey(), datoms1));
@@ -115,11 +120,11 @@ public class AsyncConnectionTest extends SetupAsync {
         // Expected
         List<Pair<Object, List<Datom>>> expectedTxs = new ArrayList<>();
         Iterator<AsyncTxReport> it2 = expected.iterator();
-        while(it2.hasNext()){
+        while (it2.hasNext()) {
             AsyncTxReport txReport = it2.next();
             Iterator<Datom> datoms0 = txReport.txData().iterator();
             List<Datom> datoms1 = new ArrayList<Datom>();
-            while(datoms0.hasNext()) {
+            while (datoms0.hasNext()) {
                 datoms1.add(datoms0.next());
             }
             expectedTxs.add(new Pair<Object, List<Datom>>(txReport.t(), datoms1));
@@ -133,7 +138,7 @@ public class AsyncConnectionTest extends SetupAsync {
         Object expectedLastT
     ) throws ExecutionException, InterruptedException {
         final Object[] n = {0L};
-        ((Right<?, Iterable<Pair<Object, Iterable<Datom>>>>)conn
+        ((Right<?, Iterable<Pair<Object, Iterable<Datom>>>>) conn
             .txRange(0, timePointEnd).get())
             .right_value().forEach(txs -> n[0] = txs.getKey());
         assertThat(n[0], is(expectedLastT));
@@ -146,7 +151,7 @@ public class AsyncConnectionTest extends SetupAsync {
 
         // Lazy retrieval with Iterable
         final Iterator<Pair<Object, Iterable<Datom>>> it =
-            ((Right<?, Iterable<Pair<Object, Iterable<Datom>>>>)conn.txRange().get())
+            ((Right<?, Iterable<Pair<Object, Iterable<Datom>>>>) conn.txRange().get())
                 .right_value().iterator();
         Pair<Object, Iterable<Datom>> lastTx = it.next();
         while (it.hasNext()) {
@@ -159,7 +164,7 @@ public class AsyncConnectionTest extends SetupAsync {
 
         // Array
         final Pair<Object, Datom[]>[] it2 =
-            ((Right<?, Pair<Object, Datom[]>[]>)conn.txRangeArray().get()).right_value();
+            ((Right<?, Pair<Object, Datom[]>[]>) conn.txRangeArray().get()).right_value();
         Pair<Object, Datom[]> lastTx2 = it2[it2.length - 1];
         assertThat(lastTx2.getKey(), is(tAfter()));
         assertThat(lastTx2.getValue()[0], is(

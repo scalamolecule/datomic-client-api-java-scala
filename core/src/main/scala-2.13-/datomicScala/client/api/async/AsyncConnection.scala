@@ -25,19 +25,14 @@ case class AsyncConnection(datomicConn: AnyRef) {
   )
 
 
-  def transact(stmts: jList[_]): Future[Either[CognitectAnomaly, AsyncTxReport]] = {
-    if (stmts.isEmpty)
-      Future(Right(AsyncTxReport(Util.map())))
-    else
-      Future {
-        Channel[jMap[_, _]](
-          InvokeAsync.transact(datomicConn, stmts)
-        ).lazyList.head match {
-          case Right(txReport) =>
-            Channel[AsyncTxReport](AsyncTxReport(txReport)).lazyList.head
-          case Left(anomaly)   => Left(anomaly)
-        }
-      }
+  def transact(stmts: jList[_]): Future[Either[CognitectAnomaly, AsyncTxReport]] = Future {
+    Channel[jMap[_, _]](
+      InvokeAsync.transact(datomicConn, stmts)
+    ).lazyList.head match {
+      case Right(txReport) =>
+        Channel[AsyncTxReport](AsyncTxReport(txReport)).lazyList.head
+      case Left(anomaly)   => Left(anomaly)
+    }
   }
 
   def transact(stmtsReader: Reader): Future[Either[CognitectAnomaly, AsyncTxReport]] =

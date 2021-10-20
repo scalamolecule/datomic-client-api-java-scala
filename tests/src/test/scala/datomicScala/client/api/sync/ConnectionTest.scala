@@ -46,8 +46,13 @@ class ConnectionTest extends Spec {
     ))
     films(conn.db) === fourFilms
 
-    // Applying empty list of stmts returns empty TxReport without touching the db
-    conn.transact(list()) === TxReport(Util.map())
+    // Transacting empty list of stmts creates transaction with timestamp only
+    val hollowTxReport = conn.transact(list())
+    val txData = hollowTxReport.txData.toArray.toList.asInstanceOf[List[Datom]]
+    // Only tx instant datom asserted
+    txData.length === 1
+    txData.head.e === txData.head.tx
+    txData.head.a === 50 // id of :db/txInstant attribute
   }
 
   "transact edn file" in new Setup {

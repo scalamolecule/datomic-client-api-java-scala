@@ -29,19 +29,14 @@ case class AsyncConnection(datomicConn: AnyRef) {
 
 
   def transact(stmts: jList[_]): CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] = {
-    if (stmts.isEmpty)
-      CompletableFuture.supplyAsync(() =>
-        Channel[AsyncTxReport](AsyncTxReport(Util.map())).chunk
-      )
-    else
-      CompletableFuture.supplyAsync { () =>
-        Channel[jMap[_, _]](
-          InvokeAsync.transact(datomicConn, stmts)
-        ).chunk match {
-          case Right(txReport) => Channel[AsyncTxReport](AsyncTxReport(txReport)).chunk
-          case Left(anomaly)   => async.Left(anomaly)
-        }
+    CompletableFuture.supplyAsync { () =>
+      Channel[jMap[_, _]](
+        InvokeAsync.transact(datomicConn, stmts)
+      ).chunk match {
+        case Right(txReport) => Channel[AsyncTxReport](AsyncTxReport(txReport)).chunk
+        case Left(anomaly)   => async.Left(anomaly)
       }
+    }
   }
 
   def transact(stmtsReader: Reader): CompletableFuture[Either[CognitectAnomaly, AsyncTxReport]] =
@@ -112,11 +107,11 @@ case class AsyncConnection(datomicConn: AnyRef) {
   }
 
   def txRangeArray(timePointStart: Any, timePointEnd: Any, limit: Int
-  ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
+                  ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
     txRangeArray(timePointStart, timePointEnd, 0, 0, limit)
 
   def txRangeArray(timePointStart: Any, timePointEnd: Any
-  ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
+                  ): CompletableFuture[Either[CognitectAnomaly, Array[Pair[Long, Array[Datom]]]]] =
     txRangeArray(timePointStart, timePointEnd, 0, 0, 1000)
 
   def txRangeArray(limit: Int)

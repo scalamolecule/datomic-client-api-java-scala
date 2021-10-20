@@ -23,14 +23,9 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
   }
 
 
-  def transact(stmts: jList[_]): TxReport = {
-    if (stmts.isEmpty)
-      TxReport(Util.map())
-    else
-      TxReport(
-        Invoke.transact(datomicConn, stmts).asInstanceOf[jMap[_, _]]
-      )
-  }
+  def transact(stmts: jList[_]): TxReport = TxReport(
+    Invoke.transact(datomicConn, stmts).asInstanceOf[jMap[_, _]]
+  )
 
   def transact(stmtsReader: Reader): TxReport =
     transact(readAll(stmtsReader).get(0).asInstanceOf[jList[_]])
@@ -70,7 +65,7 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
   // Convenience method for single invocation from connection
   def widh(stmts: jList[_]): Db = {
     val rawTxReport = Invoke.`with`(withDb, stmts).asInstanceOf[jMap[_, _]]
-    val dbAfter  = rawTxReport.get(read(":db-after"))
+    val dbAfter     = rawTxReport.get(read(":db-after"))
     Db(dbAfter.asInstanceOf[AnyRef])
   }
 

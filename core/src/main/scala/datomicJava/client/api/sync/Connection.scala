@@ -25,12 +25,9 @@ case class Connection(datomicConn: AnyRef) extends AnomalyWrapper {
   }
 
 
-  def transact(stmts: jList[_]): TxReport = {
-    if (stmts.isEmpty)
-      TxReport(Util.map())
-    else
-      TxReport(Invoke.transact(datomicConn, stmts).asInstanceOf[jMap[_, _]])
-  }
+  def transact(stmts: jList[_]): TxReport = TxReport(
+    Invoke.transact(datomicConn, stmts).asInstanceOf[jMap[_, _]]
+  )
 
   def transact(stmtsReader: Reader): TxReport =
     transact(readAll(stmtsReader).get(0).asInstanceOf[jList[_]])

@@ -7,7 +7,6 @@ import clojure.lang.PersistentVector
 import datomic.Util
 import datomic.Util._
 import datomicClient.ErrorMsg
-import datomicClient.anomaly.Interrupted
 import datomicScala.Spec
 import datomicScala.client.api.{Datom, DbStats}
 import scala.jdk.CollectionConverters._

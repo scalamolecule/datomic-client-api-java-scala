@@ -12,11 +12,11 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
 
-class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
+class AsyncDatomicTest extends SpecAsync with AnomalyWrapper {
 
   "create client" >> {
     system match {
-      case "dev-local" => {
+      case "dev-local" =>
         /*
           Install dev-local (https://docs.datomic.com/cloud/dev-local.html)
           > mkdir ~/.datomic
@@ -47,9 +47,9 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
         waitFor(AsyncDatomic.clientDevLocal("test-datomic-client-api-scala-2.12").connect("y")) === Left(
           NotFound("Db not found: y")
         )
-      }
 
-      case "peer-server" => {
+
+      case "peer-server" =>
         /*
           To run tests against a Peer Server do these 3 steps first:
 
@@ -72,8 +72,7 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
 
         // Note that a Client is returned immediately without contacting
         // a server and can thus be invalid.
-        val invalidClient: AsyncClient =
-        AsyncDatomic.clientPeerServer("admin", "nice-try", "localhost:8998")
+        val invalidClient: AsyncClient = AsyncDatomic.clientPeerServer("admin", "nice-try", "localhost:8998")
 
         // Invalid key/pass
         waitFor(invalidClient.connect("hello")) match {
@@ -98,9 +97,9 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
           case other =>
             throw new RuntimeException("Unexpectedly didn't throw a `NotFound` exception. Got " + other)
         }
-      }
 
-      case "cloud" => {
+
+      case "cloud" =>
         val client1: AsyncClient = AsyncDatomic.clientCloud(
           "us-east-1",
           "mysystem",
@@ -119,8 +118,8 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
           "myprofile",
           8182
         )
-        // todo: test against a live cloud client
-      }
+      // todo: test against a live cloud client
+
     }
     ok
   }
@@ -154,11 +153,11 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper{
           |:where [_ :movie/title ?movie-title]]""".stripMargin,
         conn.db
       )
-    val lazyChunks: Stream[Either[CognitectAnomaly, jStream[_]]] = waitFor(futureLazyChunks)
-    val firstChunk: Either[CognitectAnomaly, jStream[_]] = lazyChunks.head
+    val lazyChunks       : Stream[Either[CognitectAnomaly, jStream[_]]] = waitFor(futureLazyChunks)
+    val firstChunk       : Either[CognitectAnomaly, jStream[_]] = lazyChunks.head
     val chunkDataOptional: Option[jStream[_]] = firstChunk.toOption
-    val chunkData: jStream[_] = chunkDataOptional.get
-    val chunkDataScala: List[Any] = chunkData.iterator().asScala.toList
+    val chunkData        : jStream[_] = chunkDataOptional.get
+    val chunkDataScala   : List[Any] = chunkData.iterator().asScala.toList
     chunkDataScala === List(
       list("Commando"), list("The Goonies"), list("Repo Man")
     )

@@ -95,19 +95,23 @@ trait SpecAsync extends Specification with SchemaAndData {
       }
 
       // Retract current data
-      var lastTx: AsyncTxReport = null
       waitFor(AsyncDatomic.q("[:find ?e :where [?e :movie/title _]]", conn.db))
         .head match {
         case Right(stream) => stream.forEach { l =>
           val eid: Any = l.asInstanceOf[jList[_]].get(0)
-          lastTx = waitFor(
+          waitFor(
             conn.transact(list(list(":db/retractEntity", eid)))
-          ).toOption.get
+          ).toOption.fold {
+            val txDatom = waitFor(conn.txRange(None, None)).toOption.get.last._2.head
+            txBefore = txDatom.tx
+            txInstBefore = txDatom.v.asInstanceOf[Date]
+          } { lastTx =>
+            txBefore = lastTx.tx
+            txInstBefore = lastTx.txInst
+          }
         }
         case Left(anomaly) => throw anomaly
       }
-      txBefore = lastTx.tx
-      txInstBefore = lastTx.txInst
 
       filmDataTx = waitFor(conn.transact(filmData)).toOption.get
     }

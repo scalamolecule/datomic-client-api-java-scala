@@ -49,8 +49,13 @@ class AsyncConnectionTest extends SpecAsync {
     ))).toOption.get
     films(conn.db) === fourFilms
 
-    // Applying empty list of stmts returns empty TxReport without touching the db
-    waitFor(conn.transact(list())).toOption.get === AsyncTxReport(Util.map())
+    // Transacting empty list of stmts creates transaction with timestamp only
+    val hollowTxReport = waitFor(conn.transact(list())).toOption.get
+    val txData = hollowTxReport.txData.toArray.toList.asInstanceOf[List[Datom]]
+    // Only tx instant datom asserted
+    txData.length === 1
+    txData.head.e === txData.head.tx
+    txData.head.a === 50 // id of :db/txInstant attribute
   }
 
   "transact edn file" in new AsyncSetup {
