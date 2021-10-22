@@ -3,7 +3,7 @@ package datomicClient
 import java.net.URI
 import java.util.{List => jList, Map => jMap}
 import clojure.java.api.Clojure
-import clojure.lang.{IFn, PersistentVector, Keyword => clKeyword, Symbol => clSymbol}
+import clojure.lang.{IFn, PersistentVector, Keyword => clKeyword, Symbol => clSymbol, BigInt => clBigInt}
 import datomic.Util._
 import datomic.db.DbId
 import us.bpsm.edn.printer.Printer.Fn
@@ -37,28 +37,34 @@ trait ClojureBridge {
   // Printing edn with us.bpsm.edn
   // Adding recognition of clojure Keyword and Datomic DbId
 
-  lazy val clPersVec : Fn[PersistentVector] = new Printer.Fn[PersistentVector]() {
+  lazy val clPersVec: Fn[PersistentVector] = new Printer.Fn[PersistentVector]() {
     override def eval(self: PersistentVector, writer: Printer): Unit = {
       writer.append('[')
-      self.forEach(o =>  writer.printValue(o))
+      self.forEach(o => writer.printValue(o))
       writer.append(']')
     }
   }
-  lazy val clKw : Fn[clKeyword] = new Printer.Fn[clKeyword]() {
+  lazy val clKw     : Fn[clKeyword]        = new Printer.Fn[clKeyword]() {
     override def eval(self: clKeyword, writer: Printer): Unit = {
       writer.softspace.append(self.toString).softspace
     }
   }
-  lazy val clSym: Fn[clSymbol] = new Printer.Fn[clSymbol]() {
+  lazy val clSym   : Fn[clSymbol] = new Printer.Fn[clSymbol]() {
     override def eval(self: clSymbol, writer: Printer): Unit = {
       writer.softspace.append(self.toString).softspace
     }
   }
-  lazy val uri: Fn[URI]  = new Printer.Fn[URI]() {
-    override def eval(self: URI, writer: Printer): Unit = {
-      writer.append(s""" #=(new java.net.URI "${self.toString}")""")}
+  lazy val clBigInt: Fn[clBigInt] = new Printer.Fn[clBigInt]() {
+    override def eval(self: clBigInt, writer: Printer): Unit = {
+      writer.softspace.append(self.toString + "N").softspace
+    }
   }
-  lazy val dbId : Fn[DbId] = new Printer.Fn[DbId]() {
+  lazy val uri     : Fn[URI]      = new Printer.Fn[URI]() {
+    override def eval(self: URI, writer: Printer): Unit = {
+      writer.append(s""" #=(new java.net.URI "${self.toString}")""")
+    }
+  }
+  lazy val dbId     : Fn[DbId]             = new Printer.Fn[DbId]() {
     override def eval(self: DbId, writer: Printer): Unit = {
       if (self.idx.asInstanceOf[Long] > 0) {
         // Entity id
@@ -77,6 +83,7 @@ trait ClojureBridge {
     .put(classOf[PersistentVector], clPersVec)
     .put(classOf[clKeyword], clKw)
     .put(classOf[clSymbol], clSym)
+    .put(classOf[clBigInt], clBigInt)
     .put(classOf[URI], uri)
     .put(classOf[DbId], dbId)
     .build
@@ -85,6 +92,7 @@ trait ClojureBridge {
     .put(classOf[PersistentVector], clPersVec)
     .put(classOf[clKeyword], clKw)
     .put(classOf[clSymbol], clSym)
+    .put(classOf[clBigInt], clBigInt)
     .put(classOf[URI], uri)
     .put(classOf[DbId], dbId)
     .build

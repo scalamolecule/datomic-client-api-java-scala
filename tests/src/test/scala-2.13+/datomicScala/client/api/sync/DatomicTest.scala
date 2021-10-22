@@ -1,6 +1,7 @@
 package datomicScala.client.api.sync
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
+import datomic.Peer.function
 import datomic.Util
 import datomic.Util._
 import datomicClient.anomaly.{AnomalyWrapper, Forbidden, NotFound}
@@ -21,11 +22,11 @@ class DatomicTest extends Spec with AnomalyWrapper {
           add path to where you want to save data as per instructions in link above
 
           Add dependency to dev-local in your project
-          "com.datomic" % "dev-local" % "0.9.235",
+          "com.datomic" % "dev-local" % "1.0.238",
 
           As long dev-local has a dependency on clojure 1.10.0-alpha4
           we also need to import a newer version of clojure like this:
-          "org.clojure" % "clojure" % "1.10.1"
+          "org.clojure" % "clojure" % "1.10.3"
 
           (No need to start a transactor)
          */
@@ -100,7 +101,7 @@ class DatomicTest extends Spec with AnomalyWrapper {
           case notFound: NotFound =>
             // Is "x" or "x: nodename nor servname provided, or not known"
             notFound.msg.startsWith("x") === true
-          case NonFatal(e)           =>
+          case NonFatal(e)        =>
             throw new RuntimeException("Unexpectedly didn't throw a `NotFound` exception. Got " + e)
         }
 
