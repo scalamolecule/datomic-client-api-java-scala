@@ -139,7 +139,7 @@ case class AsyncDb(
    * @param components Optional vector in the same order as the index
    *                   containing one or more values to further narrow the
    *                   result.
-   * @return List[datomicFacade.client.api.Datom] Wrapped Datoms with a unified api
+   * @return Future[Either[CognitectAnomaly, jStream[Datom]]]
    */
   def datoms(
     index: String,

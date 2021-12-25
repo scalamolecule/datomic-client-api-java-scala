@@ -290,6 +290,8 @@ class AsyncDatomicTest extends SpecAsync with AnomalyWrapper {
     // This allows the first chunk to be lazy also.
     // Usage is flexible and follows pure fp principles but is verbose too:
 
+    import cats.effect.unsafe.implicits.global
+
     // Create Stream
     streamOfChunksOf1(conn.db)
       // Get first chunk Stream

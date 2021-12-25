@@ -85,7 +85,7 @@ case class Db(
    * @param components Optional vector in the same order as the index
    *                   containing one or more values to further narrow the
    *                   result.
-   * @return List[datomicFacade.client.api.Datom] Wrapped Datoms with a unified api
+   * @return java.util.stream.Stream[datomicFacade.client.api.Datom] Wrapped Datoms with a unified api
    */
   def datoms(
     index: String,

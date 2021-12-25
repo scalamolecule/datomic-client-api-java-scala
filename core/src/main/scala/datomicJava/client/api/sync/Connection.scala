@@ -3,7 +3,6 @@ package datomicJava.client.api.sync
 import java.io.{Reader, StringReader}
 import java.lang.{Iterable => jIterable}
 import java.util.{List => jList, Map => jMap}
-import datomic.Util
 import datomic.Util._
 import datomicClient._
 import datomicClient.anomaly.AnomalyWrapper

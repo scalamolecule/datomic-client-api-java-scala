@@ -59,7 +59,7 @@ trait SpecAsync extends Specification with SchemaAndData {
   class AsyncSetup extends SchemaAndData with Scope {
 
     // Throw potential setup error
-    setupException.fold()(throw _)
+    setupException.fold((): Unit)(throw _)
 
     var txBefore    : Long = 0L
     var txInstBefore: Date = null

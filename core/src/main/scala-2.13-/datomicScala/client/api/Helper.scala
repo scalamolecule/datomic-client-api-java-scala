@@ -25,7 +25,6 @@ object Helper {
     d.valAt(added).asInstanceOf[Boolean]
   )
 
-
   // Unify Datoms in single fast iteration
   def streamOfDatoms(rawDatoms: Any): jStream[Datom] = {
     rawDatoms match {

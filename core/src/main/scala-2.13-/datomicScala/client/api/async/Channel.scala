@@ -1,6 +1,6 @@
 package datomicScala.client.api.async
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import clojure.lang.PersistentArrayMap
 import datomic.Util._
 import datomicClient._
@@ -51,9 +51,6 @@ case class Channel[T](
   // Alternative fs2 Stream implementation
   // This allows the first chunk to be lazy too.
   // Usage is flexible but verbose
-
-  implicit val ioContextShift: ContextShift[IO] =
-    IO.contextShift(scala.concurrent.ExecutionContext.Implicits.global)
 
   private def getChunk: Future[Option[Either[CognitectAnomaly, T]]] = {
     Future {

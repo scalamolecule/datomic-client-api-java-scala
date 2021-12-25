@@ -4,9 +4,9 @@ import sbt.url
 
 lazy val commonSettings = Seq(
   name := "datomic-client-api-java-scala",
-  ThisBuild / version := "1.0.2",
-  crossScalaVersions := Seq("2.12.15", "2.13.6"),
-  ThisBuild / scalaVersion := "2.13.6",
+  ThisBuild / version := "1.0.3",
+  crossScalaVersions := Seq("2.12.15", "2.13.7"),
+  ThisBuild / scalaVersion := "2.13.7",
   organization := "org.scalamolecule",
   organizationName := "ScalaMolecule",
   organizationHomepage := Some(url("http://www.scalamolecule.org")),
@@ -32,6 +32,15 @@ lazy val commonSettings = Seq(
   }
 )
 
+lazy val root = (project in file("."))
+  .aggregate(core)
+  .settings(
+    name := "datomic-client-api-java-scala",
+    publish / skip := true,
+    publish := ((): Unit),
+    publishLocal := ((): Unit),
+  )
+
 lazy val core = project.in(file("core"))
   .settings(commonSettings ++ Seq(
     libraryDependencies ++= Seq(
@@ -42,7 +51,7 @@ lazy val core = project.in(file("core"))
       "com.datomic" % "client-pro" % "1.0.72",
       "com.datomic" % "client-cloud" % "1.0.117",
       "us.bpsm" % "edn-java" % "0.7.1",
-      "co.fs2" %% "fs2-core" % "2.4.4",
+      "co.fs2" %% "fs2-core" % "3.2.3",
     ),
 
     publishMavenStyle := true,
@@ -74,7 +83,8 @@ lazy val core = project.in(file("core"))
         email = "marcgrue@gmail.com",
         url = url("http://marcgrue.com")
       )
-    )
+    ),
+    ThisBuild / versionScheme := Some("early-semver")
   ))
 
 lazy val tests = project.in(file("tests"))
